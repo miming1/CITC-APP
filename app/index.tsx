@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { Button, StyleSheet, Text, View, useColorScheme } from "react-native";
+import { Pressable, StyleSheet, Text, View, useColorScheme } from "react-native";
 import { Colors } from "../constants/theme";
 
 export default function Home() {
@@ -11,10 +11,17 @@ export default function Home() {
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.text }]}>CITC Academic Procedure Portal</Text>
 
-      <Button
-        title="Check Available Procedure"
-        onPress={() => router.push("/process")}
-      />
+      <Pressable
+        onPress={() => {
+          console.log("clicked"); // debug
+          router.push("/process");
+        }}
+        style={[styles.button]}
+      >
+        <Text style={{ color: "white" }}>
+          Check Available Procedure
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -28,5 +35,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     marginBottom: 20,
+  },
+  button: {
+    backgroundColor: "#007AFF",
+    padding: 12,
+    borderRadius: 8,
   },
 });
