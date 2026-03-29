@@ -348,7 +348,7 @@ const s = StyleSheet.create({
     top: 4,
     left: 4,
     width: "50%",
-    height: "95%",
+    height: "98%",
     backgroundColor: "#fff",
     borderRadius: 100,
     elevation: 2,
