@@ -1,15 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useColorScheme,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useColorScheme, } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 
