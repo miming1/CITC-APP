@@ -17,7 +17,6 @@ export default function RootLayout() {
         <Stack.Screen name="process" />
 
       </Stack>
-
       <StatusBar style="auto" />
     </ThemeProvider>
   );
