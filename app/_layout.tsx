@@ -12,11 +12,8 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
 
-        {/* Screen 1: Login / Sign Up */}
         <Stack.Screen name="index" />
         <Stack.Screen name="process-list" />
-
-        {/* Screen 3: Process Detail (collaborator's existing screen) */}
         <Stack.Screen name="process" />
 
       </Stack>
