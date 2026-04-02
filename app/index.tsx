@@ -76,7 +76,7 @@ export default function LoginScreen() {
     setTimeout(() => {
       setMessage(null);
       router.replace({
-        pathname: "/process-list",
+        pathname: "/Userdashboard",
         params: { idNumber: loginForm.idNumber },
       });
     }, 700);
