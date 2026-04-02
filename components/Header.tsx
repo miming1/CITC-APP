@@ -1,44 +1,214 @@
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View, useColorScheme } from "react-native";
+import { useState } from "react";
+import {
+  Modal, Pressable,
+  StyleSheet, Text, TouchableOpacity,
+  View,
+} from "react-native";
 import { Colors } from "../constants/theme";
 
-export default function Header({ title }: { title: string }) {
-  const router = useRouter();
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-  const colorScheme = useColorScheme() ?? "light";
-  const colors = Colors[colorScheme as "light" | "dark"];
+interface HeaderProps {
+  title: string;
+  // Pass showBack={false} on the dashboard to hide the back button
+  // Defaults to true for all other pages
+  showBack?: boolean;
+}
+
+// ─── Menu Items ───────────────────────────────────────────────────────────────
+
+const MENU_ITEMS = [
+  { label: 'Processes',                  route: '/process-list'       },
+  { label: 'Frequently Asked Questions', route: '/faq'                },
+  { label: 'Form Submission Progress',   route: '/submission-progress'},
+  { label: 'Submission History',         route: '/SubmissionHistory'  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function Header({ title, showBack = true }: HeaderProps) {
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={[styles.icon, { color: colors.text }]}>←</Text>
-      </TouchableOpacity>
+    <>
+      <View style={styles.container}>
 
-      <Text style={[styles.title, { color: colors.text }]}>
-        {title}
-      </Text>
+        {/* ── Left: Back Button or Empty Spacer ── */}
+        {showBack ? (
+          <TouchableOpacity onPress={() => router.back()} style={styles.sideSlot}>
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+        ) : (
+          // Empty spacer keeps the title centered when there's no back button
+          <View style={styles.sideSlot} />
+        )}
 
-      <Text style={[styles.icon, { color: colors.text }]}>≡</Text>
-    </View>
+        {/* ── Center: Dynamic Page Title ── */}
+        <Text style={styles.title}>{title}</Text>
+
+        {/* ── Right: Hamburger Menu Button ── */}
+        <TouchableOpacity
+          style={[styles.sideSlot, styles.menuBtn, menuOpen && styles.menuBtnActive]}
+          onPress={() => setMenuOpen(true)}
+          activeOpacity={0.8}
+        >
+          {/* 3 lines — white by default, dark purple when menu is open */}
+          <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
+          <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
+          <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
+        </TouchableOpacity>
+
+      </View>
+
+      {/* ── Dropdown Menu (Modal overlay) ── */}
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        {/* Tap outside the dropdown to close */}
+        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
+
+          <View style={styles.dropdown}>
+
+            {MENU_ITEMS.map((item) => (
+              <TouchableOpacity
+                key={item.label}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  router.push(item.route as any);
+                }}
+              >
+                <Text style={styles.dropdownText}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+
+            {/* ── Logout ── */}
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={() => {
+                setMenuOpen(false);
+                router.replace('/');
+              }}
+            >
+              <Text style={styles.logoutText}>Logout  →</Text>
+            </TouchableOpacity>
+
+          </View>
+
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const PURPLE = Colors.light.tint;
+const DARK_PURPLE = '#6B4FA8';
+
 const styles = StyleSheet.create({
+
+  // ── Header Bar ─────────────────────────────────────────────────────────────
   container: {
-    height: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    backgroundColor: Colors.light.tint,
+    backgroundColor: PURPLE,
   },
 
+  // ── Left / Right slots (same width keeps title perfectly centered) ──────────
+  sideSlot: {
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Back Arrow ─────────────────────────────────────────────────────────────
+  backArrow: {
+    color: '#fff',
+    fontSize: 22,
+  },
+
+  // ── Title ──────────────────────────────────────────────────────────────────
   title: {
+    flex: 1,
+    textAlign: 'center',
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '700',
+    color: '#fff',
   },
 
-  icon: {
-    fontSize: 20,
+  // ── Hamburger Button ───────────────────────────────────────────────────────
+  menuBtn: {
+    gap: 4,
+    borderRadius: 6,
+    padding: 4,
   },
+  // Background turns dark purple when menu is open
+  menuBtnActive: {
+    backgroundColor: DARK_PURPLE,
+  },
+  menuLine: {
+    width: 22,
+    height: 2.5,
+    borderRadius: 999,
+    backgroundColor: '#fff',   // white by default
+  },
+  // Lines turn dark purple when menu is open
+  menuLineActive: {
+    backgroundColor: DARK_PURPLE,
+  },
+
+  // ── Modal Overlay ──────────────────────────────────────────────────────────
+  overlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    alignItems: 'flex-end',
+  },
+
+  // ── Dropdown Card ──────────────────────────────────────────────────────────
+  dropdown: {
+    marginTop: 56,           // lines up just below the header
+    marginRight: 8,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    minWidth: 220,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EBF8',
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#1E1340',
+  },
+
+  // ── Logout Row ─────────────────────────────────────────────────────────────
+  logoutBtn: {
+    backgroundColor: DARK_PURPLE,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
 });
