@@ -328,13 +328,13 @@ const s = StyleSheet.create({
   logoWrap:   { alignItems: "center", marginBottom: 24 },
   logoCircle: {
     width: 80, height: 80, borderRadius: 40,
-    alignItems: "center", justifyContent: "center",
+    alignItems: "center", justifyContent: "center", color: "#D3C1FF",
   },
   logoText: { color: "#fff", fontSize: 13, fontStyle: "italic", fontWeight: "600" },
 
   // Light background container for the toggle pill
   toggleWrap: {
-    backgroundColor: "#0082a6ea",
+    backgroundColor: "#D3C1FF",
     borderRadius: 100,
     padding: 4,
     flexDirection: "row",

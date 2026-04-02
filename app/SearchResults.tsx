@@ -1,17 +1,16 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import {
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text, TextInput,
-    TouchableOpacity,
-    View,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet, Text,
+  TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FAQCard from '../components/FAQCard';
 import FloatingButtons from '../components/FloatingButtons';
+import Header from '../components/Header';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,28 +58,18 @@ const FAQ_ITEMS: FAQItem[] = [
 
 export default function SearchResults() {
 
-  // Receive the search query passed from the previous screen via router params
   const { query } = useLocalSearchParams<{ query: string }>();
   const [search, setSearch] = useState(query ?? '');
 
   function handleSearch() {
-    // Re-run search with current input — update URL param if needed
     router.setParams({ query: search });
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
 
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
-          <Text style={styles.headerBackText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Search Results</Text>
-        <TouchableOpacity style={styles.headerMenu}>
-          <Text style={styles.headerMenuText}>☰</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Reusable Header — showBack defaults to true */}
+      <Header title="Search Results" />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -107,10 +96,6 @@ export default function SearchResults() {
           <Text style={styles.sectionTitle}>Popular Processes</Text>
           <View style={styles.grid}>
             {POPULAR_PROCESSES.map((item) => (
-              /*
-               * Replace this placeholder View with your actual ProcessCard component
-               * Example: <ProcessCard key={item.id} process={item} />
-               */
               <View key={item.id} style={styles.card} />
             ))}
           </View>
@@ -126,7 +111,7 @@ export default function SearchResults() {
 
       </ScrollView>
 
-      {/* ── Floating Buttons ── */}
+      {/* Floating Buttons */}
       <FloatingButtons activeTab="faq" />
 
     </SafeAreaView>
@@ -144,25 +129,11 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
 
-  // ── Header ─────────────────────────────────────────────────────────────────
-  header: {
-    backgroundColor: '#9B7FD4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  headerBack: { position: 'absolute', left: 16 },
-  headerBackText: { color: '#fff', fontSize: 20 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
-  headerMenu: { position: 'absolute', right: 16 },
-  headerMenuText: { color: '#fff', fontSize: 20 },
-
   // ── Scroll ─────────────────────────────────────────────────────────────────
+  // paddingBottom: 160 ensures the last FAQ card clears the floating buttons
   scroll: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
+    paddingBottom: 160,
     paddingTop: 16,
   },
 

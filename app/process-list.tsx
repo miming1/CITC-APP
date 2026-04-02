@@ -1,11 +1,16 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useColorScheme, } from "react-native";
+import {
+  ScrollView, StyleSheet, Text, TextInput,
+  TouchableOpacity, View, useColorScheme,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Header from "../components/Header";
 import { Colors } from "../constants/theme";
 
-// Process card data
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
 const PROCESSES = [
   { id: "1", title: "Medical Certificate Submission", duration: "1–3 Days" },
   { id: "2", title: "Leave of Absence Request",       duration: "3–5 Days" },
@@ -14,57 +19,43 @@ const PROCESSES = [
   { id: "5", title: "Grade Appeal",                   duration: "3–5 Days" },
 ];
 
-// Office grid data
 const OFFICES = [
   "Dean's Office",
   "Faculty Office",
   "TCM Office",
-  "Data Science Ofice",
+  "Data Science Office",
   "Computer Science Office",
   "IT Office",
 ];
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProcessListScreen() {
 
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme as "light" | "dark"];
 
-  // Username passed from login screen via router params
   const { username } = useLocalSearchParams<{ username: string }>();
 
-  // Search input state — filters process list in real time
   const [search, setSearch] = useState("");
 
-  // Filter processes by search text
   const filtered = PROCESSES.filter((p) =>
     p.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Go to process detail screen (Screen 3)
   function goToProcess() {
     router.push("/process");
-  }
-
-  // Log out — go back to login
-  function handleLogout() {
-    router.replace("/");
   }
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
 
-      {/* ── Header ── */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Process</Text>
-
-        <TouchableOpacity onPress={handleLogout} style={s.menuButton}>
-          <MaterialIcons name="menu" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      {/* Reusable Header — showBack defaults to true */}
+      <Header title="Processes" />
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Search Bar (controlled input) ── */}
+        {/* ── Search Bar ── */}
         <View style={s.searchRow}>
           <MaterialIcons name="search" size={20} color="#aaa" style={{ marginRight: 8 }} />
           <TextInput
@@ -72,7 +63,7 @@ export default function ProcessListScreen() {
             placeholder="Search processes…"
             placeholderTextColor="#aaa"
             value={search}
-            onChangeText={setSearch}  // updates state → re-filters list
+            onChangeText={setSearch}
           />
         </View>
 
@@ -83,7 +74,7 @@ export default function ProcessListScreen() {
           <TouchableOpacity
             key={item.id}
             style={[s.card, { backgroundColor: colors.background, borderColor: colors.icon }]}
-            onPress={goToProcess}   // navigate to Screen 3
+            onPress={goToProcess}
             activeOpacity={0.75}
           >
             <View style={s.cardLeft}>
@@ -99,7 +90,6 @@ export default function ProcessListScreen() {
           </TouchableOpacity>
         ))}
 
-        {/* No results */}
         {filtered.length === 0 && (
           <Text style={s.empty}>No processes found.</Text>
         )}
@@ -136,27 +126,12 @@ export default function ProcessListScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const s = StyleSheet.create({
   safe:   { flex: 1 },
-  scroll: { paddingHorizontal: 16, paddingBottom: 120 },
-
-  header: {
-    height: 56, 
-    flexDirection: "row",
-    alignItems: "center", 
-    justifyContent: "center",
-    paddingHorizontal: 16, 
-    backgroundColor: Colors.light.tint,
-    position:"relative",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  menuButton:{
-    position:"absolute",
-    right:16,
-  },
+  // paddingBottom: 160 ensures content clears the floating buttons
+  scroll: { paddingHorizontal: 16, paddingBottom: 160 },
 
   searchRow: {
     flexDirection: "row", alignItems: "center",

@@ -5,7 +5,6 @@ import {
   StyleSheet, Text, TouchableOpacity,
   View,
 } from "react-native";
-import { Colors } from "../constants/theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -108,8 +107,9 @@ export default function Header({ title, showBack = true }: HeaderProps) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const PURPLE = Colors.light.tint;
-const DARK_PURPLE = '#6B4FA8';
+const HEADER_COLOR = '#D3C1FF';
+const MENU_ACTIVE_COLOR = '#6B4FA8';
+const Logout_Button = '#AE74F8';
 
 const styles = StyleSheet.create({
 
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    backgroundColor: PURPLE,
+    backgroundColor: HEADER_COLOR,
   },
 
   // ── Left / Right slots (same width keeps title perfectly centered) ──────────
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   // Background turns dark purple when menu is open
   menuBtnActive: {
-    backgroundColor: DARK_PURPLE,
+    backgroundColor: MENU_ACTIVE_COLOR,
   },
   menuLine: {
     width: 22,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   // Lines turn dark purple when menu is open
   menuLineActive: {
-    backgroundColor: DARK_PURPLE,
+    backgroundColor: MENU_ACTIVE_COLOR,
   },
 
   // ── Modal Overlay ──────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   dropdown: {
     marginTop: 56,           // lines up just below the header
     marginRight: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#F1ECFF',
     borderRadius: 10,
     minWidth: 220,
     elevation: 8,
@@ -195,12 +195,12 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     fontSize: 14,
-    color: '#1E1340',
+    color: '#3a256b',
   },
 
   // ── Logout Row ─────────────────────────────────────────────────────────────
   logoutBtn: {
-    backgroundColor: DARK_PURPLE,
+    backgroundColor: Logout_Button,
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',

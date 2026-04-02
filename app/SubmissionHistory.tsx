@@ -1,14 +1,12 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text, TextInput, TouchableOpacity,
-    View,
+  Platform, ScrollView, StatusBar,
+  StyleSheet, Text, TextInput,
+  TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Header from '../components/Header';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,21 +23,20 @@ interface Submission {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const SUBMISSIONS: Submission[] = [
-  { id: '1', formName: 'INC Form',              refNo: '35169725031', date: '2026-06-30', status: 'Completed' },
-  { id: '2', formName: 'Medical Certificate',   refNo: '40139340587', date: '2026-06-18', status: 'Completed' },
-  { id: '3', formName: 'Good Moral Certificate',refNo: '29349018653', date: '2026-06-06', status: 'Completed' },
+  { id: '1', formName: 'INC Form',               refNo: '35169725031', date: '2026-06-30', status: 'Completed' },
+  { id: '2', formName: 'Medical Certificate',    refNo: '40139340587', date: '2026-06-18', status: 'Completed' },
+  { id: '3', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-06-06', status: 'Completed' },
 ];
+
+const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 'Custom Date'];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SubmissionHistory() {
-  const [search, setSearch]           = useState('');
+  const [search, setSearch]             = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterOption>('This Month');
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 'Custom Date'];
-
-  // Filter submissions by search text (form name or ref no)
   const filtered = useMemo(() =>
     SUBMISSIONS.filter((s) =>
       s.formName.toLowerCase().includes(search.toLowerCase()) ||
@@ -54,16 +51,8 @@ export default function SubmissionHistory() {
   return (
     <SafeAreaView style={styles.safeArea}>
 
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerBack}>
-          <Text style={styles.headerBackText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Submission History</Text>
-        <TouchableOpacity style={styles.headerMenu}>
-          <Text style={styles.headerMenuText}>☰</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Reusable Header — showBack defaults to true */}
+      <Header title="Submission History" />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -157,7 +146,7 @@ export default function SubmissionHistory() {
 
       {/* ── Back to Home Button ── */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/')}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/Userdashboard')}>
           <Text style={styles.backBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
@@ -177,25 +166,10 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
 
-  // ── Header ─────────────────────────────────────────────────────────────────
-  header: {
-    backgroundColor: '#9B7FD4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  headerBack: { position: 'absolute', left: 16 },
-  headerBackText: { color: '#fff', fontSize: 20 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#fff' },
-  headerMenu: { position: 'absolute', right: 16 },
-  headerMenuText: { color: '#fff', fontSize: 20 },
-
   // ── Scroll ─────────────────────────────────────────────────────────────────
   scroll: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
+    paddingBottom: 120,
     paddingTop: 16,
   },
 

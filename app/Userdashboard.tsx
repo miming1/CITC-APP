@@ -1,8 +1,9 @@
-import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 // ─── Components ───────────────────────────────────────────────────────────────
 import FAQCard from '../components/FAQCard';
 import FloatingButtons from '../components/FloatingButtons';
+import Header from '../components/Header';
 import PopularProcesses from '../components/PopularProcesses';
 import SearchBar from '../components/SearchBar';
 
@@ -54,12 +55,8 @@ const FAQ_ITEMS: FAQItem[] = [
 ];
 
 const POPULAR_PROCESSES: Process[] = [
-  { id: '1' },
-  { id: '2' },
-  { id: '3' },
-  { id: '4' },
-  { id: '5' },
-  { id: '6' },
+  { id: '1' }, { id: '2' }, { id: '3' },
+  { id: '4' }, { id: '5' }, { id: '6' },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -79,15 +76,8 @@ export default function UserDashboard() {
   return (
     <SafeAreaView style={styles.safeArea}>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Welcome!</Text>
-        <TouchableOpacity style={styles.menuButton}>
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-          <View style={styles.menuLine} />
-        </TouchableOpacity>
-      </View>
+      {/* Reusable Header — showBack=false hides the back arrow on dashboard */}
+      <Header title="Welcome!" showBack={false} />
 
       <ScrollView
         style={styles.scrollView}
@@ -117,6 +107,7 @@ export default function UserDashboard() {
             <FAQCard key={item.id} question={item.question} answer={item.answer} />
           ))}
         </View>
+
       </ScrollView>
 
       {/* Floating Buttons */}
@@ -139,38 +130,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  // paddingBottom: 160 ensures the last FAQ card clears the floating buttons
   scrollContent: {
-    paddingBottom: 100,
-  },
-
-  // ── Header ─────────────────────────────────────────────────────────────────
-  header: {
-    backgroundColor: '#9B7FD4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  menuButton: {
-    position: 'absolute',
-    right: 16,
-    padding: 4,
-  },
-  menuLine: {
-    width: 22,
-    height: 2.5,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    marginVertical: 2,
+    paddingBottom: 160,
   },
 
   // ── Sections ───────────────────────────────────────────────────────────────
