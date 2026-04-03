@@ -161,7 +161,7 @@ export default function LoginScreen() {
               >
                 <Text style={[
                   s.toggleText,
-                  { color: colors.text },
+                  { color: '#422780' },
                   tab === "login" && s.toggleActive,
                 ]}>
                   Login
@@ -175,7 +175,7 @@ export default function LoginScreen() {
               >
                 <Text style={[
                   s.toggleText,
-                  { color: colors.text },
+                  { color: '#422780' },
                   tab === "signup" && s.toggleActive,
                 ]}>
                   Sign Up
@@ -190,11 +190,11 @@ export default function LoginScreen() {
               <View>
 
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.icon }]}>ID Number</Text>
+                  <Text style={[s.label, { color: '#422780' }]}>ID Number</Text>
                   <TextInput
                     style={[s.input, { color: colors.text }]}
                     placeholder="Enter ID Number"
-                    placeholderTextColor={colors.icon}
+                    placeholderTextColor={'#CCBACE'}
                     value={loginForm.idNumber}
                     onChangeText={(v) => setLoginForm({ ...loginForm, idNumber: v })}
                     autoCapitalize="none"
@@ -202,18 +202,18 @@ export default function LoginScreen() {
                 </View>
 
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.icon }]}>Password</Text>
+                  <Text style={[s.label, { color: '#422780' }]}>Password</Text>
                   <TextInput
                     style={[s.input, { color: colors.text }]}
                     placeholder="Enter Password"
-                    placeholderTextColor={colors.icon}
+                    placeholderTextColor={'#CCBACE'}
                     value={loginForm.password}
                     onChangeText={(v) => setLoginForm({ ...loginForm, password: v })}
                     secureTextEntry
                   />
                 </View>
 
-                <Text style={[s.forgot, { color: TINT }]}>Forgot password?</Text>
+                <Text style={[s.forgot, { color: '#5D429D' }]}>Forgot password?</Text>
 
                 <TouchableOpacity
                   style={[s.btn, { backgroundColor: TINT }]}
@@ -232,11 +232,11 @@ export default function LoginScreen() {
               <View>
 
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.icon }]}>ID Number</Text>
+                  <Text style={[s.label, { color: '#422780' }]}>ID Number</Text>
                   <TextInput
                     style={[s.input, { color: colors.text }]}
                     placeholder="Enter ID Number"
-                    placeholderTextColor={colors.icon}
+                    placeholderTextColor={'#CCBACE'}
                     value={signupForm.idNumber}
                     onChangeText={(v) => setSignupForm({ ...signupForm, idNumber: v })}
                     keyboardType="numeric"
@@ -244,11 +244,11 @@ export default function LoginScreen() {
                 </View>
 
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.icon }]}>Email</Text>
+                  <Text style={[s.label, { color: '#422780' }]}>Email</Text>
                   <TextInput
                     style={[s.input, { color: colors.text }]}
                     placeholder="Enter Email Address"
-                    placeholderTextColor={colors.icon}
+                    placeholderTextColor={'#CCBACE'}
                     value={signupForm.email}
                     onChangeText={(v) => setSignupForm({ ...signupForm, email: v })}
                     keyboardType="email-address"
@@ -257,11 +257,11 @@ export default function LoginScreen() {
                 </View>
 
                 <View style={s.field}>
-                  <Text style={[s.label, { color: colors.icon }]}>Password</Text>
+                  <Text style={[s.label, { color: '#422780' }]}>Password</Text>
                   <TextInput
                     style={[s.input, { color: colors.text }]}
                     placeholder="Create a Password"
-                    placeholderTextColor={colors.icon}
+                    placeholderTextColor={'#CCBACE'}
                     value={signupForm.password}
                     onChangeText={(v) => setSignupForm({ ...signupForm, password: v })}
                     secureTextEntry

@@ -1,4 +1,5 @@
-import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Colors } from "../constants/theme";
 
 // ─── Components ───────────────────────────────────────────────────────────────
 import FAQCard from '../components/FAQCard';
@@ -73,8 +74,13 @@ function HelpCategoryItem({ item }: { item: HelpCategory }) {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function UserDashboard() {
+
+  // ── Theme ─────────────────────────────────────────────────────────────────
+  const colorScheme = useColorScheme() ?? "light";
+  const colors      = Colors[colorScheme as "light" | "dark"];
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
 
       {/* Reusable Header — showBack=false hides the back arrow on dashboard */}
       <Header title="Welcome!" showBack={false} />
@@ -124,7 +130,7 @@ const styles = StyleSheet.create({
   // ── SafeArea & Layout ──────────────────────────────────────────────────────
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    // backgroundColor removed here — now set dynamically via colors.background
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   scrollView: {
