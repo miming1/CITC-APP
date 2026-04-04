@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, useColorScheme, View } from 'react-native';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,6 +18,8 @@ export default function SearchBar({
   onChangeText,
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
+  const colorScheme = useColorScheme() ?? 'light';
+  const isDark = colorScheme === 'dark';
 
   const handleChange = (text: string) => {
     setQuery(text);
@@ -25,14 +27,17 @@ export default function SearchBar({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      { backgroundColor: isDark ? '#2A2040' : '#EDE8F7' },
+    ]}>
       <View style={styles.iconWrapper}>
-        <Ionicons name="search" size={18} color="#5D429D" />
+        <Ionicons name="search" size={18} color={isDark ? '#B0A8C8' : '#5D429D'} />
       </View>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { color: isDark ? '#E8E0FF' : '#4b2170' }]}
         placeholder={placeholder}
-        placeholderTextColor="#B0A8C8"
+        placeholderTextColor={isDark ? '#6B6485' : '#B0A8C8'}
         value={query}
         onChangeText={handleChange}
         onSubmitEditing={() => onSearch?.(query)}
@@ -43,11 +48,14 @@ export default function SearchBar({
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+
+  // ── Container ──────────────────────────────────────────────────────────────
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EDE8F7',
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -59,17 +67,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  searchIcon: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2.5,
-    borderColor: '#6B4FA8',
-  },
   input: {
     flex: 1,
     fontSize: 15,
-    color: '#4b2170',
     paddingVertical: 0,
   },
+
 });

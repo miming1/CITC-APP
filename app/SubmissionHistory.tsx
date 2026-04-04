@@ -2,10 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-  Modal,
-  Pressable, ScrollView,
+  Modal, Pressable, ScrollView,
   StyleSheet, Text, TextInput,
-  TouchableOpacity, View
+  TouchableOpacity, useColorScheme, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Header';
@@ -35,23 +34,30 @@ const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function SubmissionHistory() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const isDark      = colorScheme === 'dark';
+
+  // Theme shortcuts
+  const bg        = isDark ? '#151718' : '#F5F3FB';
+  const cardBg    = isDark ? '#1E1E2E' : '#fff';
+  const textPri   = isDark ? '#ECEDEE' : '#1E1340';
+  const textSec   = isDark ? '#9BA1A6' : '#6B6485';
+  const inputBg   = isDark ? '#2A2040' : '#EDE8F7';
+  const accent    = '#9B7FD4';
+  const accentDark = '#6B4FA8';
+
   const [search, setSearch]               = useState('');
   const [activeFilter, setActiveFilter]   = useState<FilterOption>('This Month');
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [customDateModal, setCustomDateModal] = useState(false);
-
-  // Custom date input fields
   const [customYear,  setCustomYear]  = useState('');
   const [customMonth, setCustomMonth] = useState('');
   const [customDay,   setCustomDay]   = useState('');
-
-  // Applied custom date for filtering (YYYY-MM-DD)
   const [appliedCustomDate, setAppliedCustomDate] = useState('');
 
-  // ── Filtering logic ───────────────────────────────────────────────────────
+  // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return SUBMISSIONS.filter((s) => {
-      // Search filter — matches form name, ref no, or date digits
       const matchesSearch =
         s.formName.toLowerCase().includes(search.toLowerCase()) ||
         s.refNo.includes(search) ||
@@ -59,7 +65,6 @@ export default function SubmissionHistory() {
 
       if (!matchesSearch) return false;
 
-      // Date filter
       const submissionDate = new Date(s.date);
       const now = new Date();
 
@@ -80,7 +85,6 @@ export default function SubmissionHistory() {
       if (activeFilter === 'Custom Date' && appliedCustomDate) {
         return s.date === appliedCustomDate;
       }
-
       return true;
     });
   }, [search, activeFilter, appliedCustomDate]);
@@ -107,58 +111,56 @@ export default function SubmissionHistory() {
     : activeFilter;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
 
-      {/* Reusable Header */}
       <Header title="Submission History" />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Search Bar — styled like reusable SearchBar ── */}
-        <View style={styles.searchRow}>
+        {/* ── Search Bar — matches reusable SearchBar style ── */}
+        <View style={[styles.searchRow, { backgroundColor: inputBg }]}>
           <View style={styles.searchIconWrap}>
-            <Ionicons name="search" size={18} color="#5D429D" />
+            <Ionicons name="search" size={18} color={isDark ? '#B0A8C8' : '#5D429D'} />
           </View>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: isDark ? '#E8E0FF' : '#4b2170' }]}
             placeholder="Search by name, ref no, or date…"
-            placeholderTextColor="#B0A8C8"
+            placeholderTextColor={isDark ? '#6B6485' : '#B0A8C8'}
             value={search}
             onChangeText={setSearch}
-            keyboardType="default"
           />
         </View>
 
         {/* ── Filter Row ── */}
         <View style={styles.filterRow}>
           <TouchableOpacity
-            style={styles.filterBtn}
+            style={[styles.filterBtn, { backgroundColor: inputBg }]}
             onPress={() => setDropdownOpen((prev) => !prev)}
           >
-            <Text style={styles.filterBtnText}>Filter by Date</Text>
-            <Text style={styles.filterBtnText}>{dropdownOpen ? '∧' : '∨'}</Text>
+            <Text style={[styles.filterBtnText, { color: accentDark }]}>Filter by Date</Text>
+            <Text style={[styles.filterBtnText, { color: accentDark }]}>{dropdownOpen ? '∧' : '∨'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Active Filter Label ── */}
-        <Text style={styles.filterLabel}>
-          Filtered by: <Text style={styles.filterLabelBold}>{filterLabel}</Text>
+        <Text style={[styles.filterLabel, { color: textSec }]}>
+          Filtered by: <Text style={[styles.filterLabelBold, { color: accentDark }]}>{filterLabel}</Text>
         </Text>
 
         {/* ── Table Header ── */}
         <View style={styles.tableHeader}>
-          <Text style={[styles.tableHeaderText, { flex: 2 }]}>Form Name</Text>
-          <Text style={[styles.tableHeaderText, { flex: 2 }]}>Ref No.</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Date</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1.5 }]}>Status</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, color: textSec }]}>Form Name</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, color: textSec }]}>Ref No.</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1.5, color: textSec }]}>Date</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1.5, color: textSec }]}>Status</Text>
         </View>
 
         {/* ── Table Rows ── */}
         {filtered.map((item) => (
-          <View key={item.id} style={styles.tableRow}>
-            <Text style={[styles.tableCell, { flex: 2 }]}>{item.formName}</Text>
-            <Text style={[styles.tableCell, { flex: 2 }]}>{item.refNo}</Text>
-            <Text style={[styles.tableCell, { flex: 1.5 }]}>{item.date}</Text>
+          <View key={item.id} style={[styles.tableRow, { backgroundColor: cardBg }]}>
+            <Text style={[styles.tableCell, { flex: 2, color: textPri }]}>{item.formName}</Text>
+            <Text style={[styles.tableCell, { flex: 2, color: textPri }]}>{item.refNo}</Text>
+            <Text style={[styles.tableCell, { flex: 1.5, color: textPri }]}>{item.date}</Text>
             <View style={{ flex: 1.5, alignItems: 'center' }}>
               <View style={[
                 styles.statusBadge,
@@ -180,15 +182,15 @@ export default function SubmissionHistory() {
         ))}
 
         {filtered.length === 0 && (
-          <Text style={styles.empty}>No submissions found.</Text>
+          <Text style={[styles.empty, { color: textSec }]}>No submissions found.</Text>
         )}
 
       </ScrollView>
 
-      {/* ── Dropdown Overlay — floats above content, doesn't push elements ── */}
+      {/* ── Dropdown Overlay ── */}
       {dropdownOpen && (
         <Pressable style={styles.dropdownOverlay} onPress={() => setDropdownOpen(false)}>
-          <View style={styles.dropdown}>
+          <View style={[styles.dropdown, { backgroundColor: cardBg, borderColor: isDark ? '#2A2040' : '#E2DBF0' }]}>
             {FILTER_OPTIONS.map((opt) => (
               <TouchableOpacity
                 key={opt}
@@ -197,7 +199,8 @@ export default function SubmissionHistory() {
               >
                 <Text style={[
                   styles.dropdownText,
-                  activeFilter === opt && styles.dropdownTextActive,
+                  { color: textSec },
+                  activeFilter === opt && { color: accentDark, fontWeight: '700' },
                 ]}>
                   {opt}
                 </Text>
@@ -215,56 +218,41 @@ export default function SubmissionHistory() {
         onRequestClose={() => setCustomDateModal(false)}
       >
         <Pressable style={styles.modalOverlay} onPress={() => setCustomDateModal(false)}>
-          <View style={styles.modalCard}>
-
-            <Text style={styles.modalTitle}>Enter Custom Date</Text>
-
-            <View style={styles.modalDivider} />
-
-            {/* Date input row: YYYY / MM / DD */}
+          <View style={[styles.modalCard, { backgroundColor: isDark ? '#1E1E2E' : '#fff' }]}>
+            <Text style={[styles.modalTitle, { color: accent }]}>Enter Custom Date</Text>
+            <View style={[styles.modalDivider, { backgroundColor: isDark ? '#2A2040' : '#E2DBF0' }]} />
             <View style={styles.dateRow}>
               <TextInput
-                style={styles.dateInput}
-                placeholder="YYYY"
-                placeholderTextColor="#B0A8C8"
-                value={customYear}
-                onChangeText={setCustomYear}
-                keyboardType="numeric"
-                maxLength={4}
+                style={[styles.dateInput, { color: accent, borderBottomColor: accent }]}
+                placeholder="YYYY" placeholderTextColor="#B0A8C8"
+                value={customYear} onChangeText={setCustomYear}
+                keyboardType="numeric" maxLength={4}
               />
-              <Text style={styles.dateSep}>/</Text>
+              <Text style={[styles.dateSep, { color: accent }]}>/</Text>
               <TextInput
-                style={styles.dateInput}
-                placeholder="MM"
-                placeholderTextColor="#B0A8C8"
-                value={customMonth}
-                onChangeText={setCustomMonth}
-                keyboardType="numeric"
-                maxLength={2}
+                style={[styles.dateInput, { color: accent, borderBottomColor: accent }]}
+                placeholder="MM" placeholderTextColor="#B0A8C8"
+                value={customMonth} onChangeText={setCustomMonth}
+                keyboardType="numeric" maxLength={2}
               />
-              <Text style={styles.dateSep}>/</Text>
+              <Text style={[styles.dateSep, { color: accent }]}>/</Text>
               <TextInput
-                style={styles.dateInput}
-                placeholder="DD"
-                placeholderTextColor="#B0A8C8"
-                value={customDay}
-                onChangeText={setCustomDay}
-                keyboardType="numeric"
-                maxLength={2}
+                style={[styles.dateInput, { color: accent, borderBottomColor: accent }]}
+                placeholder="DD" placeholderTextColor="#B0A8C8"
+                value={customDay} onChangeText={setCustomDay}
+                keyboardType="numeric" maxLength={2}
               />
             </View>
-
-            <TouchableOpacity style={styles.modalBtn} onPress={applyCustomDate}>
+            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: accent }]} onPress={applyCustomDate}>
               <Text style={styles.modalBtnText}>Apply</Text>
             </TouchableOpacity>
-
           </View>
         </Pressable>
       </Modal>
 
       {/* ── Back to Home Button ── */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/Userdashboard')}>
+      <View style={[styles.footer, { backgroundColor: bg }]}>
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: accent }]} onPress={() => router.replace('/Userdashboard')}>
           <Text style={styles.backBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
@@ -277,72 +265,41 @@ export default function SubmissionHistory() {
 
 const styles = StyleSheet.create({
 
-  // ── SafeArea ───────────────────────────────────────────────────────────────
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F3FB',
-  },
+  safeArea: { flex: 1 },
 
-  // ── Scroll ─────────────────────────────────────────────────────────────────
   scroll: {
     paddingHorizontal: 16,
     paddingBottom: 120,
     paddingTop: 16,
   },
 
-  // ── Search Bar — matches reusable SearchBar style ──────────────────────────
+  // ── Search Bar ─────────────────────────────────────────────────────────────
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EDE8F7',
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginBottom: 12,
   },
-  searchIconWrap: {
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#4b2170',
-    paddingVertical: 0,
-  },
+  searchIconWrap: { marginRight: 10, justifyContent: 'center', alignItems: 'center' },
+  searchInput:    { flex: 1, fontSize: 15, paddingVertical: 0 },
 
   // ── Filter ─────────────────────────────────────────────────────────────────
-  filterRow: { alignItems: 'flex-end', marginBottom: 4 },
-  filterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EDE8F7',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  filterBtnText: { fontSize: 13, color: '#6B4FA8', fontWeight: '500' },
+  filterRow:     { alignItems: 'flex-end', marginBottom: 4 },
+  filterBtn:     { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, gap: 6 },
+  filterBtnText: { fontSize: 13, fontWeight: '500' },
+  filterLabel:   { fontSize: 13, marginBottom: 10 },
+  filterLabelBold: { fontWeight: '700' },
 
-  // ── Filter Label ───────────────────────────────────────────────────────────
-  filterLabel: { fontSize: 13, color: '#6B6485', marginBottom: 10 },
-  filterLabelBold: { color: '#6B4FA8', fontWeight: '700' },
-
-  // ── Dropdown Overlay — positioned absolute so it floats above content ──────
-  dropdownOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    // transparent background — tap outside closes it
-  },
+  // ── Dropdown ───────────────────────────────────────────────────────────────
+  dropdownOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   dropdown: {
     position: 'absolute',
-    top: 140,   // lines up below the filter button
+    top: 140,
     right: 16,
-    backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2DBF0',
     minWidth: 150,
     elevation: 8,
     shadowColor: '#000',
@@ -350,33 +307,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
   },
-  dropdownItem: { paddingVertical: 12, paddingHorizontal: 16 },
-  dropdownText: { fontSize: 13, color: '#6B6485' },
-  dropdownTextActive: { color: '#6B4FA8', fontWeight: '700' },
+  dropdownItem:      { paddingVertical: 12, paddingHorizontal: 16 },
+  dropdownText:      { fontSize: 13 },
 
   // ── Table ──────────────────────────────────────────────────────────────────
-  tableHeader: {
-    flexDirection: 'row',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    marginBottom: 4,
-  },
-  tableHeaderText: { fontSize: 12, color: '#6B6485', fontWeight: '600' },
+  tableHeader:     { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 12, marginBottom: 4 },
+  tableHeaderText: { fontSize: 12, fontWeight: '600' },
   tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    marginBottom: 10,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: 10, paddingVertical: 14, paddingHorizontal: 12, marginBottom: 10,
+    elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 4,
   },
-  tableCell: { fontSize: 12, color: '#1E1340' },
+  tableCell: { fontSize: 12 },
 
   // ── Status Badge ───────────────────────────────────────────────────────────
   statusBadge:         { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
@@ -388,81 +331,22 @@ const styles = StyleSheet.create({
   statusTextPending:   { color: '#92400e' },
   statusTextRejected:  { color: '#991b1b' },
 
-  // ── Empty ──────────────────────────────────────────────────────────────────
-  empty: { textAlign: 'center', color: '#aaa', marginTop: 30, fontSize: 13 },
+  empty: { textAlign: 'center', marginTop: 30, fontSize: 13 },
 
   // ── Custom Date Modal ──────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 28,
-    width: '80%',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#6B4FA8',
-    marginBottom: 12,
-  },
-  modalDivider: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#E2DBF0',
-    marginBottom: 24,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-    gap: 6,
-  },
-  dateInput: {
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#9B7FD4',
-    fontSize: 20,
-    color: '#9B7FD4',
-    textAlign: 'center',
-    paddingVertical: 4,
-    minWidth: 48,
-  },
-  dateSep: {
-    fontSize: 20,
-    color: '#9B7FD4',
-    fontWeight: '300',
-  },
-  modalBtn: {
-    backgroundColor: '#9B7FD4',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
+  modalCard:    { borderRadius: 16, padding: 28, width: '80%', alignItems: 'center', elevation: 8 },
+  modalTitle:   { fontSize: 17, fontWeight: '600', marginBottom: 12 },
+  modalDivider: { width: '100%', height: 1, marginBottom: 24 },
+  dateRow:      { flexDirection: 'row', alignItems: 'center', marginBottom: 28, gap: 6 },
+  dateInput:    { borderBottomWidth: 1.5, fontSize: 20, textAlign: 'center', paddingVertical: 4, minWidth: 48 },
+  dateSep:      { fontSize: 20, fontWeight: '300' },
+  modalBtn:     { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 40 },
   modalBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
   // ── Footer ─────────────────────────────────────────────────────────────────
-  footer: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    padding: 20,
-    backgroundColor: '#F5F3FB',
-  },
-  backBtn: {
-    backgroundColor: '#9B7FD4',
-    borderRadius: 30,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  backBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  footer:       { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
+  backBtn:      { borderRadius: 30, paddingVertical: 16, alignItems: 'center' },
+  backBtnText:  { color: '#fff', fontSize: 15, fontWeight: '700' },
 
 });

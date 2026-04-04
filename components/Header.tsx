@@ -49,7 +49,7 @@ export default function Header({ title, showBack = true }: HeaderProps) {
 
         {/* ── Right: Hamburger Menu Button ── */}
         <TouchableOpacity
-          style={[styles.sideSlot, styles.menuBtn, menuOpen && styles.menuLineActive]}
+          style={[styles.sideSlot, menuOpen && styles.menuLineActive]}
           onPress={() => setMenuOpen(true)}
           activeOpacity={0.8}
         >
@@ -146,11 +146,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Hamburger Button ───────────────────────────────────────────────────────
-  menuBtn: {
-    gap: 4,
-    borderRadius: 6,
-    padding: 4,
-  },
 
   menuLine: {
     width: 22,

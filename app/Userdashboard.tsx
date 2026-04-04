@@ -14,7 +14,7 @@ import SearchBar from '../components/SearchBar';
 interface HelpCategory {
   id: string;
   label: string;
-  route: string;   // navigation target for each circle
+  route: string;
 }
 
 interface FAQItem {
@@ -30,7 +30,6 @@ interface Process {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-// Update each route to match your actual screen file names
 const HELP_CATEGORIES: HelpCategory[] = [
   { id: '1', label: 'INC',          route: '/process' },
   { id: '2', label: 'Med Cert',     route: '/process' },
@@ -42,20 +41,17 @@ const FAQ_ITEMS: FAQItem[] = [
   {
     id: '1',
     question: 'Where do I submit my medical certificate?',
-    answer:
-      'You may submit your medical certificate at the Office of the University Registrar (OUR) or through the designated submission portal on the student portal.',
+    answer: 'You may submit your medical certificate at the Office of the University Registrar (OUR) or through the designated submission portal on the student portal.',
   },
   {
     id: '2',
     question: 'Is there a payment for the medical certificate?',
-    answer:
-      "Yes, there is a minimal processing fee. Please check the cashier's office or the official fee schedule for the exact amount.",
+    answer: "Yes, there is a minimal processing fee. Please check the cashier's office or the official fee schedule for the exact amount.",
   },
   {
     id: '3',
     question: 'How do I get a medical certificate?',
-    answer:
-      'You can obtain a medical certificate from the University Health Services (UHS) or from a licensed physician. Make sure it is signed and bears the official clinic stamp.',
+    answer: 'You can obtain a medical certificate from the University Health Services (UHS) or from a licensed physician. Make sure it is signed and bears the official clinic stamp.',
   },
 ];
 
@@ -70,7 +66,7 @@ const POPULAR_PROCESSES: Process[] = [
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function HelpCategoryItem({ item }: { item: HelpCategory }) {
+function HelpCategoryItem({ item, isDark }: { item: HelpCategory; isDark: boolean }) {
   const router = useRouter();
   return (
     <TouchableOpacity
@@ -78,8 +74,10 @@ function HelpCategoryItem({ item }: { item: HelpCategory }) {
       onPress={() => router.push(item.route as any)}
       activeOpacity={0.75}
     >
-      <View style={styles.helpCircle} />
-      <Text style={styles.helpLabel}>{item.label}</Text>
+      <View style={[styles.helpCircle, { backgroundColor: isDark ? '#2A2040' : '#D8D3E8' }]} />
+      <Text style={[styles.helpLabel, { color: isDark ? '#9BA1A6' : '#6B6485' }]}>
+        {item.label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -89,14 +87,16 @@ function HelpCategoryItem({ item }: { item: HelpCategory }) {
 export default function UserDashboard() {
   const router = useRouter();
 
-  // ── Theme ─────────────────────────────────────────────────────────────────
   const colorScheme = useColorScheme() ?? "light";
+  const isDark      = colorScheme === 'dark';
   const colors      = Colors[colorScheme as "light" | "dark"];
 
-  return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+  const bg      = colors.background;
+  const textPri = isDark ? '#ECEDEE' : '#1E1340';
 
-      {/* Reusable Header — showBack=false hides the back arrow on dashboard */}
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
+
       <Header title="Welcome!" showBack={false} />
 
       <ScrollView
@@ -108,19 +108,16 @@ export default function UserDashboard() {
         <SearchBar
           placeholder="Search..."
           onSearch={(query) => {
-            router.push({
-              pathname: '/SearchResults',
-              params: { query },
-            });
+            router.push({ pathname: '/SearchResults', params: { query } });
           }}
         />
 
         {/* Need Help */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Need Help?</Text>
+          <Text style={[styles.sectionTitle, { color: textPri }]}>Need Help?</Text>
           <View style={styles.helpRow}>
             {HELP_CATEGORIES.map((item) => (
-              <HelpCategoryItem key={item.id} item={item} />
+              <HelpCategoryItem key={item.id} item={item} isDark={isDark} />
             ))}
           </View>
         </View>
@@ -128,12 +125,12 @@ export default function UserDashboard() {
         {/* Popular Processes */}
         <PopularProcesses
           processes={POPULAR_PROCESSES}
-          onPressProcess={(p) => router.push('/process')}
+          onPressProcess={() => router.push('/process')}
         />
 
         {/* FAQs */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>FAQs</Text>
+          <Text style={[styles.sectionTitle, { color: textPri }]}>FAQs</Text>
           {FAQ_ITEMS.map((item) => (
             <FAQCard key={item.id} question={item.question} answer={item.answer} />
           ))}
@@ -141,7 +138,6 @@ export default function UserDashboard() {
 
       </ScrollView>
 
-      {/* Floating Buttons */}
       <FloatingButtons activeTab="faq" />
 
     </SafeAreaView>
@@ -152,19 +148,13 @@ export default function UserDashboard() {
 
 const styles = StyleSheet.create({
 
-  // ── SafeArea & Layout ──────────────────────────────────────────────────────
   safeArea: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 160,
-  },
+  scrollView:    { flex: 1 },
+  scrollContent: { paddingBottom: 160 },
 
-  // ── Sections ───────────────────────────────────────────────────────────────
   section: {
     marginTop: 24,
     paddingHorizontal: 16,
@@ -172,29 +162,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1E1340',
     marginBottom: 16,
   },
 
   // ── Need Help ──────────────────────────────────────────────────────────────
-  helpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  helpItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
+  helpRow:   { flexDirection: 'row', justifyContent: 'space-between' },
+  helpItem:  { alignItems: 'center', flex: 1 },
   helpCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#D8D3E8',
     marginBottom: 8,
   },
   helpLabel: {
     fontSize: 12,
-    color: '#6B6485',
     fontWeight: '500',
     textAlign: 'center',
   },
