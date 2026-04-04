@@ -1,21 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import {
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet, Text,
-  TextInput, View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FAQCard from '../components/FAQCard';
 import FloatingButtons from '../components/FloatingButtons';
 import Header from '../components/Header';
+import SearchBar from '../components/SearchBar';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Process {
   id: string;
+  title: string;
 }
 
 interface FAQItem {
@@ -27,8 +23,12 @@ interface FAQItem {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const POPULAR_PROCESSES: Process[] = [
-  { id: '1' }, { id: '2' }, { id: '3' },
-  { id: '4' }, { id: '5' }, { id: '6' },
+  { id: '1', title: 'Special Exam' },
+  { id: '2', title: 'Petition for C..' },
+  { id: '3', title: 'Leave of Absence' },
+  { id: '4', title: 'INC' },
+  { id: '5', title: 'Medical Certificate Sub..' },
+  { id: '6', title: 'Process 6' },
 ];
 
 const FAQ_ITEMS: FAQItem[] = [
@@ -61,42 +61,39 @@ export default function SearchResults() {
   const { query } = useLocalSearchParams<{ query: string }>();
   const [search, setSearch] = useState(query ?? '');
 
-  function handleSearch() {
-    router.setParams({ query: search });
-  }
-
   return (
     <SafeAreaView style={styles.safeArea}>
 
-      {/* Reusable Header — showBack defaults to true */}
+      {/* Reusable Header */}
       <Header title="Search Results" />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Search Bar ── */}
-        <View style={styles.searchRow}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-            placeholderTextColor="#aaa"
-          />
-        </View>
+        {/* Reusable SearchBar — re-searches on submit */}
+        <SearchBar
+          placeholder="Search..."
+          onSearch={(newQuery) => {
+            router.push({
+              pathname: '/SearchResults',
+              params: { query: newQuery },
+            });
+          }}
+          onChangeText={setSearch}
+        />
 
         {/* ── Results Label ── */}
         <Text style={styles.resultsLabel}>
           Results for: <Text style={styles.resultsQuery}>"{search}"</Text>
         </Text>
 
-        {/* ── Popular Processes ── */}
+        {/* ── Popular Processes — pill style ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Popular Processes</Text>
           <View style={styles.grid}>
             {POPULAR_PROCESSES.map((item) => (
-              <View key={item.id} style={styles.card} />
+              <Text key={item.id} style={styles.pill} numberOfLines={1}>
+                {item.title}
+              </Text>
             ))}
           </View>
         </View>
@@ -126,32 +123,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
 
   // ── Scroll ─────────────────────────────────────────────────────────────────
-  // paddingBottom: 160 ensures the last FAQ card clears the floating buttons
   scroll: {
     paddingHorizontal: 16,
     paddingBottom: 160,
-    paddingTop: 16,
+    paddingTop: 8,
   },
-
-  // ── Search Bar ─────────────────────────────────────────────────────────────
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EDE8F7',
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginBottom: 12,
-  },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 14, color: '#1E1340' },
 
   // ── Results Label ──────────────────────────────────────────────────────────
-  resultsLabel: { fontSize: 13, color: '#6B6485', marginBottom: 20 },
+  resultsLabel: { fontSize: 13, color: '#6B6485', marginBottom: 20, paddingHorizontal: 4 },
   resultsQuery: { color: '#9B7FD4', fontStyle: 'italic', fontWeight: '600' },
 
   // ── Sections ───────────────────────────────────────────────────────────────
@@ -163,17 +145,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // ── Popular Processes Grid ─────────────────────────────────────────────────
+  // ── Popular Processes pill grid ────────────────────────────────────────────
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  card: {
-    width: '31%',
-    height: 70,
-    backgroundColor: '#D8D3E8',
-    borderRadius: 8,
+  pill: {
+    height: 30,
+    maxWidth: 166,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#EBEBEB',
+    fontSize: 12,
+    color: '#1E1340',
+    fontWeight: '500',
+    overflow: 'hidden',
+    textAlignVertical: 'center',
+    lineHeight: 30,
   },
 
 });

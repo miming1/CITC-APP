@@ -12,9 +12,12 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
 
-        <Stack.Screen name="index" />
-        <Stack.Screen name="process-list" />
-        <Stack.Screen name="process" />
+       <Stack.Screen name="index" />
+       <Stack.Screen name="Userdashboard" />
+       <Stack.Screen name="process-list" />
+       <Stack.Screen name="process" />
+       <Stack.Screen name="SearchResults" />
+       <Stack.Screen name="SubmissionHistory" />
 
       </Stack>
       <StatusBar style="auto" />

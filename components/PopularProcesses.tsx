@@ -1,18 +1,16 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Process {
   id: string;
-  // Add your actual process fields here, e.g.:
-  // title: string;
-  // icon?: string;
+  title: string;
 }
 
 interface PopularProcessesProps {
   processes: Process[];
-  // Optionally override the section title per page
   title?: string;
+  onPressProcess?: (process: Process) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -20,17 +18,21 @@ interface PopularProcessesProps {
 export default function PopularProcesses({
   processes,
   title = 'Popular Processes',
+  onPressProcess,
 }: PopularProcessesProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.grid}>
         {processes.map((item) => (
-          /*
-           * Replace this placeholder View with your actual process card.
-           * Example: <ProcessCard key={item.id} process={item} />
-           */
-          <View key={item.id} style={styles.card} />
+          <TouchableOpacity
+            key={item.id}
+            style={styles.pill}
+            onPress={() => onPressProcess?.(item)}
+            activeOpacity={0.75}
+          >
+            <Text style={styles.pillText} numberOfLines={1}>{item.title}</Text>
+          </TouchableOpacity>
         ))}
       </View>
     </View>
@@ -53,17 +55,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // ── Card grid ──────────────────────────────────────────────────────────────
+  // ── Pill grid ──────────────────────────────────────────────────────────────
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  card: {
-    width: '31%',
-    height: 70,
-    backgroundColor: '#D8D3E8',
-    borderRadius: 8,
+
+  // ── Pill button ────────────────────────────────────────────────────────────
+  // Width is dynamic to text length but capped at 166 — height fixed at 30
+  pill: {
+    height: 30,
+    maxWidth: 166,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#EBEBEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillText: {
+    fontSize: 12,
+    color: '#1E1340',
+    fontWeight: '500',
   },
 
 });

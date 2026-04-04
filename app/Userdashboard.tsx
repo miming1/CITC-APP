@@ -1,4 +1,5 @@
-import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { Colors } from "../constants/theme";
 
 // ─── Components ───────────────────────────────────────────────────────────────
@@ -13,6 +14,7 @@ import SearchBar from '../components/SearchBar';
 interface HelpCategory {
   id: string;
   label: string;
+  route: string;   // navigation target for each circle
 }
 
 interface FAQItem {
@@ -23,15 +25,17 @@ interface FAQItem {
 
 interface Process {
   id: string;
+  title: string;
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
+// Update each route to match your actual screen file names
 const HELP_CATEGORIES: HelpCategory[] = [
-  { id: '1', label: 'INC' },
-  { id: '2', label: 'Med Cert' },
-  { id: '3', label: 'Special Exam' },
-  { id: '4', label: 'Drop' },
+  { id: '1', label: 'INC',          route: '/process' },
+  { id: '2', label: 'Med Cert',     route: '/process' },
+  { id: '3', label: 'Special Exam', route: '/process' },
+  { id: '4', label: 'Drop',         route: '/process' },
 ];
 
 const FAQ_ITEMS: FAQItem[] = [
@@ -56,24 +60,34 @@ const FAQ_ITEMS: FAQItem[] = [
 ];
 
 const POPULAR_PROCESSES: Process[] = [
-  { id: '1' }, { id: '2' }, { id: '3' },
-  { id: '4' }, { id: '5' }, { id: '6' },
+  { id: '1', title: 'Special Exam' },
+  { id: '2', title: 'Petition for C..' },
+  { id: '3', title: 'Leave of Absence' },
+  { id: '4', title: 'INC' },
+  { id: '5', title: 'Medical Certificate Sub..' },
+  { id: '6', title: 'Process 6' },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function HelpCategoryItem({ item }: { item: HelpCategory }) {
+  const router = useRouter();
   return (
-    <View style={styles.helpItem}>
+    <TouchableOpacity
+      style={styles.helpItem}
+      onPress={() => router.push(item.route as any)}
+      activeOpacity={0.75}
+    >
       <View style={styles.helpCircle} />
       <Text style={styles.helpLabel}>{item.label}</Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function UserDashboard() {
+  const router = useRouter();
 
   // ── Theme ─────────────────────────────────────────────────────────────────
   const colorScheme = useColorScheme() ?? "light";
@@ -91,7 +105,15 @@ export default function UserDashboard() {
         showsVerticalScrollIndicator={false}
       >
         {/* Search Bar */}
-        <SearchBar placeholder="Search..." />
+        <SearchBar
+          placeholder="Search..."
+          onSearch={(query) => {
+            router.push({
+              pathname: '/SearchResults',
+              params: { query },
+            });
+          }}
+        />
 
         {/* Need Help */}
         <View style={styles.section}>
@@ -104,7 +126,10 @@ export default function UserDashboard() {
         </View>
 
         {/* Popular Processes */}
-        <PopularProcesses processes={POPULAR_PROCESSES} />
+        <PopularProcesses
+          processes={POPULAR_PROCESSES}
+          onPressProcess={(p) => router.push('/process')}
+        />
 
         {/* FAQs */}
         <View style={styles.section}>
@@ -130,13 +155,11 @@ const styles = StyleSheet.create({
   // ── SafeArea & Layout ──────────────────────────────────────────────────────
   safeArea: {
     flex: 1,
-    // backgroundColor removed here — now set dynamically via colors.background
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   scrollView: {
     flex: 1,
   },
-  // paddingBottom: 160 ensures the last FAQ card clears the floating buttons
   scrollContent: {
     paddingBottom: 160,
   },

@@ -2,11 +2,12 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-  ScrollView, StyleSheet, Text, TextInput,
+  ScrollView, StyleSheet, Text,
   TouchableOpacity, View, useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
+import SearchBar from "../components/SearchBar";
 import { Colors } from "../constants/theme";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -50,22 +51,16 @@ export default function ProcessListScreen() {
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
 
-      {/* Reusable Header — showBack defaults to true */}
+      {/* Reusable Header */}
       <Header title="Processes" />
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Search Bar ── */}
-        <View style={s.searchRow}>
-          <MaterialIcons name="search" size={20} color="#aaa" style={{ marginRight: 8 }} />
-          <TextInput
-            style={[s.searchInput, { color: colors.text }]}
-            placeholder="Search processes…"
-            placeholderTextColor="#aaa"
-            value={search}
-            onChangeText={setSearch}
-          />
-        </View>
+        {/* Reusable SearchBar — filters local list via onChangeText */}
+        <SearchBar
+          placeholder="Search processes…"
+          onChangeText={setSearch}
+        />
 
         {/* ── Processes Section ── */}
         <Text style={[s.sectionTitle, { color: colors.text }]}>Processes</Text>
@@ -130,15 +125,7 @@ export default function ProcessListScreen() {
 
 const s = StyleSheet.create({
   safe:   { flex: 1 },
-  // paddingBottom: 160 ensures content clears the floating buttons
   scroll: { paddingHorizontal: 16, paddingBottom: 160 },
-
-  searchRow: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: "#f0f0f0", borderRadius: 12,
-    paddingHorizontal: 12, marginTop: 16, marginBottom: 20,
-  },
-  searchInput: { flex: 1, paddingVertical: 12, fontSize: 14 },
 
   sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12, marginTop: 4 },
 

@@ -192,7 +192,7 @@ export default function LoginScreen() {
                 <View style={s.field}>
                   <Text style={[s.label, { color: '#422780' }]}>ID Number</Text>
                   <TextInput
-                    style={[s.input, { color: colors.text }]}
+                    style={[s.input, { color: '#4b2170'}]}
                     placeholder="Enter ID Number"
                     placeholderTextColor={'#CCBACE'}
                     value={loginForm.idNumber}
@@ -204,7 +204,7 @@ export default function LoginScreen() {
                 <View style={s.field}>
                   <Text style={[s.label, { color: '#422780' }]}>Password</Text>
                   <TextInput
-                    style={[s.input, { color: colors.text }]}
+                    style={[s.input, { color: '#4b2170' }]}
                     placeholder="Enter Password"
                     placeholderTextColor={'#CCBACE'}
                     value={loginForm.password}
@@ -234,7 +234,7 @@ export default function LoginScreen() {
                 <View style={s.field}>
                   <Text style={[s.label, { color: '#422780' }]}>ID Number</Text>
                   <TextInput
-                    style={[s.input, { color: colors.text }]}
+                    style={[s.input, { color: '#4b2170' }]}
                     placeholder="Enter ID Number"
                     placeholderTextColor={'#CCBACE'}
                     value={signupForm.idNumber}
@@ -246,7 +246,7 @@ export default function LoginScreen() {
                 <View style={s.field}>
                   <Text style={[s.label, { color: '#422780' }]}>Email</Text>
                   <TextInput
-                    style={[s.input, { color: colors.text }]}
+                    style={[s.input, { color: '#4b2170' }]}
                     placeholder="Enter Email Address"
                     placeholderTextColor={'#CCBACE'}
                     value={signupForm.email}
@@ -259,7 +259,7 @@ export default function LoginScreen() {
                 <View style={s.field}>
                   <Text style={[s.label, { color: '#422780' }]}>Password</Text>
                   <TextInput
-                    style={[s.input, { color: colors.text }]}
+                    style={[s.input, { color: '#4b2170' }]}
                     placeholder="Create a Password"
                     placeholderTextColor={'#CCBACE'}
                     value={signupForm.password}
