@@ -10,8 +10,6 @@ import {
 
 interface HeaderProps {
   title: string;
-  // Pass showBack={false} on the dashboard to hide the back button
-  // Defaults to true for all other pages
   showBack?: boolean;
 }
 
@@ -40,7 +38,6 @@ export default function Header({ title, showBack = true }: HeaderProps) {
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
         ) : (
-          // Empty spacer keeps the title centered when there's no back button
           <View style={styles.sideSlot} />
         )}
 
@@ -49,14 +46,15 @@ export default function Header({ title, showBack = true }: HeaderProps) {
 
         {/* ── Right: Hamburger Menu Button ── */}
         <TouchableOpacity
-          style={[styles.sideSlot, menuOpen && styles.menuLineActive]}
+          style={styles.sideSlot}
           onPress={() => setMenuOpen(true)}
           activeOpacity={0.8}
         >
-          {/* 3 lines — white by default, dark purple when menu is open */}
-          <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
-          <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
-          <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
+          <View style={styles.hamburger}>
+            <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
+            <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
+            <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
+          </View>
         </TouchableOpacity>
 
       </View>
@@ -68,7 +66,6 @@ export default function Header({ title, showBack = true }: HeaderProps) {
         animationType="fade"
         onRequestClose={() => setMenuOpen(false)}
       >
-        {/* Tap outside the dropdown to close */}
         <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
 
           <View style={styles.dropdown}>
@@ -108,7 +105,7 @@ export default function Header({ title, showBack = true }: HeaderProps) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const HEADER_COLOR = '#D3C1FF';
-const MENU_ACTIVE_COLOR = '#6B4FA8';
+const MENU_ACTIVE_COLOR = '#5D429D';
 const Logout_Button = '#AE74F8';
 
 const styles = StyleSheet.create({
@@ -123,7 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: HEADER_COLOR,
   },
 
-  // ── Left / Right slots (same width keeps title perfectly centered) ──────────
+  // ── Left / Right slots ─────────────────────────────────────────────────────
   sideSlot: {
     width: 40,
     alignItems: 'center',
@@ -145,15 +142,20 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // ── Hamburger Button ───────────────────────────────────────────────────────
+  // ── Hamburger Wrapper ──────────────────────────────────────────────────────
+  hamburger: {
+    gap: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
+  // ── Hamburger Lines ────────────────────────────────────────────────────────
   menuLine: {
     width: 22,
     height: 2.5,
     borderRadius: 999,
-    backgroundColor: '#fff',   // white by default
+    backgroundColor: '#fff',
   },
-  // Lines turn dark purple when menu is open
   menuLineActive: {
     backgroundColor: MENU_ACTIVE_COLOR,
   },
@@ -167,7 +169,7 @@ const styles = StyleSheet.create({
 
   // ── Dropdown Card ──────────────────────────────────────────────────────────
   dropdown: {
-    marginTop: 56,           // lines up just below the header
+    marginTop: 56,
     marginRight: 8,
     backgroundColor: '#F1ECFF',
     borderRadius: 10,
@@ -183,7 +185,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0EBF8',
+    borderBottomColor: '#C9B8F0',
   },
   dropdownText: {
     fontSize: 14,
