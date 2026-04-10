@@ -18,6 +18,7 @@ export default function RootLayout() {
        <Stack.Screen name="process" />
        <Stack.Screen name="SearchResults" />
        <Stack.Screen name="SubmissionHistory" />
+       <Stack.Screen name="faq" />
 
       </Stack>
       <StatusBar style="auto" />
