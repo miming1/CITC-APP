@@ -3,7 +3,7 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Colors } from "../constants/theme";
 import Tooltip from "./ToolTip";
 
-export default function FloatingButtons({ activeTab }: any) {
+export default function FloatingButtons({ activeTab, onTrackPress }: any) {
 
   const secondTooltip =
     activeTab === "faq"
@@ -35,7 +35,8 @@ export default function FloatingButtons({ activeTab }: any) {
           <Tooltip text={secondTooltip} />
         </View>
 
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button}
+            onPress={activeTab === "faq" ? undefined : onTrackPress}>
           <MaterialIcons name={secondIcon} size={26} color="white" />
         </TouchableOpacity>
       </View>
