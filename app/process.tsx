@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, useColorScheme, View } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,25 +12,26 @@ import { Colors } from "../constants/theme";
 export default function ProcessScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<"procedure" | "faq">("procedure");
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      
+
       <Header title="Process" />
 
       <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <ScrollView contentContainerStyle={styles.content}>
-        
+
         <Text style={[styles.title, { color: colors.text }]}>
-            Medical Certificate Submission
+          Medical Certificate Submission
         </Text>
 
         <Text style={[styles.description, { color: colors.icon }]}>
-            Submit you medical certificate to provide official verification of an illness, ensuring the absence is treated as legitimate rather than unexcused..
-        </Text>  
+          Submit you medical certificate to provide official verification of an illness, ensuring the absence is treated as legitimate rather than unexcused..
+        </Text>
 
         {activeTab === "procedure" && (
           <>
@@ -76,7 +78,10 @@ export default function ProcessScreen() {
 
       </ScrollView>
 
-      <FloatingButtons activeTab={activeTab}/>
+      <FloatingButtons
+        activeTab={activeTab}
+        onTrackPress={() => router.push("/scan")}
+      />
 
     </SafeAreaView>
   );

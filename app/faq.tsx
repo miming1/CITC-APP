@@ -12,40 +12,25 @@ const FAQ_ITEMS = [
   {
     id: "1",
     question: "Where do I submit my medical certificate?",
-    answer: "Submit your medical certificate to the faculty office or through the designated submission portal on the student portal.",
+    answer: "Submit your medical certificate to the faculty office or through the designated submission portal on the HIMS.",
   },
   {
     id: "2",
-    question: "Is there a payment for the medical certificate?",
-    answer: "There is no payment when getting a medical certificate at the health center at USTP-CDO.",
-  },
-  {
-    id: "3",
-    question: "How do I get a medical certificate?",
-    answer: "Visit the University Health Services (UHS). Make sure the certificate is signed and bears the official clinic stamp.",
-  },
-  {
-    id: "4",
-    question: "What are the accepted health issues for issuing a medical certificate?",
-    answer: "Consult the University Health Services for a full list of accepted conditions eligible for a medical certificate.",
-  },
-  {
-    id: "5",
     question: "How do I file a leave of absence?",
     answer: "Submit a Leave of Absence form to the Dean's Office. Attach required documents and get approval before your leave starts.",
   },
   {
-    id: "6",
+    id: "3",
     question: "How do I file a grade appeal?",
     answer: "Submit a grade appeal form to the Dean's Office within 2 weeks after grades are released. Include supporting documents.",
   },
   {
-    id: "7",
+    id: "4",
     question: "What is an INC grade and how do I clear it?",
     answer: "An INC (Incomplete) means you have an outstanding requirement. Complete it within the deadline set by your professor.",
   },
   {
-    id: "8",
+    id: "5",
     question: "How do I request a special exam?",
     answer: "Submit a special exam request form to your department head with a valid reason and supporting documents.",
   },
