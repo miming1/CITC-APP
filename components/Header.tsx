@@ -18,7 +18,7 @@ interface HeaderProps {
 const MENU_ITEMS = [
   { label: 'Processes',                  route: '/process-list'       },
   { label: 'Frequently Asked Questions', route: '/faq'                },
-  { label: 'Form Submission Progress',   route: '/submission-progress'},
+  { label: 'Form Submission Progress',   route: '/active-req'         },
   { label: 'Submission History',         route: '/SubmissionHistory'  },
 ];
 
