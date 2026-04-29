@@ -3,10 +3,11 @@ import { useState } from "react";
 import {
   KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput,
-  TouchableOpacity, View, useColorScheme,
+  TouchableOpacity, View, useColorScheme
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
+import { loginUser, registerUser } from "../lib/auth";
 
 export default function LoginScreen() {
 
@@ -37,6 +38,9 @@ export default function LoginScreen() {
     text: string;
   } | null>(null);
 
+    // loading spinner while waiting for API response
+  const [loading, setLoading] = useState(false);
+
   // ── Handlers ─────────────────────────────────────────────────
 
   // Switch tab and clear any existing message
@@ -45,84 +49,83 @@ export default function LoginScreen() {
     setMessage(null);
   }
 
-  // Login: validate → show success → navigate to process-list
-  function handleLogin() {
+ // ── Login ────────────────────────────────────────────────────
+  async function handleLogin() {
     const { idNumber, password } = loginForm;
-    const isNumeric = /^\d+$/.test(idNumber); // Only allows digits 0-9
-    
-    // 1. Basic empty check
-    if (!idNumber.trim() || !password.trim()) {
-      setMessage({ type: "error", text: "Please fill in all fields." });
-      return;
-    }
+    const isNumeric = /^\d+$/.test(idNumber);
+ 
+  if (!idNumber.trim() || !password.trim()) {
+    setMessage({ type: "error", text: "Please fill in all fields." });
+    return;
+  }
+  if (!isNumeric) {
+    setMessage({ type: "error", text: "ID Number must contain only numbers." });
+    return;
+  }
+  if (idNumber.length < 8 || idNumber.length > 20) {
+    setMessage({ type: "error", text: "ID Number is too short" });
+    return;
+  }
+  if (password.length < 8 || password.length > 20) {
+    setMessage({ type: "error", text: "Password is too short" });
+    return;
+  }
 
-    // 2. ID Number Validation (Numeric + Length)
-    if (!isNumeric) {
-      setMessage({ type: "error", text: "ID Number must contain only numbers." });
-      return;
-    }
-      if (idNumber.length < 8 || idNumber.length > 20) {
-      setMessage({ type: "error", text: "ID Number is too short" });
-      return;
-    }
+  setMessage({ type: "success", text: "Logging you in…" });
+  const result = await loginUser(idNumber, password);
 
-    // 3. Password Length Check (8-20)
-    if (password.length < 8 || password.length > 20) {
-      setMessage({ type: "error", text: "Password is too short" });
-      return;
-    }
-
-    setMessage({ type: "success", text: "Logging you in…" });
+  if (result.success) {
     setTimeout(() => {
       setMessage(null);
       router.replace({
         pathname: "/Userdashboard",
-        params: { idNumber: loginForm.idNumber },
+        params: { idNumber: idNumber },
       });
     }, 700);
+  } else {
+    setMessage({ type: "error", text: "Invalid ID or password." });
   }
+}
 
-  // Sign up: validate → show success → switch back to login tab
-
-  function handleSignup() {
+  // ── Sign Up ──────────────────────────────────────────────────
+  async function handleSignup() {
     const { idNumber, email, password } = signupForm;
     const emailRegex = /\S+@\S+\.\S+/;
-    const isNumeric = /^\d+$/.test(idNumber);
+    const isNumeric  = /^\d+$/.test(idNumber);
+ 
+  if (!idNumber || !email || !password) {
+    setMessage({ type: "error", text: "Please fill in all fields." });
+    return;
+  }
+  if (!isNumeric) {
+    setMessage({ type: "error", text: "ID Number must contain only numbers." });
+    return;
+  }
+  if (idNumber.length < 8 || idNumber.length > 20) {
+    setMessage({ type: "error", text: "ID Number is too short" });
+    return;
+  }
+  if (!emailRegex.test(email)) {
+    setMessage({ type: "error", text: "Invalid email! Must include '@' and a domain (e.g., .com)." });
+    return;
+  }
+  if (password.length < 8 || password.length > 20) {
+    setMessage({ type: "error", text: "Password is too short" });
+    return;
+  }
 
-    // 1. Check for empty fields
-    if (!idNumber || !email || !password) {
-      setMessage({ type: "error", text: "Please fill in all fields." });
-      return;
-    }
+  const result = await registerUser(idNumber, email, password);
 
-    // 2. ID Number Validation (Numeric + Length)
-    if (!isNumeric) {
-      setMessage({ type: "error", text: "ID Number must contain only numbers." });
-      return;
-    }
-      if (idNumber.length < 8 || idNumber.length > 20) {
-      setMessage({ type: "error", text: "ID Number is too short" });
-      return;
-    }
-
-    // 3. Email Validation (Must have @ and .)
-    if (!emailRegex.test(email)) {
-      setMessage({ type: "error", text: "Invalid email! Must include '@' and a domain (e.g., .com)." });
-      return;
-    }
-
-    // 4. Password Validation (8-20 characters)
-    if (password.length < 8 || password.length > 20) {
-      setMessage({ type: "error", text: "Password is too short" });
-      return;
-    }
-
+  if (result.success) {
     setMessage({ type: "success", text: "Account created! You can now log in." });
     setTimeout(() => {
       setTab("login");
       setMessage(null);
     }, 1000);
+  } else {
+    setMessage({ type: "error", text: "Registration failed. ID may already exist." });
   }
+}
 
   // ── Render ───────────────────────────────────────────────────
   return (

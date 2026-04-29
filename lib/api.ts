@@ -1,0 +1,44 @@
+import { ENDPOINTS } from '../constants/api';
+import { getToken } from './auth';
+
+// ── Procedures ────────────────────────────────────────────────
+export async function fetchProcedures() {
+  const res = await fetch(ENDPOINTS.procedures);
+  if (!res.ok) throw new Error('Failed to fetch procedures');
+  return res.json();
+  // returns: [{ id, procedure_name, description, created_at, updated_at }]
+}
+
+// ── FAQs ──────────────────────────────────────────────────────
+export async function fetchFAQs() {
+  const res = await fetch(ENDPOINTS.faqs);
+  if (!res.ok) throw new Error('Failed to fetch FAQs');
+  return res.json();
+  // returns: [{ id, question, answer, category, created_at }]
+}
+
+// ── My Requests (needs auth token) ───────────────────────────
+export async function fetchMyRequests() {
+  const token = await getToken();
+  const res = await fetch(ENDPOINTS.trackReq, {
+    headers: { Authorization: `Token ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch requests');
+  return res.json();
+  // returns: [{ id, user, procedure, status, created_at, updated_at }]
+}
+
+// ── Submit Request (needs auth token) ────────────────────────
+export async function submitRequest(procedureId: number) {
+  const token = await getToken();
+  const res = await fetch(ENDPOINTS.submitReq, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Token ${token}`,
+    },
+    body: JSON.stringify({ procedure: procedureId }),
+  });
+  if (!res.ok) throw new Error('Failed to submit request');
+  return res.json();
+}
