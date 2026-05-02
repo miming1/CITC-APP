@@ -1,7 +1,8 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Modal, Pressable, ScrollView, StyleSheet, Text,
   TouchableOpacity, View, useColorScheme,
 } from "react-native";
@@ -9,8 +10,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 import { Colors } from "../constants/theme";
+import { fetchProcedures } from "../lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Procedure {
+  id: number;
+  procedure_name: string;
+  description: string;
+}
 
 interface Office {
   id: string;
@@ -19,15 +27,7 @@ interface Office {
   processes: string[];
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const PROCESSES = [
-  { id: "1", title: "Medical Certificate Submission", duration: "1–3 Days" },
-  { id: "2", title: "Leave of Absence Request",       duration: "3–5 Days" },
-  { id: "3", title: "Enrollment Assistance",          duration: "1 Day"    },
-  { id: "4", title: "Scholarship Application",        duration: "5–7 Days" },
-  { id: "5", title: "Grade Appeal",                   duration: "3–5 Days" },
-];
+// ─── Offices stay hardcoded (not in backend yet) ──────────────────────────────
 
 const OFFICES: Office[] = [
   {
@@ -70,20 +70,40 @@ export default function ProcessListScreen() {
   const isDark = colorScheme === "dark";
   const colors = Colors[colorScheme as "light" | "dark"];
 
-  // Theme shortcuts
   const bg      = colors.background;
   const textPri = isDark ? '#ECEDEE' : '#1E1340';
   const textSec = isDark ? '#9BA1A6' : '#6B6485';
-  const cardBg  = isDark ? '#1E1E2E' : '#fff';
   const border  = colors.icon;
 
   const { username } = useLocalSearchParams<{ username: string }>();
 
-  const [search, setSearch]           = useState("");
-  const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
+  // ── State ─────────────────────────────────────────────────────────────────
+  const [search, setSearch]                     = useState("");
+  const [selectedOffice, setSelectedOffice]     = useState<Office | null>(null);
+  const [procedures, setProcedures]             = useState<Procedure[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState<string | null>(null);
 
-  const filtered = PROCESSES.filter((p) =>
-    p.title.toLowerCase().includes(search.toLowerCase())
+  // ── Fetch procedures from backend ────────────────────────────────
+  useEffect(() => {
+    async function loadProcedures() {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await fetchProcedures();
+        setProcedures(data);
+      } catch (e) {
+        setError("Could not load procedures. Check your connection.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadProcedures();
+  }, []);
+
+  // ── Filter by search ──────────────────────────────────────────────────────
+  const filtered = procedures.filter((p) =>
+    p.procedure_name.toLowerCase().includes(search.toLowerCase())
   );
 
   function goToProcess() { router.push("/process"); }
@@ -95,7 +115,6 @@ export default function ProcessListScreen() {
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Reusable SearchBar — marginHorizontal:16 built in, aligns flush with header */}
         <SearchBar
           placeholder="Search processes…"
           onChangeText={setSearch}
@@ -104,7 +123,36 @@ export default function ProcessListScreen() {
         {/* ── Processes Section ── */}
         <Text style={[s.sectionTitle, { color: textPri }]}>Processes</Text>
 
-        {filtered.map((item) => (
+        {/* Loading state */}
+        {loading && (
+          <View style={s.centered}>
+            <ActivityIndicator size="large" color={Colors.light.tint} />
+            <Text style={[s.loadingText, { color: textSec }]}>Loading procedures…</Text>
+          </View>
+        )}
+
+        {/* Error state */}
+        {!loading && error && (
+          <View style={s.centered}>
+            <MaterialIcons name="wifi-off" size={40} color={textSec} />
+            <Text style={[s.errorText, { color: textSec }]}>{error}</Text>
+            <TouchableOpacity
+              style={[s.retryBtn, { borderColor: Colors.light.tint }]}
+              onPress={() => {
+                setLoading(true);
+                fetchProcedures()
+                  .then((data) => { setProcedures(data); setError(null); })
+                  .catch(() => setError("Could not load procedures. Check your connection."))
+                  .finally(() => setLoading(false));
+              }}
+            >
+              <Text style={[s.retryText, { color: Colors.light.tint }]}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Procedure cards from API */}
+        {!loading && !error && filtered.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={[s.card, { backgroundColor: bg, borderColor: border }]}
@@ -116,19 +164,24 @@ export default function ProcessListScreen() {
                 <MaterialIcons name="description" size={18} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[s.cardTitle, { color: textPri }]}>{item.title}</Text>
-                <Text style={[s.cardDuration, { color: textSec }]}>⏱ {item.duration}</Text>
+                <Text style={[s.cardTitle, { color: textPri }]}>
+                  {item.procedure_name}
+                </Text>
+                <Text style={[s.cardDesc, { color: textSec }]} numberOfLines={1}>
+                  {item.description}
+                </Text>
               </View>
             </View>
             <MaterialIcons name="chevron-right" size={20} color={textSec} />
           </TouchableOpacity>
         ))}
 
-        {filtered.length === 0 && (
-          <Text style={[s.empty, { color: textSec }]}>No processes found.</Text>
+        {/* Empty search result */}
+        {!loading && !error && filtered.length === 0 && procedures.length > 0 && (
+          <Text style={[s.empty, { color: textSec }]}>No procedures match your search.</Text>
         )}
 
-        {/* ── Offices Section ── */}
+        {/* Offices Section — still hardcoded */}
         <Text style={[s.sectionTitle, { color: textPri }]}>Offices</Text>
 
         <View style={s.grid}>
@@ -171,24 +224,20 @@ export default function ProcessListScreen() {
         <Pressable style={s.modalOverlay} onPress={() => setSelectedOffice(null)}>
           <Pressable style={[s.modalCard, { backgroundColor: isDark ? '#1E1E2E' : '#EDE8F7' }]}>
 
-            {/* Close button */}
             <TouchableOpacity style={s.closeBtn} onPress={() => setSelectedOffice(null)}>
               <Text style={[s.closeText, { color: textSec }]}>✕</Text>
             </TouchableOpacity>
 
-            {/* Office Name */}
             <View style={s.modalRow}>
               <Text style={[s.modalLabel, { color: textPri }]}>Office Name:</Text>
               <Text style={[s.modalValue, { color: textPri }]}>{selectedOffice?.name}</Text>
             </View>
 
-            {/* Address */}
             <View style={s.modalRow}>
               <Text style={[s.modalLabel, { color: textPri }]}>Address:</Text>
               <Text style={[s.modalValue, { color: textPri }]}>{selectedOffice?.address}</Text>
             </View>
 
-            {/* Processes */}
             <View style={s.modalRow}>
               <Text style={[s.modalLabel, { color: textPri }]}>Processes:</Text>
               <View style={{ flex: 1 }}>
@@ -214,22 +263,41 @@ const s = StyleSheet.create({
 
   sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12, marginTop: 4 },
 
+  // ── Loading / Error ────────────────────────────────────────────────────────
+  centered: {
+    alignItems: "center",
+    paddingVertical: 32,
+    gap: 10,
+  },
+  loadingText: { fontSize: 13, marginTop: 8 },
+  errorText:   { fontSize: 13, textAlign: "center", marginTop: 8 },
+  retryBtn: {
+    marginTop: 6,
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+  },
+  retryText: { fontSize: 13, fontWeight: "600" },
+
+  // ── Procedure Card ─────────────────────────────────────────────────────────
   card: {
     flexDirection: "row", alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1, borderRadius: 12,
     padding: 14, marginBottom: 10,
   },
-  cardLeft:     { flexDirection: "row", alignItems: "center", flex: 1 },
+  cardLeft:  { flexDirection: "row", alignItems: "center", flex: 1 },
   cardIcon: {
     width: 36, height: 36, borderRadius: 10,
     backgroundColor: Colors.light.tint,
     alignItems: "center", justifyContent: "center", marginRight: 12,
   },
-  cardTitle:    { fontSize: 13, fontWeight: "600" },
-  cardDuration: { fontSize: 11, marginTop: 2 },
-  empty:        { textAlign: "center", marginTop: 20, fontSize: 13 },
+  cardTitle: { fontSize: 13, fontWeight: "600" },
+  cardDesc:  { fontSize: 11, marginTop: 2 },
+  empty:     { textAlign: "center", marginTop: 20, fontSize: 13 },
 
+  // ── Offices ────────────────────────────────────────────────────────────────
   grid:       { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 20 },
   officeItem: { width: "30%", alignItems: "center" },
   officeBox: {
@@ -238,6 +306,7 @@ const s = StyleSheet.create({
   },
   officeName: { fontSize: 10, textAlign: "center", lineHeight: 13 },
 
+  // ── FAB ────────────────────────────────────────────────────────────────────
   fab: { position: "absolute", right: 20, bottom: 36, gap: 14 },
   fabBtn: {
     width: 52, height: 52, borderRadius: 26,
@@ -256,45 +325,15 @@ const s = StyleSheet.create({
     padding: 24,
   },
   modalCard: {
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
-    // height is dynamic — no fixed height set
-    elevation: 8,
-    shadowColor: '#000',
+    borderRadius: 20, padding: 24, width: '100%',
+    elevation: 8, shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowOpacity: 0.15, shadowRadius: 12,
   },
-  closeBtn: {
-    position: 'absolute',
-    top: 16,
-    right: 20,
-    zIndex: 1,
-  },
-  closeText: {
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  modalRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    paddingRight: 24,
-  },
-  modalLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    width: 90,
-    marginRight: 8,
-    paddingTop: 1,
-  },
-  modalValue: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  modalBullet: {
-    fontSize: 14,
-    lineHeight: 22,
-  },
+  closeBtn:    { position: 'absolute', top: 16, right: 20, zIndex: 1 },
+  closeText:   { fontSize: 18, fontWeight: '400' },
+  modalRow:    { flexDirection: 'row', marginBottom: 16, paddingRight: 24 },
+  modalLabel:  { fontSize: 14, fontWeight: '700', width: 90, marginRight: 8, paddingTop: 1 },
+  modalValue:  { flex: 1, fontSize: 14, lineHeight: 20 },
+  modalBullet: { fontSize: 14, lineHeight: 22 },
 });
