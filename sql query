@@ -1,0 +1,278 @@
+-- ================================
+-- EXTENSIONS
+-- ================================
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- ================================
+-- ENUM (SAFE CREATE)
+-- ================================
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'document_status_enum') THEN
+CREATE TYPE document_status_enum AS ENUM (
+'Pending',
+'In Progress',
+'Completed',
+'Rejected'
+);
+END IF;
+END$$;
+
+-- ================================
+-- ROLES
+-- ================================
+CREATE TABLE IF NOT EXISTS roles (
+role_id SERIAL PRIMARY KEY,
+role_name VARCHAR(50) UNIQUE NOT NULL
+);
+
+INSERT INTO roles (role_name)
+VALUES ('Student'), ('Admin')
+ON CONFLICT (role_name) DO NOTHING;
+
+-- ================================
+-- OFFICES
+-- ================================
+CREATE TABLE IF NOT EXISTS offices (
+office_id SERIAL PRIMARY KEY,
+office_name VARCHAR(100) NOT NULL,
+description TEXT,
+contact_info TEXT
+);
+
+-- ================================
+-- USERS
+-- ================================
+CREATE TABLE IF NOT EXISTS users (
+user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+name VARCHAR(100) NOT NULL,
+email VARCHAR(100) UNIQUE NOT NULL,
+password_hash TEXT NOT NULL,
+role_id INT REFERENCES roles(role_id) ON DELETE SET NULL,
+office_id INT REFERENCES offices(office_id) ON DELETE SET NULL,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- PROCEDURES
+-- ================================
+CREATE TABLE IF NOT EXISTS procedures (
+procedure_id SERIAL PRIMARY KEY,
+procedure_name VARCHAR(150) NOT NULL,
+description TEXT,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- PROCEDURE REQUIREMENTS
+-- ================================
+CREATE TABLE IF NOT EXISTS procedure_requirements (
+requirement_id SERIAL PRIMARY KEY,
+procedure_id INT REFERENCES procedures(procedure_id) ON DELETE CASCADE,
+requirement_text TEXT NOT NULL
+);
+
+-- ================================
+-- PROCEDURE DOCUMENTS
+-- ================================
+CREATE TABLE IF NOT EXISTS procedure_documents (
+document_type_id SERIAL PRIMARY KEY,
+procedure_id INT REFERENCES procedures(procedure_id) ON DELETE CASCADE,
+document_name VARCHAR(150) NOT NULL,
+description TEXT,
+office_id INT REFERENCES offices(office_id) ON DELETE SET NULL
+);
+
+-- ================================
+-- PROCEDURE STEPS
+-- ================================
+CREATE TABLE IF NOT EXISTS procedure_steps (
+step_id SERIAL PRIMARY KEY,
+procedure_id INT REFERENCES procedures(procedure_id) ON DELETE CASCADE,
+step_number INT NOT NULL,
+step_description TEXT NOT NULL,
+office_id INT REFERENCES offices(office_id) ON DELETE SET NULL,
+reference_link TEXT,
+person_in_charge VARCHAR(100),
+office_location VARCHAR(150),
+ADD CONSTRAINT unique_step_per_procedure
+UNIQUE (procedure_id, step_number)
+);
+
+-- ================================
+-- REQUESTS
+-- ================================
+CREATE TABLE IF NOT EXISTS requests (
+request_id SERIAL PRIMARY KEY,
+user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+procedure_id INT REFERENCES procedures(procedure_id) ON DELETE CASCADE,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- REQUEST DOCUMENTS (CORE)
+-- ================================
+CREATE TABLE IF NOT EXISTS request_documents (
+id SERIAL PRIMARY KEY,
+request_id INT REFERENCES requests(request_id) ON DELETE CASCADE,
+document_type_id INT REFERENCES procedure_documents(document_type_id) ON DELETE CASCADE,
+
+file_name TEXT,
+file_path TEXT,
+
+status document_status_enum DEFAULT 'Pending',
+
+updated_by UUID REFERENCES users(user_id) ON DELETE SET NULL,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+remarks TEXT,
+
+uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- FAQ
+-- ================================
+CREATE TABLE IF NOT EXISTS faq_categories (
+category_id SERIAL PRIMARY KEY,
+category_name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS faqs (
+faq_id SERIAL PRIMARY KEY,
+question TEXT NOT NULL,
+answer TEXT NOT NULL,
+category_id INT REFERENCES faq_categories(category_id) ON DELETE SET NULL,
+procedure_id INT REFERENCES procedures(procedure_id) ON DELETE CASCADE,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- CHATBOT
+-- ================================
+CREATE TABLE IF NOT EXISTS chat_sessions (
+session_id SERIAL PRIMARY KEY,
+user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+message_id SERIAL PRIMARY KEY,
+session_id INT REFERENCES chat_sessions(session_id) ON DELETE CASCADE,
+sender_type VARCHAR(10) CHECK (sender_type IN ('user','bot')),
+message_text TEXT NOT NULL,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- NOTIFICATIONS
+-- ================================
+CREATE TABLE IF NOT EXISTS notifications (
+notification_id SERIAL PRIMARY KEY,
+user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+message TEXT NOT NULL,
+is_read BOOLEAN DEFAULT FALSE,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ================================
+-- ANALYTICS
+-- ================================
+CREATE TABLE IF NOT EXISTS analytics_procedure_usage (
+id SERIAL PRIMARY KEY,
+procedure_id INT UNIQUE REFERENCES procedures(procedure_id) ON DELETE CASCADE,
+total_requests INT DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS analytics_document_processing (
+id SERIAL PRIMARY KEY,
+document_type_id INT UNIQUE REFERENCES procedure_documents(document_type_id) ON DELETE CASCADE,
+total_processed INT DEFAULT 0,
+avg_processing_time INTERVAL
+);
+
+CREATE TABLE IF NOT EXISTS analytics_office_performance (
+id SERIAL PRIMARY KEY,
+office_id INT UNIQUE REFERENCES offices(office_id) ON DELETE CASCADE,
+total_processed INT DEFAULT 0,
+avg_processing_time INTERVAL
+);
+
+-- ================================
+-- INDEXES
+-- ================================
+CREATE INDEX IF NOT EXISTS idx_requests_user ON requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_req_docs_request ON request_documents(request_id);
+CREATE INDEX IF NOT EXISTS idx_req_docs_doc ON request_documents(document_type_id);
+
+-- ================================
+-- RLS ENABLE
+-- ================================
+ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE request_documents ENABLE ROW LEVEL SECURITY;
+
+-- ================================
+-- POLICIES
+-- ================================
+DROP POLICY IF EXISTS "Users manage own requests" ON requests;
+CREATE POLICY "Users manage own requests"
+ON requests
+FOR ALL
+USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users view own documents" ON request_documents;
+CREATE POLICY "Users view own documents"
+ON request_documents
+FOR SELECT
+USING (
+request_id IN (
+SELECT request_id FROM requests WHERE user_id = auth.uid()
+)
+);
+
+DROP POLICY IF EXISTS "Admins can update documents" ON request_documents;
+CREATE POLICY "Office admin can update documents"
+ON request_documents
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1
+    FROM users
+    JOIN roles ON users.role_id = roles.role_id
+    JOIN procedure_documents pd ON pd.document_type_id = request_documents.document_type_id
+    WHERE users.user_id = auth.uid()
+      AND roles.role_name = 'Admin'
+      AND users.office_id = pd.office_id
+  )
+);
+
+DROP POLICY IF EXISTS "Admins can insert documents" ON request_documents;
+CREATE POLICY "Office admin can insert documents"
+ON request_documents
+FOR INSERT
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM users
+    JOIN roles ON users.role_id = roles.role_id
+    JOIN procedure_documents pd ON pd.document_type_id = request_documents.document_type_id
+    WHERE users.user_id = auth.uid()
+      AND roles.role_name = 'Admin'
+      AND users.office_id = pd.office_id
+  )
+);
+
+CREATE POLICY "Office admin can delete documents"
+ON request_documents
+FOR DELETE
+USING (
+  EXISTS (
+    SELECT 1
+    FROM users
+    JOIN roles ON users.role_id = roles.role_id
+    JOIN procedure_documents pd ON pd.document_type_id = request_documents.document_type_id
+    WHERE users.user_id = auth.uid()
+      AND roles.role_name = 'Admin'
+      AND users.office_id = pd.office_id
+  )
+);
