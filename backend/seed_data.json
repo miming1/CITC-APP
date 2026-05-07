@@ -1,0 +1,109 @@
+[
+{
+  "model": "api.procedure",
+  "pk": 1,
+  "fields": {
+    "procedure_name": "Medical Certificate Submission",
+    "description": "Submit your medical certificate to provide official verification of an illness, ensuring the absence is treated as legitimate rather than unexcused.",
+    "created_at": "2026-04-16T02:08:57.677Z",
+    "updated_at": "2026-04-16T02:08:57.677Z"
+  }
+},
+{
+  "model": "api.procedure",
+  "pk": 2,
+  "fields": {
+    "procedure_name": "Leave of Absence Request",
+    "description": "File a leave of absence for extended absences from school.",
+    "created_at": "2026-04-16T02:10:07.373Z",
+    "updated_at": "2026-04-16T02:10:07.373Z"
+  }
+},
+{
+  "model": "api.procedure",
+  "pk": 3,
+  "fields": {
+    "procedure_name": "Enrollment Assistance",
+    "description": "--",
+    "created_at": "2026-04-17T09:38:16.067Z",
+    "updated_at": "2026-04-17T09:38:16.067Z"
+  }
+},
+{
+  "model": "api.procedure",
+  "pk": 4,
+  "fields": {
+    "procedure_name": "Scholarship Application",
+    "description": "--",
+    "created_at": "2026-04-17T09:38:31.865Z",
+    "updated_at": "2026-04-17T09:38:31.865Z"
+  }
+},
+{
+  "model": "api.procedure",
+  "pk": 5,
+  "fields": {
+    "procedure_name": "Grade Appeal",
+    "description": "--",
+    "created_at": "2026-04-17T09:38:45.641Z",
+    "updated_at": "2026-04-17T09:38:45.641Z"
+  }
+},
+{
+  "model": "api.faqcategory",
+  "pk": 1,
+  "fields": {
+    "category_name": "General"
+  }
+},
+{
+  "model": "api.faq",
+  "pk": 1,
+  "fields": {
+    "category": 1,
+    "question": "Where do I submit my medical certificate?",
+    "answer": "Submit your medical certificate to the faculty office or through the designated submission portal on the HIMS.",
+    "created_at": "2026-04-16T02:27:12.662Z"
+  }
+},
+{
+  "model": "api.faq",
+  "pk": 2,
+  "fields": {
+    "category": 1,
+    "question": "How do I file a grade appeal",
+    "answer": "Submit a grade appeal form to the Dean's Office within 2 weeks after grades are released. Include supporting documents.",
+    "created_at": "2026-04-17T09:35:22.986Z"
+  }
+},
+{
+  "model": "api.faq",
+  "pk": 3,
+  "fields": {
+    "category": 1,
+    "question": "What is an INC grade and how do I clear it?",
+    "answer": "An INC (Incomplete) means you have an outstanding requirement. Complete it within the deadline set by your professor.",
+    "created_at": "2026-04-17T09:35:47.987Z"
+  }
+},
+{
+  "model": "api.faq",
+  "pk": 4,
+  "fields": {
+    "category": 1,
+    "question": "How do I request a special exam?",
+    "answer": "Submit a special exam request form to your department head with a valid reason and supporting documents.",
+    "created_at": "2026-04-17T09:36:15.117Z"
+  }
+},
+{
+  "model": "api.faq",
+  "pk": 5,
+  "fields": {
+    "category": 1,
+    "question": "How do I file a leave of absence?",
+    "answer": "Submit a Leave of Absence form to the Dean's Office. Attach required documents and get approval before your leave starts.",
+    "created_at": "2026-04-17T09:37:10.210Z"
+  }
+}
+]

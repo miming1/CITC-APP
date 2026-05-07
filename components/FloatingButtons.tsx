@@ -3,17 +3,35 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Colors } from "../constants/theme";
 import Tooltip from "./ToolTip";
 
-export default function FloatingButtons({ activeTab, onTrackPress }: any) {
+type FloatingButtonsProps = {
+  activeTab: "procedure" | "faq";
+  onTrackPress: () => void;
+  onQuestionPress: () => void;
+};
 
-  const secondTooltip =
-    activeTab === "faq"
-      ? "Send a Question"
-      : "Track Document";
+export default function FloatingButtons({
+  activeTab,
+  onTrackPress,
+  onQuestionPress,
+}: FloatingButtonsProps) {
 
-  const secondIcon =
-    activeTab === "faq"
-      ? "send"
-      : "description";
+  const isFAQTab = activeTab === "faq";
+
+  const secondTooltip = isFAQTab
+    ? "Send a Question"
+    : "Track Document";
+
+  const secondIcon = isFAQTab
+    ? "send"
+    : "description";
+
+  const handleSecondButton = () => {
+    if (isFAQTab) {
+      onQuestionPress();
+    } else {
+      onTrackPress();
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -25,19 +43,30 @@ export default function FloatingButtons({ activeTab, onTrackPress }: any) {
         </View>
 
         <TouchableOpacity style={styles.button}>
-          <MaterialIcons name="chat" size={26} color="white" />
+          <MaterialIcons
+            name="chat"
+            size={26}
+            color="white"
+          />
         </TouchableOpacity>
       </View>
 
-      {/* Document / Send Question */}
+      {/* Track Document / Send Question */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
           <Tooltip text={secondTooltip} />
         </View>
 
-        <TouchableOpacity style={styles.button}
-            onPress={activeTab === "faq" ? undefined : onTrackPress}>
-          <MaterialIcons name={secondIcon} size={26} color="white" />
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSecondButton}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons
+            name={secondIcon}
+            size={26}
+            color="white"
+          />
         </TouchableOpacity>
       </View>
 
@@ -49,7 +78,7 @@ const styles = StyleSheet.create({
 
   container: {
     position: "absolute",
-    right: 24, // moved away from screen edge
+    right: 24,
     bottom: 40,
     alignItems: "flex-end",
   },
@@ -62,7 +91,7 @@ const styles = StyleSheet.create({
 
   tooltip: {
     position: "absolute",
-    right: 70, // places tooltip to the LEFT of the button
+    right: 70,
   },
 
   button: {
