@@ -208,6 +208,22 @@ def delete_faq(request, pk):
         status=204
     )
 
+@api_view(['POST'])
+def create_faq(request):
+
+    data = request.data.copy()
+
+    if 'answer' not in data or data['answer'] is None:
+        data['answer'] = ""
+
+    serializer = FAQSerializer(data=data)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=201)
+
+    return Response(serializer.errors, status=400)
+
 # =========================
 # REQUESTS
 # =========================

@@ -138,34 +138,97 @@ export default function ProcessScreen() {
     setShowFAQModal(true);
   };
 
-  const handleSaveFAQ = (data: any) => {
-    // USER MODE
-    if (!isAdmin) {
-      alert("Question submitted successfully!");
+  const handleSaveFAQ = async (data: any) => {
+    try {
+
+      // =========================
+      // USER MODE
+      // =========================
+      if (!isAdmin) {
+
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/faqs/create/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              procedure: procedureId,
+              question: data.question,
+              answer: "", // No answer for user-submitted questions
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to submit question");
+        }
+
+        alert("Question submitted successfully!");
+
+        setShowFAQModal(false);
+
+        fetchAll();
+
+        return;
+      }
+
+      // =========================
+      // ADMIN MODE
+      // =========================
+
+      if (editingFAQ) {
+
+        const response = await fetch(
+          `http://127.0.0.1:8000/api/faqs/${editingFAQ.faq_id}/update/`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              question: data.question,
+              answer: data.answer,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to update FAQ");
+        }
+
+      } else {
+
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/faqs/create/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              procedure: procedureId,
+              question: data.question,
+              answer: data.answer,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to create FAQ");
+        }
+      }
+
+      fetchAll();
+
       setShowFAQModal(false);
-      return;
-    }
 
-    // ADMIN MODE
-    if (editingFAQ) {
-      setFaqs((prev) =>
-        prev.map((f) =>
-          f.faq_id === editingFAQ.faq_id
-            ? { ...f, ...data }
-            : f
-        )
-      );
-    } else {
-      setFaqs((prev) => [
-        ...prev,
-        {
-          faq_id: Date.now(),
-          ...data,
-        },
-      ]);
-    }
+    } catch (err: any) {
 
-    setShowFAQModal(false);
+      alert(err.message);
+
+    }
   };
 
   // ---------------- LOADING ----------------

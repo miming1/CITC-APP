@@ -118,7 +118,11 @@ export default function FAQScreen() {
 
       </ScrollView>
 
-      <FloatingButtons activeTab="faq" />
+      <FloatingButtons
+        activeTab="faq"
+        onTrackPress={() => {}}
+        onQuestionPress={() => {}}
+      />
 
     </SafeAreaView>
   );

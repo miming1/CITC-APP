@@ -217,7 +217,10 @@ class Faqs(models.Model):
 
     question = models.TextField()
 
-    answer = models.TextField()
+    answer = models.TextField(
+        blank=True,
+        null=True
+    )
 
     category = models.ForeignKey(
         FaqCategories,

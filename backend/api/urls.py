@@ -27,6 +27,7 @@ urlpatterns = [
     path('faqs/', views.get_faqs),
     path('faqs/<int:pk>/', views.update_faq),
     path('faqs/<int:pk>/delete/', views.delete_faq),
+    path('faqs/create/', views.create_faq),
 
     # =========================
     # REQUESTS
