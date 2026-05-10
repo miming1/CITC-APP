@@ -42,3 +42,33 @@ export async function submitRequest(procedureId: number) {
   if (!res.ok) throw new Error('Failed to submit request');
   return res.json();
 }
+
+// ── Edit Profile (needs auth token) ───────────────────────────
+export async function updateProfile(
+  id_number?: string,
+  email?: string,
+  password?: string
+) {
+  const token = await getToken();
+
+  const res = await fetch(ENDPOINTS.updateProfile, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Token ${token}`,
+    },
+    body: JSON.stringify({
+      id_number,
+      email,
+      password,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error ?? "Failed to update profile");
+  }
+
+  return data;
+}

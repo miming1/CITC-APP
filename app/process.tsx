@@ -1,28 +1,20 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  View,
-} from "react-native";
+import { ScrollView, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { supabase } from "../lib/supabase";
 
-import AdminMenu from "../components/AdminMenu";
-import AuthModal from "../components/AuthModal";
-import DeleteModal from "../components/DeleteModal";
-import FAQCard from "../components/FAQCard";
-import FAQModal from "../components/FAQModal";
-import FloatingButtons from "../components/FloatingButtons";
+import FAQTab from "../components/faqTab";
 import Header from "../components/Header";
-import StepItem from "../components/StepItem";
+import ProcessTab from "../components/processTab";
 import TabSwitcher from "../components/TabSwitcher";
 
+import AuthModal from "../components/AuthModal";
+import DeleteModal from "../components/DeleteModal";
+import FAQModal from "../components/FAQModal";
+
+import { verifyCurrentPassword } from "@/lib/auth";
 import { Colors } from "../constants/theme";
 
 export default function ProcessScreen() {
@@ -31,25 +23,11 @@ export default function ProcessScreen() {
   const router = useRouter();
 
   const { id, roleId } = useLocalSearchParams();
-
   const procedureId = id ? Number(id) : 1;
 
-  // ROLE CHECK
   const isAdmin = Number(roleId) === 2;
 
-  const [activeTab, setActiveTab] =
-    useState<"procedure" | "faq">("procedure");
-
-  // UI
-  const [showMenu, setShowMenu] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // MODALS
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showFAQModal, setShowFAQModal] = useState(false);
-
-  const [editingFAQ, setEditingFAQ] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<"procedure" | "faq">("procedure");
 
   // DATA
   const [procedure, setProcedure] = useState<any>(null);
@@ -57,511 +35,239 @@ export default function ProcessScreen() {
   const [requirements, setRequirements] = useState<any[]>([]);
   const [faqs, setFaqs] = useState<any[]>([]);
 
-  // STATES
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // EDIT STATE
+  const [isEditingProcedure, setIsEditingProcedure] = useState(false);
 
-  // ---------------- FETCH ALL ----------------
+  // MODALS
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFAQModal, setShowFAQModal] = useState(false);
+
+  const [deleteType, setDeleteType] = useState<"procedure" | "faq" | null>(null);
+  const [selectedFAQ, setSelectedFAQ] = useState<any>(null);
+
+  // 🔥 DELETE TRACKERS (IMPORTANT FIX)
+  const [deletedSteps, setDeletedSteps] = useState<number[]>([]);
+  const [deletedRequirements, setDeletedRequirements] = useState<number[]>([]);
 
   const fetchAll = async () => {
-    try {
-      setLoading(true);
+    const [proc, stepsRes, reqRes, faqRes] = await Promise.all([
+      supabase.from("procedures").select("*").eq("procedure_id", procedureId).maybeSingle(),
+      supabase.from("procedure_steps").select("*").eq("procedure_id", procedureId).order("step_number"),
+      supabase.from("procedure_requirements").select("*").eq("procedure_id", procedureId),
+      supabase.from("faqs").select("*").eq("procedure_id", procedureId),
+    ]);
 
-      const [proc, stepsRes, reqRes, faqRes] =
-        await Promise.all([
-          supabase
-            .from("procedures")
-            .select("*")
-            .eq("procedure_id", procedureId)
-            .maybeSingle(),
-
-          supabase
-            .from("procedure_steps")
-            .select("*")
-            .eq("procedure_id", procedureId)
-            .order("step_number", {
-              ascending: true,
-            }),
-
-          supabase
-            .from("procedure_requirements")
-            .select("*")
-            .eq("procedure_id", procedureId),
-
-          supabase
-            .from("faqs")
-            .select("*")
-            .eq("procedure_id", procedureId),
-        ]);
-
-      if (proc.error) throw proc.error;
-
-      setProcedure(proc.data);
-      setSteps(stepsRes.data || []);
-      setRequirements(reqRes.data || []);
-      setFaqs(faqRes.data || []);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    setProcedure(proc.data);
+    setSteps(stepsRes.data || []);
+    setRequirements(reqRes.data || []);
+    setFaqs(faqRes.data || []);
   };
 
   useEffect(() => {
     fetchAll();
   }, [procedureId]);
 
-  // ---------------- HANDLERS ----------------
-
-  const handleSave = () => {
-    setShowAuthModal(true);
-  };
-
-  const handleAuthSuccess = () => {
-    setIsEditing(false);
-    alert("Saved successfully");
-  };
-
-  const handleDeleteFAQ = (id: number) => {
-    setFaqs((prev) =>
-      prev.filter((f) => f.faq_id !== id)
-    );
-  };
-
-  const handleAddFAQ = () => {
-    setEditingFAQ(null);
-    setShowFAQModal(true);
-  };
-
-  const handleEditFAQ = (faq: any) => {
-    setEditingFAQ(faq);
-    setShowFAQModal(true);
-  };
-
-  const handleSaveFAQ = async (data: any) => {
+  // =========================
+  // SAVE PROCEDURE
+  // =========================
+  const handleAuthSuccess = async () => {
     try {
+      // 1. update procedure
+      await fetch(`http://127.0.0.1:8000/api/procedures/${procedureId}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          procedure_name: procedure.procedure_name,
+          description: procedure.description,
+        }),
+      });
 
       // =========================
-      // USER MODE
+      // DELETE REQUIREMENTS
       // =========================
-      if (!isAdmin) {
+      for (const id of deletedRequirements) {
+        await supabase
+          .from("procedure_requirements")
+          .delete()
+          .eq("requirement_id", id);
+      }
 
-        const response = await fetch(
-          "http://127.0.0.1:8000/api/faqs/create/",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              procedure: procedureId,
-              question: data.question,
-              answer: "", // No answer for user-submitted questions
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to submit question");
+      // UPDATE / INSERT REQUIREMENTS
+      for (const req of requirements) {
+        if (req.requirement_id) {
+          await supabase
+            .from("procedure_requirements")
+            .update({ requirement_text: req.requirement_text })
+            .eq("requirement_id", req.requirement_id);
+        } else {
+          await supabase.from("procedure_requirements").insert({
+            procedure_id: procedureId,
+            requirement_text: req.requirement_text,
+          });
         }
-
-        alert("Question submitted successfully!");
-
-        setShowFAQModal(false);
-
-        fetchAll();
-
-        return;
       }
 
       // =========================
-      // ADMIN MODE
+      // DELETE STEPS
       // =========================
+      for (const id of deletedSteps) {
+        await supabase
+          .from("procedure_steps")
+          .delete()
+          .eq("step_id", id);
+      }
 
-      if (editingFAQ) {
-
-        const response = await fetch(
-          `http://127.0.0.1:8000/api/faqs/${editingFAQ.faq_id}/update/`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              question: data.question,
-              answer: data.answer,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to update FAQ");
-        }
-
-      } else {
-
-        const response = await fetch(
-          "http://127.0.0.1:8000/api/faqs/create/",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              procedure: procedureId,
-              question: data.question,
-              answer: data.answer,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to create FAQ");
+      // UPDATE / INSERT STEPS
+      for (const step of steps) {
+        if (step.step_id) {
+          await supabase
+            .from("procedure_steps")
+            .update({
+              step_description: step.step_description,
+              office_location: step.office_location,
+              reference_link: step.reference_link,
+            })
+            .eq("step_id", step.step_id);
+        } else {
+          await supabase.from("procedure_steps").insert({
+            procedure_id: procedureId,
+            step_number: step.step_number,
+            step_description: step.step_description,
+            office_location: step.office_location,
+            reference_link: step.reference_link,
+          });
         }
       }
 
+      // RESET DELETE TRACKERS
+      setDeletedSteps([]);
+      setDeletedRequirements([]);
+
+      alert("Updated successfully");
+      setIsEditingProcedure(false);
       fetchAll();
-
-      setShowFAQModal(false);
-
     } catch (err: any) {
-
       alert(err.message);
-
     }
   };
 
-  // ---------------- LOADING ----------------
+  const handleDeleteProcedure = async () => {
+    await fetch(`http://127.0.0.1:8000/api/procedures/${procedureId}/delete/`, {
+      method: "DELETE",
+    });
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <Text>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
+    router.back();
+  };
 
-  // ---------------- ERROR ----------------
+  const handleDeleteFAQ = async (id: number) => {
+    await fetch(`http://127.0.0.1:8000/api/faqs/${id}/delete/`, {
+      method: "DELETE",
+    });
 
-  if (error) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <Text>Error: {error}</Text>
-      </SafeAreaView>
-    );
-  }
-
-  // ---------------- UI ----------------
+    fetchAll();
+  };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.background,
-        },
-      ]}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <Header title="Process" />
 
-      <TabSwitcher
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-      >
-        {/* TITLE */}
-        <View style={styles.headerRow}>
-          {isEditing ? (
-            <TextInput
-              value={
-                procedure?.procedure_name || ""
-              }
-              onChangeText={(text) =>
-                setProcedure((p: any) => ({
-                  ...p,
-                  procedure_name: text,
-                }))
-              }
-              style={styles.input}
-            />
-          ) : (
-            <Text
-              style={[
-                styles.title,
-                { color: colors.text },
-              ]}
-            >
-              {procedure?.procedure_name}
-            </Text>
-          )}
-
-          {isAdmin && (
-            <TouchableOpacity
-              onPress={() =>
-                setShowMenu(!showMenu)
-              }
-            >
-              <Text style={styles.dots}>⋮</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* ADMIN MENU */}
-        {showMenu && (
-          <AdminMenu
-            onEdit={() => {
-              setIsEditing(true);
-              setShowMenu(false);
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+        {activeTab === "procedure" ? (
+          <ProcessTab
+            procedure={procedure}
+            setProcedure={setProcedure}
+            steps={steps}
+            setSteps={setSteps}
+            requirements={requirements}
+            setRequirements={setRequirements}
+            isAdmin={isAdmin}
+            isEditing={isEditingProcedure}
+            colors={colors}
+            onEdit={() => setIsEditingProcedure(true)}
+            onCancel={() => {
+              setIsEditingProcedure(false);
+              fetchAll();
             }}
-            onDelete={() =>
-              setShowDeleteModal(true)
-            }
-          />
-        )}
-
-        {/* DESCRIPTION */}
-        {isEditing ? (
-          <TextInput
-            value={procedure?.description || ""}
-            onChangeText={(text) =>
-              setProcedure((p: any) => ({
-                ...p,
-                description: text,
-              }))
-            }
-            multiline
-            style={styles.input}
+            onSave={() => setShowAuthModal(true)}
+            onDelete={() => setShowDeleteModal(true)}
+            setDeletedSteps={setDeletedSteps}
+            setDeletedRequirements={setDeletedRequirements}
+            deletedSteps={deletedSteps}
+            deletedRequirements={deletedRequirements}
           />
         ) : (
-          <Text
-            style={[
-              styles.description,
-              { color: colors.icon },
-            ]}
-          >
-            {procedure?.description}
-          </Text>
-        )}
+          <FAQTab
+            faqs={faqs}
+            setFaqs={setFaqs}
+            procedure={procedure}
+            isAdmin={isAdmin}
+            colors={colors}
+            onSaveFAQInline={async (faq) => {
+              await fetch(`http://127.0.0.1:8000/api/faqs/${faq.faq_id}/`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  question: faq.question,
+                  answer: faq.answer,
+                }),
+              });
 
-        {/* PROCEDURE TAB */}
-        {activeTab === "procedure" && (
-          <>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.text },
-              ]}
-            >
-              Requirements
-            </Text>
-
-            <View style={styles.requirements}>
-              {requirements.map((req) => (
-                <Text
-                  key={req.requirement_id}
-                  style={{
-                    color: colors.text,
-                  }}
-                >
-                  • {req.requirement_text}
-                </Text>
-              ))}
-            </View>
-
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.text },
-              ]}
-            >
-              Steps
-            </Text>
-
-            {steps.map((step) => (
-              <StepItem
-                key={step.step_id}
-                number={step.step_number}
-                text={step.step_description}
-                sub={step.office_location}
-              />
-            ))}
-          </>
-        )}
-
-        {/* FAQ TAB */}
-        {activeTab === "faq" && (
-          <>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.text },
-              ]}
-            >
-              FAQs
-            </Text>
-
-            {faqs.map((faq) => (
-              <FAQCard
-                key={faq.faq_id}
-                question={faq.question}
-                answer={faq.answer}
-                isAdmin={isAdmin}
-                onEdit={() =>
-                  handleEditFAQ(faq)
-                }
-                onDelete={() =>
-                  handleDeleteFAQ(
-                    faq.faq_id
-                  )
-                }
-              />
-            ))}
-
-            {/* ADMIN ONLY */}
-            {isAdmin && (
-              <TouchableOpacity
-                style={styles.addBtn}
-                onPress={handleAddFAQ}
-              >
-                <Text
-                  style={{
-                    fontSize: 20,
-                    color: colors.text,
-                  }}
-                >
-                  ＋ Add FAQ
-                </Text>
-              </TouchableOpacity>
-            )}
-          </>
-        )}
-
-        {/* SAVE */}
-        {isEditing && (
-          <TouchableOpacity
-            style={styles.saveBtn}
-            onPress={handleSave}
-          >
-            <Text style={{ color: "#fff" }}>
-              Save
-            </Text>
-          </TouchableOpacity>
+              fetchAll();
+            }}
+            onRequestDelete={(faq) => {
+              setSelectedFAQ(faq);
+              setDeleteType("faq");
+              setShowDeleteModal(true);
+            }}
+          />
         )}
       </ScrollView>
 
-      {/* FLOATING BUTTONS */}
-      <FloatingButtons
-        activeTab={activeTab}
-        onTrackPress={() =>
-          router.push({
-            pathname: "/scan",
-            params: { roleId },
-          })
-        }
-        onQuestionPress={() => {
-          setEditingFAQ(null);
-          setShowFAQModal(true);
+      <DeleteModal
+        visible={showDeleteModal}
+        onCancel={() => setShowDeleteModal(false)}
+        onConfirm={async () => {
+          if (deleteType === "procedure") await handleDeleteProcedure();
+          if (deleteType === "faq" && selectedFAQ) {
+            await handleDeleteFAQ(selectedFAQ.faq_id);
+          }
+
+          setShowDeleteModal(false);
+          setSelectedFAQ(null);
+          setDeleteType(null);
         }}
       />
 
-      {/* AUTH MODAL */}
       <AuthModal
         visible={showAuthModal}
-        onClose={() =>
-          setShowAuthModal(false)
-        }
+        onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
+        verifyPassword={verifyCurrentPassword}
       />
 
-      {/* DELETE MODAL */}
-      <DeleteModal
-        visible={showDeleteModal}
-        onCancel={() =>
-          setShowDeleteModal(false)
-        }
-        onConfirm={() =>
-          setShowDeleteModal(false)
-        }
-      />
-
-      {/* FAQ MODAL */}
       <FAQModal
         visible={showFAQModal}
-        onClose={() =>
-          setShowFAQModal(false)
-        }
-        onSave={handleSaveFAQ}
-        initialData={editingFAQ}
+        onClose={() => setShowFAQModal(false)}
+        procedureId={procedureId}
         isAdmin={isAdmin}
+        onSave={async (procedureId, data) => {
+          await fetch("http://127.0.0.1:8000/api/faqs/create/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              procedure: procedureId,
+              question: data.question,
+              answer: data.answer,
+            }),
+          });
+
+          setShowFAQModal(false);
+          fetchAll();
+        }}
       />
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-
-  content: {
-    padding: 16,
-    paddingBottom: 120,
-  },
-
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-  },
-
-  dots: {
-    fontSize: 20,
-  },
-
-  description: {
-    marginTop: 10,
-  },
-
-  sectionTitle: {
-    marginTop: 20,
-    fontWeight: "600",
-  },
-
-  requirements: {
-    marginBottom: 20,
-  },
-
-  input: {
-    borderWidth: 1,
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 8,
-  },
-
-  saveBtn: {
-    marginTop: 20,
-    backgroundColor: Colors.light.tint,
-    padding: 12,
-    alignItems: "center",
-    borderRadius: 8,
-  },
-
-  addBtn: {
-    marginTop: 20,
-    alignItems: "center",
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

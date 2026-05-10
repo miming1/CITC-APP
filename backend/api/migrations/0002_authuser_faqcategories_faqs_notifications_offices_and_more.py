@@ -176,7 +176,6 @@ class Migration(migrations.Migration):
                 ('user_id', models.UUIDField(primary_key=True, serialize=False)),
                 ('id_number', models.BigIntegerField(unique=True)),
                 ('email', models.CharField(max_length=100, unique=True)),
-                ('password_hash', models.TextField()),
                 ('created_at', models.DateTimeField(blank=True, null=True)),
             ],
             options={

@@ -89,6 +89,84 @@ export async function registerUser(
 }
 
 // =========================
+// UPDATE PROFILE
+// =========================
+export async function updateUserProfile(
+  id_number?: string,
+  email?: string,
+  password?: string
+) {
+  try {
+    const token = await getStoredToken();
+
+    const res = await fetch(ENDPOINTS.updateProfile, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({
+        id_number,
+        email,
+        password,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      return {
+        success: true,
+        data,
+      };
+    }
+
+    return {
+      success: false,
+      error: data.error ?? "Update failed",
+    };
+
+  } catch (e) {
+    return {
+      success: false,
+      error: "Cannot reach server",
+    };
+  }
+}
+
+export async function verifyCurrentPassword(
+  password: string
+) {
+  try {
+
+    const token = await getStoredToken();
+
+    const res = await fetch(
+      ENDPOINTS.verifyPassword,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({
+          password,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    return data.valid === true;
+
+  } catch (e) {
+
+    return false;
+
+  }
+}
+
+// =========================
 // TOKEN HELPERS
 // =========================
 export async function getToken() {

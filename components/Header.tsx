@@ -20,6 +20,7 @@ const MENU_ITEMS = [
   { label: 'Frequently Asked Questions', route: '/faq'                },
   { label: 'Form Submission Progress',   route: '/active-req'         },
   { label: 'Submission History',         route: '/SubmissionHistory'  },
+  { label: 'Profile',                    route: '/editProfile'            },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────

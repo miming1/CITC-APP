@@ -14,6 +14,8 @@ export default function RootLayout() {
 
        <Stack.Screen name="index" />
        <Stack.Screen name="Userdashboard" />
+       <Stack.Screen name="adminDashboard" />
+       <Stack.Screen name="editProfile" />
        <Stack.Screen name="process-list" />
        <Stack.Screen name="process" />
        <Stack.Screen name="faq" />
@@ -22,6 +24,7 @@ export default function RootLayout() {
        <Stack.Screen name="SearchResults" />
        <Stack.Screen name="active-req" />
        <Stack.Screen name="SubmissionHistory" />
+
 
       </Stack>
       <StatusBar style="auto" />

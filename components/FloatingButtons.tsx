@@ -1,21 +1,73 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from "react-native";
+
 import { Colors } from "../constants/theme";
 import Tooltip from "./ToolTip";
 
 type FloatingButtonsProps = {
   activeTab: "procedure" | "faq";
+  isAdmin?: boolean;
+
   onTrackPress: () => void;
-  onQuestionPress: () => void;
+  onFAQPress: () => void;
 };
 
 export default function FloatingButtons({
   activeTab,
+  isAdmin = false,
   onTrackPress,
-  onQuestionPress,
+  onFAQPress,
 }: FloatingButtonsProps) {
+  const colorScheme = useColorScheme() ?? "light";
+  const theme = Colors[colorScheme];
 
   const isFAQTab = activeTab === "faq";
+
+  // =========================================================
+  // ADMIN RULES
+  // =========================================================
+
+  if (isAdmin) {
+    // Only show Add FAQ in FAQ tab
+    if (isFAQTab) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.wrapper}>
+            <View style={styles.tooltip}>
+              <Tooltip text="Add FAQ" />
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                { backgroundColor: theme.tint },
+              ]}
+              onPress={onFAQPress}
+              activeOpacity={0.85}
+            >
+              <MaterialIcons
+                name="add"
+                size={26}
+                color="#fff"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    // Procedure tab → no floating buttons for admin
+    return null;
+  }
+
+  // =========================================================
+  // USER MODE
+  // =========================================================
 
   const secondTooltip = isFAQTab
     ? "Send a Question"
@@ -27,7 +79,7 @@ export default function FloatingButtons({
 
   const handleSecondButton = () => {
     if (isFAQTab) {
-      onQuestionPress();
+      onFAQPress();
     } else {
       onTrackPress();
     }
@@ -35,47 +87,57 @@ export default function FloatingButtons({
 
   return (
     <View style={styles.container}>
-
-      {/* AI Chat */}
+      {/* CHATBOT BUTTON (USER ONLY) */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
           <Tooltip text="Chat with AI Assistant" />
         </View>
 
-        <TouchableOpacity style={styles.button}>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            { backgroundColor: theme.tint },
+          ]}
+          activeOpacity={0.85}
+        >
           <MaterialIcons
             name="chat"
             size={26}
-            color="white"
+            color="#fff"
           />
         </TouchableOpacity>
       </View>
 
-      {/* Track Document / Send Question */}
+      {/* SECOND BUTTON (USER ONLY) */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
           <Tooltip text={secondTooltip} />
         </View>
 
         <TouchableOpacity
-          style={styles.button}
+          style={[
+            styles.button,
+            { backgroundColor: theme.tint },
+          ]}
           onPress={handleSecondButton}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           <MaterialIcons
-            name={secondIcon}
+            name={secondIcon as any}
             size={26}
-            color="white"
+            color="#fff"
           />
         </TouchableOpacity>
       </View>
-
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+// =========================================================
+// STYLES
+// =========================================================
 
+const styles = StyleSheet.create({
   container: {
     position: "absolute",
     right: 24,
@@ -95,17 +157,18 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.light.tint,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     justifyContent: "center",
     alignItems: "center",
-
-    elevation: 5,
+    elevation: 6,
     shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
     shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowRadius: 5,
   },
-
 });

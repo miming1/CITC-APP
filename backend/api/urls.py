@@ -8,6 +8,7 @@ urlpatterns = [
     path('auth/register/', views.register),
     path('auth/login/', views.user_login),
     path('auth/me/', views.me),
+    #path('auth/admin', views.admin_dashboard),
 
     # =========================
     # PROCEDURES
@@ -34,4 +35,15 @@ urlpatterns = [
     # =========================
     path('requests/', views.submit_request),
     path('requests/track/', views.track_requests),
+
+    # =========================
+    # PROFILE 
+    # =========================
+    path('auth/update-profile/', views.update_profile),
+
+    # =========================
+    # VERIFY PASSWORD 
+    # =========================
+    path("verify-password/", views.verify_password, name="verify-password"),
+
 ]

@@ -175,7 +175,7 @@ export default function UserDashboard() {
           onPressProcess={(process: Process) =>
             router.push({
               pathname: '/process',
-              params: { id: process.id },
+              params: { id: process.id, roleId: 1,},
             })
           }
         />
