@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:8000";
+const BASE_URL = "https://citc-app.onrender.com";
 
 export const fetchProcedure = async (id: number) => {
   const res = await fetch(`${BASE_URL}/process/${id}/`);

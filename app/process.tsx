@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
+import { API_BASE_URL } from "../constants/api";
 import { supabase } from "../lib/supabase";
 
 import FAQTab from "../components/faqTab";
@@ -46,7 +46,6 @@ export default function ProcessScreen() {
   const [deleteType, setDeleteType] = useState<"procedure" | "faq" | null>(null);
   const [selectedFAQ, setSelectedFAQ] = useState<any>(null);
 
-  // 🔥 DELETE TRACKERS (IMPORTANT FIX)
   const [deletedSteps, setDeletedSteps] = useState<number[]>([]);
   const [deletedRequirements, setDeletedRequirements] = useState<number[]>([]);
 
@@ -74,7 +73,7 @@ export default function ProcessScreen() {
   const handleAuthSuccess = async () => {
     try {
       // 1. update procedure
-      await fetch(`http://127.0.0.1:8000/api/procedures/${procedureId}/`, {
+      await fetch(`${API_BASE_URL}/procedures/${procedureId}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -153,7 +152,7 @@ export default function ProcessScreen() {
   };
 
   const handleDeleteProcedure = async () => {
-    await fetch(`http://127.0.0.1:8000/api/procedures/${procedureId}/delete/`, {
+    await fetch(`${API_BASE_URL}/procedures/${procedureId}/delete/`, {
       method: "DELETE",
     });
 
@@ -161,7 +160,7 @@ export default function ProcessScreen() {
   };
 
   const handleDeleteFAQ = async (id: number) => {
-    await fetch(`http://127.0.0.1:8000/api/faqs/${id}/delete/`, {
+    await fetch(`${API_BASE_URL}/faqs/${id}/delete/`, {
       method: "DELETE",
     });
 
@@ -206,7 +205,7 @@ export default function ProcessScreen() {
             isAdmin={isAdmin}
             colors={colors}
             onSaveFAQInline={async (faq) => {
-              await fetch(`http://127.0.0.1:8000/api/faqs/${faq.faq_id}/`, {
+              await fetch(`${API_BASE_URL}/faqs/${faq.faq_id}/`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -254,7 +253,7 @@ export default function ProcessScreen() {
         procedureId={procedureId}
         isAdmin={isAdmin}
         onSave={async (procedureId, data) => {
-          await fetch("http://127.0.0.1:8000/api/faqs/create/", {
+          await fetch(`${API_BASE_URL}/faqs/create/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
