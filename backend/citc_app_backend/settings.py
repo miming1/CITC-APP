@@ -55,7 +55,12 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = 'citc_app_backend.urls'
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://citc-app-1.vercel.app",
+]
 
 TEMPLATES = [
     {
