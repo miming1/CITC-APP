@@ -145,7 +145,7 @@ export default function LoginScreen() {
           if (roleId === 2) {
 
             router.replace({
-              pathname: "/adminDashboard",
+              pathname: "/AdminDashboard",
               params: {
                 idNumber: idNumber,
               },
