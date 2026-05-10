@@ -14,7 +14,7 @@ export default function RootLayout() {
 
        <Stack.Screen name="index" />
        <Stack.Screen name="Userdashboard" />
-       <Stack.Screen name="adminDashboard" />
+       <Stack.Screen name="AdminDashboard" />
        <Stack.Screen name="editProfile" />
        <Stack.Screen name="process-list" />
        <Stack.Screen name="process" />
