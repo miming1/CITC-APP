@@ -33,7 +33,6 @@ export default function FloatingButtons({
   // =========================================================
 
   if (isAdmin) {
-    // Only show Add FAQ in FAQ tab
     if (isFAQTab) {
       return (
         <View style={styles.container}>
@@ -50,18 +49,13 @@ export default function FloatingButtons({
               onPress={onFAQPress}
               activeOpacity={0.85}
             >
-              <MaterialIcons
-                name="add"
-                size={26}
-                color="#fff"
-              />
+              <MaterialIcons name="add" size={26} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
       );
     }
 
-    // Procedure tab → no floating buttons for admin
     return null;
   }
 
@@ -77,6 +71,11 @@ export default function FloatingButtons({
     ? "send"
     : "description";
 
+  const handleChatbotPress = () => {
+    // TODO: replace with navigation when chatbot screen exists
+    console.log("Chatbot pressed (not implemented yet)");
+  };
+
   const handleSecondButton = () => {
     if (isFAQTab) {
       onFAQPress();
@@ -87,7 +86,7 @@ export default function FloatingButtons({
 
   return (
     <View style={styles.container}>
-      {/* CHATBOT BUTTON (USER ONLY) */}
+      {/* CHATBOT BUTTON */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
           <Tooltip text="Chat with AI Assistant" />
@@ -98,17 +97,14 @@ export default function FloatingButtons({
             styles.button,
             { backgroundColor: theme.tint },
           ]}
+          onPress={handleChatbotPress}
           activeOpacity={0.85}
         >
-          <MaterialIcons
-            name="chat"
-            size={26}
-            color="#fff"
-          />
+          <MaterialIcons name="chat" size={26} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      {/* SECOND BUTTON (USER ONLY) */}
+      {/* SECOND BUTTON */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
           <Tooltip text={secondTooltip} />
@@ -122,11 +118,7 @@ export default function FloatingButtons({
           onPress={handleSecondButton}
           activeOpacity={0.85}
         >
-          <MaterialIcons
-            name={secondIcon as any}
-            size={26}
-            color="#fff"
-          />
+          <MaterialIcons name={secondIcon as any} size={26} color="#fff" />
         </TouchableOpacity>
       </View>
     </View>
