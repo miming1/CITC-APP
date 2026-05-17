@@ -1,15 +1,37 @@
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+<<<<<<< Updated upstream
   KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput,
   TouchableOpacity, View, useColorScheme
+=======
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+  useColorScheme,
+>>>>>>> Stashed changes
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 import { loginUser, registerUser } from "../lib/auth";
 
+import AuthLogo from "../components/AuthLogo";
+import AuthMessage from "../components/AuthMessage";
+import AuthTabSwitcher from "../components/Authtabswitcher";
+import ForgotPasswordModal from "../components/ForgotPasswordModal";
+import LoginFormView from "../components/LoginFormView";
+import SignupFormView from "../components/SignupFormView";
+import TermsModal from "../components/TermsModal";
+
+// =========================================================
+// SCREEN
+// =========================================================
+
 export default function LoginScreen() {
+<<<<<<< Updated upstream
 
   // Reads the device light/dark setting — same pattern as other screens
   const colorScheme = useColorScheme() ?? "light";
@@ -26,12 +48,25 @@ export default function LoginScreen() {
   const [loginForm, setLoginForm] = useState({ idNumber: "", password: "" });
 
   // Sign up form fields (controlled inputs)
+=======
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme as "light" | "dark"];
+  const TINT = Colors.light.tint;
+
+  // ── Tab ───────────────────────────────────────────────
+  const [tab, setTab] = useState<"login" | "signup">("login");
+
+  // ── Forms ─────────────────────────────────────────────
+  const [loginForm, setLoginForm] = useState({ idNumber: "", password: "" });
+>>>>>>> Stashed changes
   const [signupForm, setSignupForm] = useState({
     idNumber: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
 
+<<<<<<< Updated upstream
   // Feedback shown below the form after submitting
   const [message, setMessage] = useState<{
     type: "error" | "success";
@@ -39,16 +74,29 @@ export default function LoginScreen() {
   } | null>(null);
 
     // loading spinner while waiting for API response
+=======
+  // ── State ─────────────────────────────────────────────
+>>>>>>> Stashed changes
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
+<<<<<<< Updated upstream
   // ── Handlers ─────────────────────────────────────────────────
 
   // Switch tab and clear any existing message
+=======
+  // ── Helpers ───────────────────────────────────────────
+>>>>>>> Stashed changes
   function switchTab(t: "login" | "signup") {
     setTab(t);
     setMessage(null);
+    setTermsAccepted(false);
   }
 
+<<<<<<< Updated upstream
  // ── Login ────────────────────────────────────────────────────
   async function handleLogin() {
     const { idNumber, password } = loginForm;
@@ -132,6 +180,99 @@ export default function LoginScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
 
       {/* Lifts the card up when the keyboard opens */}
+=======
+  function updateLogin(field: keyof typeof loginForm, value: string) {
+    setLoginForm((p) => ({ ...p, [field]: value }));
+  }
+
+  function updateSignup(field: keyof typeof signupForm, value: string) {
+    setSignupForm((p) => ({ ...p, [field]: value }));
+  }
+
+  // ── Login ─────────────────────────────────────────────
+  async function handleLogin() {
+    const { idNumber, password } = loginForm;
+    const isNumeric = /^\d+$/.test(idNumber);
+
+    if (!idNumber.trim() || !password.trim())
+      return setMessage({ type: "error", text: "Please fill in all fields." });
+    if (!isNumeric)
+      return setMessage({ type: "error", text: "ID Number must contain only numbers." });
+    if (idNumber.length < 8 || idNumber.length > 20)
+      return setMessage({ type: "error", text: "Invalid ID Number length." });
+    if (password.length < 8)
+      return setMessage({ type: "error", text: "Password is too short." });
+
+    try {
+      setLoading(true);
+      setMessage({ type: "success", text: "Logging you in..." });
+
+      const result = await loginUser(idNumber, password);
+
+      if (result.success) {
+        setMessage({ type: "success", text: "Login successful!" });
+        setTimeout(() => {
+          setMessage(null);
+          if (result.role_id === 2) {
+            router.replace({ pathname: "/AdminDashboard", params: { idNumber } });
+          } else {
+            router.replace({ pathname: "/Userdashboard", params: { idNumber } });
+          }
+        }, 700);
+      } else {
+        setMessage({ type: "error", text: result.error || "Invalid ID or password." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Something went wrong. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Signup ────────────────────────────────────────────
+  async function handleSignup() {
+    const { idNumber, email, password, confirmPassword } = signupForm;
+    const emailRegex = /\S+@\S+\.\S+/;
+    const isNumeric = /^\d+$/.test(idNumber);
+
+    if (!idNumber || !email || !password || !confirmPassword)
+      return setMessage({ type: "error", text: "Please fill in all fields." });
+    if (!isNumeric)
+      return setMessage({ type: "error", text: "ID Number must contain only numbers." });
+    if (idNumber.length < 8 || idNumber.length > 20)
+      return setMessage({ type: "error", text: "Invalid ID Number length." });
+    if (!emailRegex.test(email))
+      return setMessage({ type: "error", text: "Invalid email format." });
+    if (password.length < 8)
+      return setMessage({ type: "error", text: "Password must be at least 8 characters." });
+    if (password !== confirmPassword)
+      return setMessage({ type: "error", text: "Passwords do not match." });
+    if (!termsAccepted)
+      return setMessage({ type: "error", text: "Please accept the Terms & Conditions." });
+
+    try {
+      setLoading(true);
+      const result = await registerUser(idNumber, email, password);
+
+      if (result.success) {
+        setMessage({ type: "success", text: "Account created successfully!" });
+        setTimeout(() => {
+          switchTab("login");
+        }, 1000);
+      } else {
+        setMessage({ type: "error", text: result.error || "Registration failed." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Something went wrong. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Render ────────────────────────────────────────────
+  return (
+    <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
+>>>>>>> Stashed changes
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -139,9 +280,12 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={s.card}>
+            <AuthLogo />
 
+<<<<<<< Updated upstream
             {/* ── Logo ──────────────────────────────────────────
                 Placeholder circle — replace with <Image> later  */}
             <View style={s.logoWrap}>
@@ -293,19 +437,55 @@ export default function LoginScreen() {
                   {message.text}
                 </Text>
               </View>
+=======
+            <AuthTabSwitcher active={tab} onChange={switchTab} />
+
+            {tab === "login" ? (
+              <LoginFormView
+                form={loginForm}
+                onChange={updateLogin}
+                onSubmit={handleLogin}
+                onForgotPassword={() => setShowForgot(true)}
+                loading={loading}
+                tint={TINT}
+              />
+            ) : (
+              <SignupFormView
+                form={signupForm}
+                onChange={updateSignup}
+                onSubmit={handleSignup}
+                onViewTerms={() => setShowTerms(true)}
+                termsAccepted={termsAccepted}
+                onToggleTerms={() => setTermsAccepted((p) => !p)}
+                loading={loading}
+                tint={TINT}
+              />
+>>>>>>> Stashed changes
             )}
 
+            {message && <AuthMessage type={message.type} text={message.text} />}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+<<<<<<< Updated upstream
+=======
+
+      <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} />
+      <ForgotPasswordModal visible={showForgot} onClose={() => setShowForgot(false)} />
+>>>>>>> Stashed changes
     </SafeAreaView>
   );
 }
 
+<<<<<<< Updated upstream
 // ── Styles ────────────────────────────────────────────────────
 const s = StyleSheet.create({
 
   safe:   { flex: 1 },
+=======
+const s = StyleSheet.create({
+  safe: { flex: 1 },
+>>>>>>> Stashed changes
   scroll: {
     flexGrow: 1,
     alignItems: "center",
@@ -313,8 +493,11 @@ const s = StyleSheet.create({
     padding: 20,
     paddingVertical: 40,
   },
+<<<<<<< Updated upstream
 
   // White card that wraps the whole form
+=======
+>>>>>>> Stashed changes
   card: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -327,6 +510,7 @@ const s = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
   },
+<<<<<<< Updated upstream
 
   logoWrap:   { alignItems: "center", marginBottom: 24 },
   logoCircle: {
@@ -397,4 +581,6 @@ const s = StyleSheet.create({
   msgErrText: { color: "#b91c1c", fontSize: 13 },
   msgOkText:  { color: "#15803d", fontSize: 13 },
 
+=======
+>>>>>>> Stashed changes
 });
