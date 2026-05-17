@@ -10,6 +10,8 @@ import Header from "../components/Header";
 import ProcessTab from "../components/processTab";
 import TabSwitcher from "../components/TabSwitcher";
 
+import FloatingButtons from "../components/FloatingButtons"; // ✅ ADDED
+
 import AuthModal from "../components/AuthModal";
 import DeleteModal from "../components/DeleteModal";
 import FAQModal from "../components/FAQModal";
@@ -72,7 +74,6 @@ export default function ProcessScreen() {
   // =========================
   const handleAuthSuccess = async () => {
     try {
-      // 1. update procedure
       await fetch(`${API_BASE_URL}/procedures/${procedureId}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -82,9 +83,6 @@ export default function ProcessScreen() {
         }),
       });
 
-      // =========================
-      // DELETE REQUIREMENTS
-      // =========================
       for (const id of deletedRequirements) {
         await supabase
           .from("procedure_requirements")
@@ -92,7 +90,6 @@ export default function ProcessScreen() {
           .eq("requirement_id", id);
       }
 
-      // UPDATE / INSERT REQUIREMENTS
       for (const req of requirements) {
         if (req.requirement_id) {
           await supabase
@@ -107,9 +104,6 @@ export default function ProcessScreen() {
         }
       }
 
-      // =========================
-      // DELETE STEPS
-      // =========================
       for (const id of deletedSteps) {
         await supabase
           .from("procedure_steps")
@@ -117,7 +111,6 @@ export default function ProcessScreen() {
           .eq("step_id", id);
       }
 
-      // UPDATE / INSERT STEPS
       for (const step of steps) {
         if (step.step_id) {
           await supabase
@@ -139,7 +132,6 @@ export default function ProcessScreen() {
         }
       }
 
-      // RESET DELETE TRACKERS
       setDeletedSteps([]);
       setDeletedRequirements([]);
 
@@ -225,6 +217,27 @@ export default function ProcessScreen() {
         )}
       </ScrollView>
 
+      {/* ========================= */}
+      {/*   FLOATING BUTTONS        */}
+      {/* ========================= */}
+      <FloatingButtons
+        activeTab={activeTab}
+        isAdmin={isAdmin}
+
+        onTrackPress={() => {
+          // TODO: replace with real screen when ready
+          router.push({
+            pathname: "/scan", // or "/scan-document"
+            params: { id: procedureId },
+          });
+        }}
+
+        onFAQPress={() => {
+          setShowFAQModal(true);
+        }}
+      />
+
+      {/* MODALS */}
       <DeleteModal
         visible={showDeleteModal}
         onCancel={() => setShowDeleteModal(false)}
