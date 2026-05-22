@@ -1,6 +1,5 @@
 from django.urls import path
-from . import views
-
+from . import views, views_otp
 urlpatterns = [
     # =========================
     # AUTH
@@ -45,5 +44,14 @@ urlpatterns = [
     # VERIFY PASSWORD 
     # =========================
     path("verify-password/", views.verify_password, name="verify-password"),
+    
+    # =========================
+    # OTP-BASED AUTH (signup + forgot password)
+    # =========================
+    path('auth/send-signup-otp/', views_otp.send_signup_otp, name='send_signup_otp'),
+    path('auth/verify-signup-otp/', views_otp.verify_signup_otp, name='verify_signup_otp'),
+    path('auth/forgot-password/', views_otp.forgot_password, name='forgot_password'),
+    path('auth/verify-otp/', views_otp.verify_reset_otp, name='verify_reset_otp'),
+    path('auth/reset-password/', views_otp.reset_password, name='reset_password'),
 
 ]

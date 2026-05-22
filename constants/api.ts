@@ -10,4 +10,11 @@ export const ENDPOINTS = {
   trackReq:   `${API_BASE_URL}/requests/track/`,
   updateProfile: `${API_BASE_URL}/auth/update-profile/`,
   verifyPassword: `${API_BASE_URL}/verify-password/`,
+
+  // ── OTP SECURE ENDPOINTS ───────────────────
+  sendSignupOtp:   `${API_BASE_URL}/auth/send-signup-otp/`,
+  verifySignupOtp: `${API_BASE_URL}/auth/verify-signup-otp/`,
+  forgotPassword:  `${API_BASE_URL}/auth/forgot-password/`,
+  verifyResetOtp:  `${API_BASE_URL}/auth/verify-otp/`,
+  resetPassword:   `${API_BASE_URL}/auth/reset-password/`,
 };

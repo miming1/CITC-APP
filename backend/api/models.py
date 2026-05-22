@@ -9,6 +9,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+import datetime
 
 
 # =========================
@@ -430,8 +431,6 @@ class RequestDocuments(models.Model):
 # =========================
 # DJANGO AUTH USER
 # =========================
-# Optional read-only model mapping to auth_user table
-# You can keep this if needed for querying only
 
 class AuthUser(models.Model):
 
@@ -496,3 +495,45 @@ class Notifications(models.Model):
     class Meta:
         managed = False
         db_table = 'notifications'
+
+
+# =========================
+# OTP TOKENS
+# =========================
+
+class OTPToken(models.Model):  # <-- 2. PASTE THE CLASS AT THE BOTTOM HERE
+
+    PURPOSE_SIGNUP = 'signup'
+    PURPOSE_RESET  = 'reset'
+    PURPOSE_CHOICES = [
+        (PURPOSE_SIGNUP, 'Email Verification (Signup)'),
+        (PURPOSE_RESET,  'Password Reset'),
+    ]
+
+    email = models.EmailField()
+
+    otp = models.CharField(max_length=6)
+
+    purpose = models.CharField(
+        max_length=10,
+        choices=PURPOSE_CHOICES,
+        default=PURPOSE_SIGNUP
+    )
+
+    pending_data = models.JSONField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'otp_tokens'
+
+    def is_expired(self):
+        from django.conf import settings
+        from django.utils import timezone
+        expiry_minutes = getattr(settings, 'OTP_EXPIRY_MINUTES', 2)
+        return timezone.now() > self.created_at + datetime.timedelta(minutes=expiry_minutes)
+
+    def __str__(self):
+        return f"{self.email} | {self.purpose} | used={self.is_used}"

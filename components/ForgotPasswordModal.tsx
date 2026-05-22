@@ -13,7 +13,7 @@ import {
   View
 } from "react-native";
 
-const API_BASE = "https://your-backend-app.onrender.com/api";
+import { ENDPOINTS } from "../constants/api";
 
 interface Props {
   visible: boolean;
@@ -35,7 +35,6 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
 
   const emailRegex = /\S+@\S+\.\S+/;
 
-  // ── STEP 1: Send OTP to email ──────────────────────────────
   const handleSendOTP = async () => {
     setError("");
     if (!email.trim()) return setError("Please enter your email address.");
@@ -43,7 +42,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/forgot-password/`, {
+      const res = await fetch(ENDPOINTS.forgotPassword, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -61,14 +60,13 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
     }
   };
 
-  // ── STEP 2: Verify OTP ─────────────────────────────────────
   const handleVerifyOTP = async () => {
     setError("");
-    if (otp.length < 4) return setError("Please enter the OTP sent to your email.");
+    if (otp.length < 6) return setError("Please enter the 6-digit verification code.");
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/verify-otp/`, {
+      const res = await fetch(ENDPOINTS.verifyResetOtp, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
@@ -86,7 +84,6 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
     }
   };
 
-  // ── STEP 3: Set new password ───────────────────────────────
   const handleResetPassword = async () => {
     setError("");
     if (newPassword.length < 8) return setError("Password must be at least 8 characters.");
@@ -94,7 +91,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/reset-password/`, {
+      const res = await fetch(ENDPOINTS.resetPassword, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp, new_password: newPassword }),
@@ -131,13 +128,11 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
         <Pressable style={s.overlay} onPress={handleClose}>
           <Pressable style={s.card} onPress={() => {}}>
 
-            {/* Header */}
             <TouchableOpacity style={s.closeBtn} onPress={handleClose}>
               <Ionicons name="chevron-back" size={20} color="#9B7FD4" />
               <Text style={s.closeText}>Forgot Password</Text>
             </TouchableOpacity>
 
-            {/* ── STEP 1: Email ── */}
             {step === "email" && (
               <>
                 <View style={s.iconWrap}>
@@ -175,7 +170,6 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
               </>
             )}
 
-            {/* ── STEP 2: OTP ── */}
             {step === "otp" && (
               <>
                 <View style={s.iconWrap}>
@@ -192,7 +186,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                   <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
                   <TextInput
                     style={s.input}
-                    placeholder="Enter OTP"
+                    placeholder="Enter 6-digit OTP"
                     placeholderTextColor="#CCBACE"
                     value={otp}
                     onChangeText={(v) => { setOtp(v); setError(""); }}
@@ -214,7 +208,6 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
               </>
             )}
 
-            {/* ── STEP 3: New Password ── */}
             {step === "newPassword" && (
               <>
                 <View style={s.iconWrap}>
@@ -225,7 +218,6 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                 <Text style={s.sentTitle}>Set New Password</Text>
                 <Text style={s.sub}>Choose a strong password for your account.</Text>
 
-                {/* New password */}
                 <View style={s.inputWrap}>
                   <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
                   <TextInput
@@ -241,7 +233,6 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                   </TouchableOpacity>
                 </View>
 
-                {/* Confirm password */}
                 <View style={[s.inputWrap, { marginTop: 8 }]}>
                   <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
                   <TextInput
@@ -268,7 +259,6 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
               </>
             )}
 
-            {/* ── STEP 4: Done ── */}
             {step === "done" && (
               <>
                 <View style={s.iconWrap}>
