@@ -1,12 +1,16 @@
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+const { height: SCREEN_H } = Dimensions.get("window");
 
 interface Props {
   visible: boolean;
@@ -15,12 +19,29 @@ interface Props {
 
 export default function TermsModal({ visible, onClose }: Props) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       <Pressable style={s.overlay} onPress={onClose}>
-        <Pressable style={s.sheet}>
+        {/* Inner Pressable stops tap-through closing when tapping content */}
+        <Pressable style={s.sheet} onPress={() => {}}>
           <View style={s.handle} />
           <Text style={s.title}>Terms &amp; Conditions</Text>
-          <ScrollView showsVerticalScrollIndicator={false} style={s.scroll}>
+
+          {/*
+            KEY FIX for Expo Go / Android:
+            - Give ScrollView a fixed pixel height (not %) so native knows how tall to scroll
+            - flex:1 alone doesn't work inside a Modal sheet on Android
+          */}
+          <ScrollView
+            style={{ height: SCREEN_H * 0.52 }}
+            contentContainerStyle={s.scrollContent}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
+          >
             <Text style={s.section}>1. Acceptance of Terms</Text>
             <Text style={s.body}>
               By creating an account and using the CITC Academic Procedure Portal (CITC-APP),
@@ -32,24 +53,22 @@ export default function TermsModal({ visible, onClose }: Props) {
             <Text style={s.body}>
               The App is intended solely for students, faculty, and staff of USTP-CDO's
               College of Information Technology and Computing (CITC). You agree to use the
-              App only for its intended purpose: tracking and managing academic procedures and
-              document submissions.
+              App only for its intended purpose: tracking and managing academic procedures
+              and document submissions.
             </Text>
 
             <Text style={s.section}>3. Account Responsibility</Text>
             <Text style={s.body}>
               You are responsible for maintaining the confidentiality of your account
-              credentials. You agree to notify the CITC administration immediately of any
-              unauthorized use of your account. The college is not liable for any loss
-              resulting from unauthorized account access.
+              credentials. Notify the CITC administration immediately of any unauthorized
+              use. The college is not liable for any loss resulting from unauthorized access.
             </Text>
 
             <Text style={s.section}>4. Privacy &amp; Data</Text>
             <Text style={s.body}>
               Your personal information (student ID, email address) is collected solely for
               authentication and communication purposes. We do not share your data with
-              third parties outside of USTP-CDO's internal systems. Submitted documents are
-              stored securely and accessible only to authorized personnel.
+              third parties outside of USTP-CDO's internal systems.
             </Text>
 
             <Text style={s.section}>5. Document Submissions</Text>
@@ -71,7 +90,7 @@ export default function TermsModal({ visible, onClose }: Props) {
               at USTP-CDO.
             </Text>
 
-            <View style={{ height: 20 }} />
+            <View style={{ height: 24 }} />
           </ScrollView>
 
           <TouchableOpacity style={s.btn} onPress={onClose}>
@@ -94,7 +113,7 @@ const s = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: "85%",
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
   },
   handle: {
     width: 40,
@@ -111,7 +130,9 @@ const s = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
   },
-  scroll: { marginBottom: 16 },
+  scrollContent: {
+    paddingBottom: 8,
+  },
   section: {
     fontSize: 14,
     fontWeight: "700",
@@ -129,6 +150,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
+    marginTop: 16,
   },
   btnText: {
     color: "#422780",

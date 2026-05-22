@@ -5,18 +5,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../constants/api";
 import { supabase } from "../lib/supabase";
 
+import DeleteModal from "../components/DeleteModal";
+import FAQModal from "../components/FAQModal";
 import FAQTab from "../components/faqTab";
+import FloatingButtons from "../components/FloatingButtons";
 import Header from "../components/Header";
 import ProcessTab from "../components/processTab";
 import TabSwitcher from "../components/TabSwitcher";
+import TermsModal from "../components/TermsModal";
 
-import FloatingButtons from "../components/FloatingButtons"; // ✅ ADDED
-
-import AuthModal from "../components/AuthModal";
-import DeleteModal from "../components/DeleteModal";
-import FAQModal from "../components/FAQModal";
-
-import { verifyCurrentPassword } from "@/lib/auth";
 import { Colors } from "../constants/theme";
 
 export default function ProcessScreen() {
@@ -253,11 +250,9 @@ export default function ProcessScreen() {
         }}
       />
 
-      <AuthModal
+      <TermsModal
         visible={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        onSuccess={handleAuthSuccess}
-        verifyPassword={verifyCurrentPassword}
       />
 
       <FAQModal

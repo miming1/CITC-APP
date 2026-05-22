@@ -1,44 +1,122 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
+
+const API_BASE = "https://your-backend-app.onrender.com/api";
 
 interface Props {
   visible: boolean;
   onClose: () => void;
 }
 
-type Step = "email" | "sent";
+type Step = "email" | "otp" | "newPassword" | "done";
 
 export default function ForgotPasswordModal({ visible, onClose }: Props) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const emailRegex = /\S+@\S+\.\S+/;
 
-  const handleSend = async () => {
+  // ── STEP 1: Send OTP to email ──────────────────────────────
+  const handleSendOTP = async () => {
     setError("");
     if (!email.trim()) return setError("Please enter your email address.");
     if (!emailRegex.test(email)) return setError("Please enter a valid email address.");
+
     setLoading(true);
-    // TODO: wire up to backend reset endpoint e.g. POST /api/auth/forgot-password/
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setStep("sent");
+    try {
+      const res = await fetch(`${API_BASE}/auth/forgot-password/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "No account found with that email.");
+      } else {
+        setStep("otp");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── STEP 2: Verify OTP ─────────────────────────────────────
+  const handleVerifyOTP = async () => {
+    setError("");
+    if (otp.length < 4) return setError("Please enter the OTP sent to your email.");
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/verify-otp/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Invalid or expired OTP.");
+      } else {
+        setStep("newPassword");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── STEP 3: Set new password ───────────────────────────────
+  const handleResetPassword = async () => {
+    setError("");
+    if (newPassword.length < 8) return setError("Password must be at least 8 characters.");
+    if (newPassword !== confirmPassword) return setError("Passwords do not match.");
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset-password/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, new_password: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to reset password.");
+      } else {
+        setStep("done");
+      }
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClose = () => {
     setEmail("");
+    setOtp("");
+    setNewPassword("");
+    setConfirmPassword("");
     setStep("email");
     setError("");
     onClose();
@@ -46,83 +124,178 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <Pressable style={s.overlay} onPress={handleClose}>
-        <Pressable style={s.card} onPress={() => {}}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <Pressable style={s.overlay} onPress={handleClose}>
+          <Pressable style={s.card} onPress={() => {}}>
 
-          {/* Close */}
-          <TouchableOpacity style={s.closeBtn} onPress={handleClose}>
-            <Ionicons name="chevron-back" size={20} color="#9B7FD4" />
-            <Text style={s.closeText}>Forgot Password</Text>
-          </TouchableOpacity>
+            {/* Header */}
+            <TouchableOpacity style={s.closeBtn} onPress={handleClose}>
+              <Ionicons name="chevron-back" size={20} color="#9B7FD4" />
+              <Text style={s.closeText}>Forgot Password</Text>
+            </TouchableOpacity>
 
-          {step === "email" ? (
-            <>
-              <View style={s.iconWrap}>
-                <View style={s.iconCircle}>
-                  <Ionicons name="mail-outline" size={40} color="#9B7FD4" />
+            {/* ── STEP 1: Email ── */}
+            {step === "email" && (
+              <>
+                <View style={s.iconWrap}>
+                  <View style={s.iconCircle}>
+                    <Ionicons name="mail-outline" size={40} color="#9B7FD4" />
+                  </View>
+                  <View style={s.sparkle}>
+                    <Ionicons name="sparkles" size={14} color="#D3C1FF" />
+                  </View>
                 </View>
-                <View style={s.sparkle}>
-                  <Ionicons name="sparkles" size={14} color="#D3C1FF" />
+                <Text style={s.sub}>
+                  Enter your registered email address.{"\n"}
+                  We will send a one-time verification code.
+                </Text>
+                <View style={s.inputWrap}>
+                  <Ionicons name="mail-outline" size={18} color="#CCBACE" style={s.inputIcon} />
+                  <TextInput
+                    style={s.input}
+                    placeholder="example@gmail.com"
+                    placeholderTextColor="#CCBACE"
+                    value={email}
+                    onChangeText={(v) => { setEmail(v); setError(""); }}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
                 </View>
-              </View>
+                {error ? <Text style={s.errorText}>{error}</Text> : null}
+                <TouchableOpacity
+                  style={[s.btn, (!email.trim() || loading) && s.btnDisabled]}
+                  onPress={handleSendOTP}
+                  disabled={!email.trim() || loading}
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Send OTP</Text>}
+                </TouchableOpacity>
+              </>
+            )}
 
-              <Text style={s.sub}>
-                Please enter your registered email ID.{"\n"}
-                We will send a verification link to your registered email.
-              </Text>
+            {/* ── STEP 2: OTP ── */}
+            {step === "otp" && (
+              <>
+                <View style={s.iconWrap}>
+                  <View style={s.iconCircle}>
+                    <Ionicons name="keypad-outline" size={40} color="#9B7FD4" />
+                  </View>
+                </View>
+                <Text style={s.sentTitle}>Check Your Email</Text>
+                <Text style={s.sub}>
+                  A 6-digit OTP was sent to{"\n"}
+                  <Text style={s.emailBold}>{email}</Text>
+                </Text>
+                <View style={s.inputWrap}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
+                  <TextInput
+                    style={s.input}
+                    placeholder="Enter OTP"
+                    placeholderTextColor="#CCBACE"
+                    value={otp}
+                    onChangeText={(v) => { setOtp(v); setError(""); }}
+                    keyboardType="numeric"
+                    maxLength={6}
+                  />
+                </View>
+                {error ? <Text style={s.errorText}>{error}</Text> : null}
+                <TouchableOpacity
+                  style={[s.btn, (!otp.trim() || loading) && s.btnDisabled]}
+                  onPress={handleVerifyOTP}
+                  disabled={!otp.trim() || loading}
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Verify OTP</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setStep("email")} style={s.cancelWrap}>
+                  <Text style={s.cancel}>← Change Email</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
-              <View style={s.inputWrap}>
-                <Ionicons name="mail-outline" size={18} color="#CCBACE" style={s.inputIcon} />
-                <TextInput
-                  style={s.input}
-                  placeholder="example@gmail.com"
-                  placeholderTextColor="#CCBACE"
-                  value={email}
-                  onChangeText={(v) => { setEmail(v); setError(""); }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
+            {/* ── STEP 3: New Password ── */}
+            {step === "newPassword" && (
+              <>
+                <View style={s.iconWrap}>
+                  <View style={s.iconCircle}>
+                    <Ionicons name="shield-checkmark-outline" size={40} color="#9B7FD4" />
+                  </View>
+                </View>
+                <Text style={s.sentTitle}>Set New Password</Text>
+                <Text style={s.sub}>Choose a strong password for your account.</Text>
 
-              {error ? <Text style={s.errorText}>{error}</Text> : null}
+                {/* New password */}
+                <View style={s.inputWrap}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    placeholder="New Password"
+                    placeholderTextColor="#CCBACE"
+                    value={newPassword}
+                    onChangeText={(v) => { setNewPassword(v); setError(""); }}
+                    secureTextEntry={!showNew}
+                  />
+                  <TouchableOpacity onPress={() => setShowNew((p) => !p)}>
+                    <Ionicons name={showNew ? "eye-off-outline" : "eye-outline"} size={18} color="#CCBACE" />
+                  </TouchableOpacity>
+                </View>
 
-              <TouchableOpacity
-                style={[s.btn, (!email.trim() || loading) && s.btnDisabled]}
-                onPress={handleSend}
-                disabled={!email.trim() || loading}
-              >
-                {loading
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={s.btnText}>Next</Text>
-                }
+                {/* Confirm password */}
+                <View style={[s.inputWrap, { marginTop: 8 }]}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    placeholder="Confirm Password"
+                    placeholderTextColor="#CCBACE"
+                    value={confirmPassword}
+                    onChangeText={(v) => { setConfirmPassword(v); setError(""); }}
+                    secureTextEntry={!showConfirm}
+                  />
+                  <TouchableOpacity onPress={() => setShowConfirm((p) => !p)}>
+                    <Ionicons name={showConfirm ? "eye-off-outline" : "eye-outline"} size={18} color="#CCBACE" />
+                  </TouchableOpacity>
+                </View>
+
+                {error ? <Text style={s.errorText}>{error}</Text> : null}
+                <TouchableOpacity
+                  style={[s.btn, loading && s.btnDisabled]}
+                  onPress={handleResetPassword}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Reset Password</Text>}
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* ── STEP 4: Done ── */}
+            {step === "done" && (
+              <>
+                <View style={s.iconWrap}>
+                  <View style={[s.iconCircle, s.sentCircle]}>
+                    <Ionicons name="checkmark-circle-outline" size={40} color="#5D429D" />
+                  </View>
+                </View>
+                <Text style={s.sentTitle}>Password Reset!</Text>
+                <Text style={s.sub}>
+                  Your password has been successfully changed.{"\n"}
+                  You can now log in with your new password.
+                </Text>
+                <TouchableOpacity style={s.btn} onPress={handleClose}>
+                  <Text style={s.btnText}>Back to Login</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {step !== "done" && (
+              <TouchableOpacity onPress={handleClose} style={s.cancelWrap}>
+                <Text style={s.cancel}>Cancel</Text>
               </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={s.iconWrap}>
-                <View style={[s.iconCircle, s.sentCircle]}>
-                  <Ionicons name="checkmark-circle-outline" size={40} color="#5D429D" />
-                </View>
-              </View>
+            )}
 
-              <Text style={s.sentTitle}>Email Sent!</Text>
-              <Text style={s.sub}>
-                If <Text style={s.emailBold}>{email}</Text> is registered, a password reset
-                link has been sent. Check your inbox or spam folder.
-              </Text>
-
-              <TouchableOpacity style={s.btn} onPress={handleClose}>
-                <Text style={s.btnText}>Done</Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          <TouchableOpacity onPress={handleClose} style={s.cancelWrap}>
-            <Text style={s.cancel}>Cancel</Text>
-          </TouchableOpacity>
-
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -155,11 +328,7 @@ const s = StyleSheet.create({
     marginBottom: 20,
     gap: 4,
   },
-  closeText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#422780",
-  },
+  closeText: { fontSize: 16, fontWeight: "700", color: "#422780" },
   iconWrap: {
     position: "relative",
     marginBottom: 20,
@@ -174,31 +343,11 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  sentCircle: {
-    backgroundColor: "#EFF7EE",
-  },
-  sparkle: {
-    position: "absolute",
-    top: 0,
-    right: -8,
-  },
-  sub: {
-    fontSize: 13,
-    color: "#6B5A8E",
-    lineHeight: 20,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  sentTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#422780",
-    marginBottom: 10,
-  },
-  emailBold: {
-    fontWeight: "700",
-    color: "#422780",
-  },
+  sentCircle: { backgroundColor: "#EFF7EE" },
+  sparkle: { position: "absolute", top: 0, right: -8 },
+  sub: { fontSize: 13, color: "#6B5A8E", lineHeight: 20, marginBottom: 20, textAlign: "center" },
+  sentTitle: { fontSize: 20, fontWeight: "700", color: "#422780", marginBottom: 10 },
+  emailBold: { fontWeight: "700", color: "#422780" },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -212,18 +361,8 @@ const s = StyleSheet.create({
     backgroundColor: "#FAFAFA",
   },
   inputIcon: { marginRight: 10 },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    color: "#4b2170",
-    paddingVertical: 0,
-  },
-  errorText: {
-    color: "#b91c1c",
-    fontSize: 12,
-    marginBottom: 10,
-    alignSelf: "flex-start",
-  },
+  input: { flex: 1, fontSize: 14, color: "#4b2170", paddingVertical: 0 },
+  errorText: { color: "#b91c1c", fontSize: 12, marginBottom: 10, alignSelf: "flex-start" },
   btn: {
     width: "100%",
     backgroundColor: "#9B7FD4",
@@ -235,18 +374,7 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   btnDisabled: { opacity: 0.55 },
-  btnText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  cancelWrap: {
-    marginTop: 14,
-    paddingVertical: 4,
-  },
-  cancel: {
-    color: "#9B7FD4",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  cancelWrap: { marginTop: 14, paddingVertical: 4 },
+  cancel: { color: "#9B7FD4", fontSize: 14, fontWeight: "600" },
 });

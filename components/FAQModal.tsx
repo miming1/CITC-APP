@@ -21,7 +21,6 @@ type FAQModalProps = {
   visible: boolean;
   onClose: () => void;
 
-  // ✅ now includes procedureId properly
   onSave: (procedureId: number, data: FAQ) => void;
 
   initialData?: FAQ | null;
