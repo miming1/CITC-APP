@@ -561,3 +561,106 @@ def verify_password(request):
     return Response({
         "valid": False
     }, status=400)
+
+
+# =========================
+# OTP & PASSWORD RESET VIEWS
+# =========================
+from django.core.mail import send_mail
+from django.conf import settings
+import random
+
+OTP_STORAGE = {}
+
+@api_view(['POST'])
+def send_signup_otp(request):
+    email = request.data.get("email")
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+        
+    # Generate a secure 6-digit code
+    otp_code = str(random.randint(100000, 999999))
+    OTP_STORAGE[email] = otp_code
+    
+    try:
+        # Fire the real email through your configured Gmail SMTP service
+        send_mail(
+            subject="CITC App - Your Verification OTP",
+            message=f"Your verification code is: {otp_code}. It will expire shortly.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        return Response({"message": "OTP sent successfully to your inbox"}, status=200)
+    except Exception as e:
+        # If SMTP fails or times out, safely catch it without crashing Gunicorn
+        return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
+
+
+@api_view(['POST'])
+def verify_signup_otp(request):
+    email = request.data.get("email")
+    otp = request.data.get("otp")
+    
+    if OTP_STORAGE.get(email) == str(otp):
+        # Remove the code once used
+        OTP_STORAGE.pop(email, None)
+        return Response({"message": "OTP verified successfully"}, status=200)
+        
+    return Response({"error": "Invalid or expired OTP code"}, status=400)
+
+
+@api_view(['POST'])
+def forgot_password(request):
+    email = request.data.get("email")
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+        
+    if not User.objects.filter(email=email).exists():
+        return Response({"error": "No user account found with this email"}, status=404)
+        
+    otp_code = str(random.randint(100000, 999999))
+    OTP_STORAGE[email] = otp_code
+    
+    try:
+        send_mail(
+            subject="CITC App - Password Reset Verification Code",
+            message=f"Use this OTP to reset your password: {otp_code}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        return Response({"message": "Reset verification OTP sent"}, status=200)
+    except Exception as e:
+        return Response({"error": f"Email service error: {str(e)}"}, status=500)
+
+
+@api_view(['POST'])
+def verify_reset_otp(request):
+    email = request.data.get("email")
+    otp = request.data.get("otp")
+    
+    if OTP_STORAGE.get(email) == str(otp):
+        return Response({"message": "OTP verified. You may now reset your password."}, status=200)
+    return Response({"error": "Invalid verification code"}, status=400)
+
+
+@api_view(['POST'])
+def reset_password(request):
+    email = request.data.get("email")
+    otp = request.data.get("otp")
+    new_password = request.data.get("password")
+    
+    if not email or not new_password:
+        return Response({"error": "Missing parameters"}, status=400)
+        
+    try:
+        user = User.objects.get(email=email)
+        user.set_password(new_password)
+        user.save()
+        
+        # Clear the validated status code
+        OTP_STORAGE.pop(email, None)
+        return Response({"message": "Password updated successfully!"}, status=200)
+    except User.DoesNotExist:
+        return Response({"error": "User could not be found"}, status=404)
