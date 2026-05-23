@@ -1,7 +1,9 @@
 import random
 import string
 import re
-import resend
+import urllib.request
+import urllib.error
+import json
 
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -50,8 +52,6 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
     if not api_key:
         raise Exception("RESEND_API_KEY is not set.")
 
-    resend.api_key = api_key
-
     if purpose == OTPToken.PURPOSE_SIGNUP:
         subject = "CITC-APP - Verify Your Email"
         html_body = (
@@ -77,16 +77,34 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
             "</div>"
         )
 
-    params: resend.Emails.SendParams = {
+    payload = json.dumps({
         "from": from_email,
         "to": [to_email],
         "subject": subject,
         "html": html_body,
-    }
+    }).encode("utf-8")
 
-    result = resend.Emails.send(params)
-    print(f"[Resend] Email sent: {result}")
-    return result
+    req = urllib.request.Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        method="POST",
+    )
+    req.add_header("Authorization", f"Bearer {api_key}")
+    req.add_header("Content-Type", "application/json")
+    req.add_header("User-Agent", "python-citc-app/1.0")
+    req.add_header("Accept", "application/json")
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            response_body = resp.read().decode("utf-8")
+            print(f"[Resend] SUCCESS: {response_body}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        print(f"[Resend] HTTP {e.code} ERROR: {error_body}")
+        raise Exception(f"Resend API error {e.code}: {error_body}")
+    except urllib.error.URLError as e:
+        print(f"[Resend] URL ERROR: {e.reason}")
+        raise Exception(f"Network error: {e.reason}")
 
 
 def _invalidate_previous_otps(email: str, purpose: str):
