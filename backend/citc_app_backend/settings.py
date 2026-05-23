@@ -97,22 +97,16 @@ REST_FRAMEWORK = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =========================
-# EMAIL (Gmail SMTP)
+# EMAIL — Resend (HTTPS API, port 443, works on Render free tier)
 # =========================
-# Uses Gmail App Password — NOT your regular Gmail password.
-# How to get one:
-#   1. Go to myaccount.google.com → Security → 2-Step Verification (must be ON)
-#   2. Search "App passwords" → Create one for "Mail"
-#   3. Copy the 16-char password into EMAIL_HOST_PASSWORD in your .env
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 465           
 EMAIL_USE_TLS = False      
 EMAIL_USE_SSL = True       
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
-
+RESEND_API_KEY    = config('RESEND_API_KEY', default='')
+RESEND_FROM_EMAIL = config('RESEND_FROM_EMAIL', default='CITC App <onboarding@resend.dev>')
+ 
 # OTP expires after this many minutes
-OTP_EXPIRY_MINUTES = 2
+OTP_EXPIRY_MINUTES = 5
