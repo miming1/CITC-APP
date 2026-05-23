@@ -97,16 +97,12 @@ REST_FRAMEWORK = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =========================
-# EMAIL — Resend (HTTPS API, port 443, works on Render free tier)
+# BREVO (EMAIL SERVICE) CONFIG
 # =========================
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465           
-EMAIL_USE_TLS = False      
-EMAIL_USE_SSL = True       
-RESEND_API_KEY    = config('RESEND_API_KEY', default='')
-RESEND_FROM_EMAIL = config('RESEND_FROM_EMAIL', default='CITC App <onboarding@resend.dev>')
- 
+BREVO_API_KEY    = config('BREVO_API_KEY', default='')
+BREVO_FROM_EMAIL = config('BREVO_FROM_EMAIL', default='')
+BREVO_FROM_NAME  = config('BREVO_FROM_NAME', default='CITC App')
+
 # OTP expires after this many minutes
 OTP_EXPIRY_MINUTES = 5
