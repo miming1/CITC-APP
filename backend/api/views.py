@@ -9,6 +9,10 @@ from rest_framework.authtoken.models import Token
 
 from django.utils import timezone
 import uuid
+import random
+
+from django.core.mail import get_connection, send_mail
+from django.conf import settings
 
 from .models import (
     Procedures,
@@ -566,10 +570,6 @@ def verify_password(request):
 # =========================
 # OTP & PASSWORD RESET VIEWS
 # =========================
-from django.core.mail import send_mail
-from django.conf import settings
-import random
-
 OTP_STORAGE = {}
 
 @api_view(['POST'])
@@ -578,23 +578,37 @@ def send_signup_otp(request):
     if not email:
         return Response({"error": "Email is required"}, status=400)
         
-    # Generate a secure 6-digit code
     otp_code = str(random.randint(100000, 999999))
     OTP_STORAGE[email] = otp_code
     
     try:
-        # Fire the real email through your configured Gmail SMTP service
+        connection = get_connection(
+            backend=settings.EMAIL_BACKEND,
+            fail_silently=False,
+            timeout=3
+        )
+        
         send_mail(
             subject="CITC App - Your Verification OTP",
             message=f"Your verification code is: {otp_code}. It will expire shortly.",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
+            connection=connection,
             fail_silently=False,
         )
+        print(f"SUCCESS: Email sent to inbox. OTP: {otp_code}")
         return Response({"message": "OTP sent successfully to your inbox"}, status=200)
+        
     except Exception as e:
-        # If SMTP fails or times out, safely catch it without crashing Gunicorn
-        return Response({"error": f"Failed to send email: {str(e)}"}, status=500)
+        print("\n" + "="*50)
+        print(f"SMTP CONNECTION BLOCKED BY HOST: {str(e)}")
+        print(f"FALLBACK TESTING OTP FOR {email} ---> [ {otp_code} ]")
+        print("="*50 + "\n")
+        
+        return Response({
+            "message": "OTP generated (Testing Fallback Mode)",
+            "note": "Read the code directly from your Render Console Logs"
+        }, status=200)
 
 
 @api_view(['POST'])
@@ -603,7 +617,6 @@ def verify_signup_otp(request):
     otp = request.data.get("otp")
     
     if OTP_STORAGE.get(email) == str(otp):
-        # Remove the code once used
         OTP_STORAGE.pop(email, None)
         return Response({"message": "OTP verified successfully"}, status=200)
         
@@ -623,16 +636,33 @@ def forgot_password(request):
     OTP_STORAGE[email] = otp_code
     
     try:
+        connection = get_connection(
+            backend=settings.EMAIL_BACKEND,
+            fail_silently=False,
+            timeout=3
+        )
+        
         send_mail(
             subject="CITC App - Password Reset Verification Code",
             message=f"Use this OTP to reset your password: {otp_code}",
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
+            connection=connection,
             fail_silently=False,
         )
+        print(f"SUCCESS: Reset email sent. OTP: {otp_code}")
         return Response({"message": "Reset verification OTP sent"}, status=200)
+        
     except Exception as e:
-        return Response({"error": f"Email service error: {str(e)}"}, status=500)
+        print("\n" + "="*50)
+        print(f"SMTP CONNECTION BLOCKED BY HOST: {str(e)}")
+        print(f"FALLBACK RESET OTP FOR {email} ---> [ {otp_code} ]")
+        print("="*50 + "\n")
+        
+        return Response({
+            "message": "Reset OTP generated (Testing Fallback Mode)",
+            "note": "Read the code directly from your Render Console Logs"
+        }, status=200)
 
 
 @api_view(['POST'])
@@ -659,7 +689,6 @@ def reset_password(request):
         user.set_password(new_password)
         user.save()
         
-        # Clear the validated status code
         OTP_STORAGE.pop(email, None)
         return Response({"message": "Password updated successfully!"}, status=200)
     except User.DoesNotExist:
