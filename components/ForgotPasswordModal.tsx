@@ -203,7 +203,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                   {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Verify OTP</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setStep("email")} style={s.cancelWrap}>
-                  <Text style={s.cancel}>← Change Email</Text>
+                  <Text style={s.cancel}>Change Email</Text>
                 </TouchableOpacity>
               </>
             )}
