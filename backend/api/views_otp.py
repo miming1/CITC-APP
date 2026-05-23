@@ -1,9 +1,7 @@
 import random
 import string
 import re
-import urllib.request
-import urllib.error
-import json
+import resend
 
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -16,7 +14,7 @@ from rest_framework.response import Response
 from .models import Users, Roles, OTPToken
 
 
-# ─── Allowed email domains (real providers only) ──────────────────────────────
+# ─── Allowed email domains ────────────────────────────────────────────────────
 
 ALLOWED_EMAIL_DOMAINS = {
     "gmail.com",
@@ -26,7 +24,7 @@ ALLOWED_EMAIL_DOMAINS = {
     "ustp.edu.ph", "up.edu.ph", "dlsu.edu.ph", "ateneo.edu.ph",
     "mapua.edu.ph", "feu.edu.ph", "ust.edu.ph",
     "protonmail.com", "proton.me", "zoho.com",
-    "aol.com", "gmx.com", "mail.com",
+    "aol.com", "gmx.com",
     "globe.com.ph", "smart.com.ph",
 }
 
@@ -46,9 +44,14 @@ def _generate_otp(length=6):
 
 
 def _send_otp_email(to_email: str, otp: str, purpose: str):
-    """
-    Sends OTP via Resend HTTP API (port 443).
-    """
+    api_key = getattr(settings, 'RESEND_API_KEY', '').strip()
+    from_email = getattr(settings, 'RESEND_FROM_EMAIL', 'onboarding@resend.dev').strip()
+
+    if not api_key:
+        raise Exception("RESEND_API_KEY is not set.")
+
+    resend.api_key = api_key
+
     if purpose == OTPToken.PURPOSE_SIGNUP:
         subject = "CITC-APP - Verify Your Email"
         html_body = (
@@ -57,7 +60,8 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
             "<p>Your verification code for CITC Academic Procedure Portal:</p>"
             f"<div style='font-size:36px;font-weight:700;letter-spacing:8px;"
             f"color:#9B7FD4;text-align:center;padding:20px 0;'>{otp}</div>"
-            f"<p style='color:#6b7280;font-size:13px;'>Expires in {getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
+            f"<p style='color:#6b7280;font-size:13px;'>Expires in "
+            f"{getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
             "</div>"
         )
     else:
@@ -68,44 +72,21 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
             "<p>Your password reset code for CITC Academic Procedure Portal:</p>"
             f"<div style='font-size:36px;font-weight:700;letter-spacing:8px;"
             f"color:#9B7FD4;text-align:center;padding:20px 0;'>{otp}</div>"
-            f"<p style='color:#6b7280;font-size:13px;'>Expires in {getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
+            f"<p style='color:#6b7280;font-size:13px;'>Expires in "
+            f"{getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
             "</div>"
         )
 
-    api_key = getattr(settings, 'RESEND_API_KEY', '').strip()
-    from_email = getattr(settings, 'RESEND_FROM_EMAIL', 'onboarding@resend.dev').strip()
-
-    if not api_key:
-        raise Exception("RESEND_API_KEY is not set in environment variables.")
-
-    payload = json.dumps({
+    params: resend.Emails.SendParams = {
         "from": from_email,
         "to": [to_email],
         "subject": subject,
         "html": html_body,
-    }).encode("utf-8")
+    }
 
-    req = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=payload,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            response_body = resp.read().decode("utf-8")
-            print(f"[Resend] SUCCESS: {response_body}")
-    except urllib.error.HTTPError as e:
-        error_body = e.read().decode("utf-8")
-        print(f"[Resend] HTTP {e.code} ERROR: {error_body}")
-        raise Exception(f"Resend API error {e.code}: {error_body}")
-    except urllib.error.URLError as e:
-        print(f"[Resend] URL ERROR: {e.reason}")
-        raise Exception(f"Network error contacting Resend: {e.reason}")
+    result = resend.Emails.send(params)
+    print(f"[Resend] Email sent: {result}")
+    return result
 
 
 def _invalidate_previous_otps(email: str, purpose: str):
