@@ -224,7 +224,13 @@ def verify_signup_otp(request):
     if User.objects.filter(username=id_number).exists():
         return Response({"error": "ID Number already registered."}, status=400)
 
+    if Users.objects.filter(email=email_val).exists():
+        return Response({"error": "Email already registered."}, status=400)
+
     try:
+        # =========================
+        # CREATE DJANGO AUTH USER
+        # =========================
         auth_user = User(
             username=id_number,
             email=email_val,
@@ -232,18 +238,36 @@ def verify_signup_otp(request):
         )
         auth_user.save()
 
+        # =========================
+        # GET ROLE
+        # =========================
         try:
             role_user = Roles.objects.get(role_id=1)
         except Roles.DoesNotExist:
             role_user = None
 
-        profile = Users.objects.create(
+        # =========================
+        # GET OR CREATE PROFILE
+        # signal may have already created a partial profile
+        # so we use get_or_create then update it to be safe
+        # =========================
+        profile, created = Users.objects.get_or_create(
             auth_user=auth_user,
-            id_number=int(id_number),
-            email=email_val,
-            role=role_user,
-            created_at=timezone.now()
+            defaults={
+                "id_number": int(id_number),
+                "email": email_val,
+                "role": role_user,
+                "created_at": timezone.now(),
+            }
         )
+
+        if not created:
+            # Signal already created it — update the missing fields
+            profile.id_number = int(id_number)
+            profile.email = email_val
+            profile.role = role_user
+            profile.created_at = timezone.now()
+            profile.save()
 
         return Response({
             "message": "Account created successfully.",
