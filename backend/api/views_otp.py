@@ -1,6 +1,9 @@
 import random
 import string
 import re
+import urllib.request
+import urllib.error
+import json
 
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
@@ -16,30 +19,19 @@ from .models import Users, Roles, OTPToken
 # ─── Allowed email domains (real providers only) ──────────────────────────────
 
 ALLOWED_EMAIL_DOMAINS = {
-    # Google
     "gmail.com",
-    # Yahoo
     "yahoo.com", "yahoo.co.uk", "yahoo.co.ph", "yahoo.com.ph",
-    # Microsoft
     "outlook.com", "hotmail.com", "live.com", "msn.com",
-    # Apple
     "icloud.com", "me.com", "mac.com",
-    # Philippine universities / common institutional
     "ustp.edu.ph", "up.edu.ph", "dlsu.edu.ph", "ateneo.edu.ph",
     "mapua.edu.ph", "feu.edu.ph", "ust.edu.ph",
-    # Other major international providers
     "protonmail.com", "proton.me", "zoho.com",
     "aol.com", "gmx.com", "mail.com",
-    # Telecom Philippines
     "globe.com.ph", "smart.com.ph",
 }
 
 
 def _is_real_email(email: str) -> bool:
-    """
-    Returns True only if the email's domain is in our allowed list.
-    Blocks throwaway domains like email.com, test.com, mailinator.com, etc.
-    """
     try:
         domain = email.strip().lower().split("@")[1]
     except IndexError:
@@ -55,51 +47,36 @@ def _generate_otp(length=6):
 
 def _send_otp_email(to_email: str, otp: str, purpose: str):
     """
-    Sends OTP via Resend's HTTP API (port 443 — never blocked by Render).
-    Requires RESEND_API_KEY in environment/settings.
-    Requires RESEND_FROM_EMAIL in environment/settings (e.g. "CITC App <noreply@yourdomain.com>").
+    Sends OTP via Resend HTTP API (port 443).
     """
-    import urllib.request
-    import urllib.error
-    import json
-
     if purpose == OTPToken.PURPOSE_SIGNUP:
-        subject = "CITC-APP — Verify Your Email"
-        html_body = f"""
-        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:24px;
-                    border:1px solid #e5e7eb;border-radius:12px;">
-          <h2 style="color:#422780;">Email Verification</h2>
-          <p>Your one-time verification code for the <strong>CITC Academic Procedure Portal</strong> is:</p>
-          <div style="font-size:36px;font-weight:700;letter-spacing:8px;
-                      color:#9B7FD4;text-align:center;padding:20px 0;">{otp}</div>
-          <p style="color:#6b7280;font-size:13px;">
-            This code expires in {getattr(settings, 'OTP_EXPIRY_MINUTES', 2)} minutes.<br>
-            If you did not request this, please ignore this message.
-          </p>
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;">
-          <p style="color:#9ca3af;font-size:12px;">— CITC Team, USTP-CDO</p>
-        </div>
-        """
+        subject = "CITC-APP - Verify Your Email"
+        html_body = (
+            "<div style='font-family:sans-serif;padding:24px;'>"
+            "<h2 style='color:#422780;'>Email Verification</h2>"
+            "<p>Your verification code for CITC Academic Procedure Portal:</p>"
+            f"<div style='font-size:36px;font-weight:700;letter-spacing:8px;"
+            f"color:#9B7FD4;text-align:center;padding:20px 0;'>{otp}</div>"
+            f"<p style='color:#6b7280;font-size:13px;'>Expires in {getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
+            "</div>"
+        )
     else:
-        subject = "CITC-APP — Password Reset Code"
-        html_body = f"""
-        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:24px;
-                    border:1px solid #e5e7eb;border-radius:12px;">
-          <h2 style="color:#422780;">Password Reset</h2>
-          <p>Your password reset code for the <strong>CITC Academic Procedure Portal</strong> is:</p>
-          <div style="font-size:36px;font-weight:700;letter-spacing:8px;
-                      color:#9B7FD4;text-align:center;padding:20px 0;">{otp}</div>
-          <p style="color:#6b7280;font-size:13px;">
-            This code expires in {getattr(settings, 'OTP_EXPIRY_MINUTES', 2)} minutes.<br>
-            If you did not request this, please ignore this message.
-          </p>
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;">
-          <p style="color:#9ca3af;font-size:12px;">— CITC Team, USTP-CDO</p>
-        </div>
-        """
+        subject = "CITC-APP - Password Reset Code"
+        html_body = (
+            "<div style='font-family:sans-serif;padding:24px;'>"
+            "<h2 style='color:#422780;'>Password Reset</h2>"
+            "<p>Your password reset code for CITC Academic Procedure Portal:</p>"
+            f"<div style='font-size:36px;font-weight:700;letter-spacing:8px;"
+            f"color:#9B7FD4;text-align:center;padding:20px 0;'>{otp}</div>"
+            f"<p style='color:#6b7280;font-size:13px;'>Expires in {getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
+            "</div>"
+        )
 
-    api_key = getattr(settings, 'RESEND_API_KEY', '')
-    from_email = getattr(settings, 'RESEND_FROM_EMAIL', 'CITC App <onboarding@resend.dev>')
+    api_key = getattr(settings, 'RESEND_API_KEY', '').strip()
+    from_email = getattr(settings, 'RESEND_FROM_EMAIL', 'onboarding@resend.dev').strip()
+
+    if not api_key:
+        raise Exception("RESEND_API_KEY is not set in environment variables.")
 
     payload = json.dumps({
         "from": from_email,
@@ -118,9 +95,17 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
         method="POST",
     )
 
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        if resp.status not in (200, 201):
-            raise Exception(f"Resend API returned status {resp.status}")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            response_body = resp.read().decode("utf-8")
+            print(f"[Resend] SUCCESS: {response_body}")
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8")
+        print(f"[Resend] HTTP {e.code} ERROR: {error_body}")
+        raise Exception(f"Resend API error {e.code}: {error_body}")
+    except urllib.error.URLError as e:
+        print(f"[Resend] URL ERROR: {e.reason}")
+        raise Exception(f"Network error contacting Resend: {e.reason}")
 
 
 def _invalidate_previous_otps(email: str, purpose: str):
@@ -140,7 +125,6 @@ def send_signup_otp(request):
     email     = request.data.get("email", "").strip().lower()
     password  = request.data.get("password", "")
 
-    # ── Basic validation ──────────────────────────────────────────────────────
     if not id_number or not email or not password:
         return Response({"error": "All fields are required."}, status=400)
 
@@ -153,7 +137,6 @@ def send_signup_otp(request):
     if not re.match(r'\S+@\S+\.\S+', email):
         return Response({"error": "Invalid email format."}, status=400)
 
-    # ── Real email domain check ───────────────────────────────────────────────
     if not _is_real_email(email):
         return Response(
             {"error": "Please use a real email address (e.g. Gmail, Yahoo, Outlook)."},
@@ -163,7 +146,6 @@ def send_signup_otp(request):
     if len(password) < 8:
         return Response({"error": "Password must be at least 8 characters."}, status=400)
 
-    # ── Duplicate checks ──────────────────────────────────────────────────────
     if User.objects.filter(username=id_number).exists():
         return Response({"error": "ID Number already registered."}, status=400)
 
@@ -173,7 +155,6 @@ def send_signup_otp(request):
     if Users.objects.filter(email=email).exists():
         return Response({"error": "Email already registered."}, status=400)
 
-    # ── Create OTP ────────────────────────────────────────────────────────────
     otp = _generate_otp()
     _invalidate_previous_otps(email, OTPToken.PURPOSE_SIGNUP)
 
@@ -188,7 +169,6 @@ def send_signup_otp(request):
         },
     )
 
-    # ── Send email ────────────────────────────────────────────────────────────
     try:
         _send_otp_email(email, otp, OTPToken.PURPOSE_SIGNUP)
     except Exception as e:
@@ -277,7 +257,6 @@ def forgot_password(request):
     if not email:
         return Response({"error": "Email is required."}, status=400)
 
-    # ── Real email domain check ───────────────────────────────────────────────
     if not _is_real_email(email):
         return Response(
             {"error": "Please use a real email address (e.g. Gmail, Yahoo, Outlook)."},
@@ -304,7 +283,6 @@ def forgot_password(request):
                 status=500,
             )
 
-    # Always 200 so attackers can't enumerate registered emails
     return Response(
         {"message": "If that email is registered, an OTP has been sent."},
         status=200,
