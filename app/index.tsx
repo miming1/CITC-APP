@@ -1,17 +1,25 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
   View,
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
-import { loginUser, registerUser } from "../lib/auth";
+import { loginUser } from "../lib/auth";
 
 import AuthLogo from "../components/AuthLogo";
 import AuthMessage from "../components/AuthMessage";
@@ -49,6 +57,12 @@ export default function LoginScreen() {
   const [showTerms, setShowTerms] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+
+  // ── OTP Modal State ───────────────────────────────────
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
 
   // ── Helpers ───────────────────────────────────────────
   function switchTab(t: "login" | "signup") {
@@ -106,7 +120,7 @@ export default function LoginScreen() {
     }
   }
 
-  // ── Signup ────────────────────────────────────────────
+  // ── Signup Step 1: Send OTP ────────────────────────────
   async function handleSignup() {
     const { idNumber, email, password, confirmPassword } = signupForm;
     const emailRegex = /\S+@\S+\.\S+/;
@@ -129,20 +143,74 @@ export default function LoginScreen() {
 
     try {
       setLoading(true);
-      const result = await registerUser(idNumber, email, password);
+      setMessage(null);
 
-      if (result.success) {
-        setMessage({ type: "success", text: "Account created successfully!" });
-        setTimeout(() => {
-          switchTab("login");
-        }, 1000);
+      const res = await fetch(ENDPOINTS.sendSignupOtp, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_number: idNumber,
+          email,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage({ type: "error", text: data.error || "Failed to send OTP." });
       } else {
-        setMessage({ type: "error", text: result.error || "Registration failed." });
+        // Show OTP modal
+        setOtp("");
+        setOtpError("");
+        setShowOtpModal(true);
       }
     } catch {
       setMessage({ type: "error", text: "Something went wrong. Please try again." });
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ── Signup Step 2: Verify OTP ─────────────────────────
+  async function handleVerifyOtp() {
+    if (otp.length < 6) {
+      return setOtpError("Please enter the 6-digit OTP.");
+    }
+
+    try {
+      setOtpLoading(true);
+      setOtpError("");
+
+      const res = await fetch(ENDPOINTS.verifySignupOtp, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: signupForm.email,
+          otp,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setOtpError(data.error || "Invalid or expired OTP.");
+      } else {
+        // Success — close modal and switch to login
+        setShowOtpModal(false);
+        setSignupForm({ idNumber: "", email: "", password: "", confirmPassword: "" });
+        setTermsAccepted(false);
+        setOtp("");
+        setMessage({ type: "success", text: "Account created successfully!" });
+        setTimeout(() => {
+          switchTab("login");
+          setMessage(null);
+        }, 1000);
+      }
+    } catch {
+      setOtpError("Something went wrong. Please try again.");
+    } finally {
+      setOtpLoading(false);
     }
   }
 
@@ -192,6 +260,84 @@ export default function LoginScreen() {
 
       <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} />
       <ForgotPasswordModal visible={showForgot} onClose={() => setShowForgot(false)} />
+
+      {/* ── OTP Verification Modal ── */}
+      <Modal
+        visible={showOtpModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowOtpModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <Pressable style={s.overlay} onPress={() => setShowOtpModal(false)}>
+            <Pressable style={s.otpCard} onPress={() => {}}>
+
+              {/* Header */}
+              <TouchableOpacity style={s.closeBtn} onPress={() => setShowOtpModal(false)}>
+                <Ionicons name="chevron-back" size={20} color="#9B7FD4" />
+                <Text style={s.closeBtnText}>Verify Email</Text>
+              </TouchableOpacity>
+
+              {/* Icon */}
+              <View style={s.iconCircle}>
+                <Ionicons name="keypad-outline" size={40} color="#9B7FD4" />
+              </View>
+
+              {/* Title */}
+              <Text style={s.otpTitle}>Check Your Email</Text>
+              <Text style={s.otpSub}>
+                A 6-digit OTP was sent to{"\n"}
+                <Text style={s.otpEmail}>{signupForm.email}</Text>
+              </Text>
+
+              {/* OTP Input */}
+              <View style={s.inputWrap}>
+                <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
+                <TextInput
+                  style={s.input}
+                  placeholder="Enter 6-digit OTP"
+                  placeholderTextColor="#CCBACE"
+                  value={otp}
+                  onChangeText={(v) => { setOtp(v); setOtpError(""); }}
+                  keyboardType="numeric"
+                  maxLength={6}
+                />
+              </View>
+
+              {otpError ? <Text style={s.errorText}>{otpError}</Text> : null}
+
+              {/* Verify Button */}
+              <TouchableOpacity
+                style={[s.btn, (otp.length < 6 || otpLoading) && s.btnDisabled]}
+                onPress={handleVerifyOtp}
+                disabled={otp.length < 6 || otpLoading}
+              >
+                {otpLoading
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={s.btnText}>Verify OTP</Text>
+                }
+              </TouchableOpacity>
+
+              {/* Resend */}
+              <TouchableOpacity
+                style={s.resendWrap}
+                onPress={() => {
+                  setShowOtpModal(false);
+                  setOtp("");
+                  setOtpError("");
+                }}
+              >
+                <Text style={s.resend}>Change Email</Text>
+              </TouchableOpacity>
+
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -216,5 +362,115 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
+  },
+
+  // ── OTP Modal ──────────────────────────────────────────
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  otpCard: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 28,
+    paddingTop: 20,
+    width: "100%",
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+  },
+  closeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginBottom: 20,
+    gap: 4,
+  },
+  closeBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#422780",
+  },
+  iconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "#F3EEFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  otpTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#422780",
+    marginBottom: 10,
+  },
+  otpSub: {
+    fontSize: 13,
+    color: "#6B5A8E",
+    lineHeight: 20,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  otpEmail: {
+    fontWeight: "700",
+    color: "#422780",
+  },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    borderWidth: 1.5,
+    borderColor: "#E0D5F5",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 6,
+    backgroundColor: "#FAFAFA",
+  },
+  inputIcon: { marginRight: 10 },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    color: "#4b2170",
+    paddingVertical: 0,
+  },
+  errorText: {
+    color: "#b91c1c",
+    fontSize: 12,
+    marginBottom: 10,
+    alignSelf: "flex-start",
+  },
+  btn: {
+    width: "100%",
+    backgroundColor: "#9B7FD4",
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 52,
+    marginTop: 8,
+  },
+  btnDisabled: { opacity: 0.55 },
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  resendWrap: {
+    marginTop: 14,
+    paddingVertical: 4,
+  },
+  resend: {
+    color: "#9B7FD4",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
