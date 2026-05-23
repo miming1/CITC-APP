@@ -46,11 +46,19 @@ def _generate_otp(length=6):
 
 
 def _send_otp_email(to_email: str, otp: str, purpose: str):
-    api_key = getattr(settings, 'RESEND_API_KEY', '').strip()
-    from_email = getattr(settings, 'RESEND_FROM_EMAIL', 'onboarding@resend.dev').strip()
+    """
+    Sends OTP via Brevo (Sendinblue) HTTP API.
+    No domain verification needed. Can send to any real email.
+    Requires BREVO_API_KEY in environment variables.
+    """
+    api_key = getattr(settings, 'BREVO_API_KEY', '').strip()
+    from_email = getattr(settings, 'BREVO_FROM_EMAIL', '').strip()
+    from_name = getattr(settings, 'BREVO_FROM_NAME', 'CITC App').strip()
 
     if not api_key:
-        raise Exception("RESEND_API_KEY is not set.")
+        raise Exception("BREVO_API_KEY is not set.")
+    if not from_email:
+        raise Exception("BREVO_FROM_EMAIL is not set.")
 
     if purpose == OTPToken.PURPOSE_SIGNUP:
         subject = "CITC-APP - Verify Your Email"
@@ -62,6 +70,7 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
             f"color:#9B7FD4;text-align:center;padding:20px 0;'>{otp}</div>"
             f"<p style='color:#6b7280;font-size:13px;'>Expires in "
             f"{getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
+            "<p style='color:#9ca3af;font-size:12px;'>— CITC Team, USTP-CDO</p>"
             "</div>"
         )
     else:
@@ -74,36 +83,36 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
             f"color:#9B7FD4;text-align:center;padding:20px 0;'>{otp}</div>"
             f"<p style='color:#6b7280;font-size:13px;'>Expires in "
             f"{getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>"
+            "<p style='color:#9ca3af;font-size:12px;'>— CITC Team, USTP-CDO</p>"
             "</div>"
         )
 
     payload = json.dumps({
-        "from": from_email,
-        "to": [to_email],
+        "sender": {"name": from_name, "email": from_email},
+        "to": [{"email": to_email}],
         "subject": subject,
-        "html": html_body,
+        "htmlContent": html_body,
     }).encode("utf-8")
 
     req = urllib.request.Request(
-        "https://api.resend.com/emails",
+        "https://api.brevo.com/v3/smtp/email",
         data=payload,
         method="POST",
     )
-    req.add_header("Authorization", f"Bearer {api_key}")
+    req.add_header("api-key", api_key)
     req.add_header("Content-Type", "application/json")
-    req.add_header("User-Agent", "python-citc-app/1.0")
     req.add_header("Accept", "application/json")
 
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             response_body = resp.read().decode("utf-8")
-            print(f"[Resend] SUCCESS: {response_body}")
+            print(f"[Brevo] SUCCESS: {response_body}")
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8")
-        print(f"[Resend] HTTP {e.code} ERROR: {error_body}")
-        raise Exception(f"Resend API error {e.code}: {error_body}")
+        print(f"[Brevo] HTTP {e.code} ERROR: {error_body}")
+        raise Exception(f"Brevo API error {e.code}: {error_body}")
     except urllib.error.URLError as e:
-        print(f"[Resend] URL ERROR: {e.reason}")
+        print(f"[Brevo] URL ERROR: {e.reason}")
         raise Exception(f"Network error: {e.reason}")
 
 
