@@ -287,7 +287,6 @@ def create_faq(request):
 
     data = request.data.copy()
 
-    # Prevent NULL answer issue
     if 'answer' not in data or data['answer'] is None:
         data['answer'] = ""
 
@@ -494,7 +493,6 @@ def update_profile(request):
     # =========================
     if new_email:
 
-        # prevent duplicate email
         if Users.objects.filter(email=new_email).exclude(
             user_id=profile.user_id
         ).exists():
@@ -511,7 +509,6 @@ def update_profile(request):
     # =========================
     if new_id_number:
 
-        # prevent duplicate username
         if User.objects.filter(
             username=str(new_id_number)
         ).exclude(
@@ -596,15 +593,10 @@ def send_signup_otp(request):
             connection=connection,
             fail_silently=False,
         )
-        print(f"SUCCESS: Email sent to inbox. OTP: {otp_code}")
         return Response({"message": "OTP sent successfully to your inbox"}, status=200)
         
-    except Exception as e:
-        print("\n" + "="*50)
-        print(f"SMTP CONNECTION BLOCKED BY HOST: {str(e)}")
-        print(f"FALLBACK TESTING OTP FOR {email} ---> [ {otp_code} ]")
-        print("="*50 + "\n")
-        
+    except Exception:
+        print(f"FALLBACK SIGNUP CODE: {otp_code}")
         return Response({
             "message": "OTP generated (Testing Fallback Mode)",
             "note": "Read the code directly from your Render Console Logs"
@@ -650,15 +642,10 @@ def forgot_password(request):
             connection=connection,
             fail_silently=False,
         )
-        print(f"SUCCESS: Reset email sent. OTP: {otp_code}")
         return Response({"message": "Reset verification OTP sent"}, status=200)
         
-    except Exception as e:
-        print("\n" + "="*50)
-        print(f"SMTP CONNECTION BLOCKED BY HOST: {str(e)}")
-        print(f"FALLBACK RESET OTP FOR {email} ---> [ {otp_code} ]")
-        print("="*50 + "\n")
-        
+    except Exception:
+        print(f"FALLBACK RESET CODE: {otp_code}")
         return Response({
             "message": "Reset OTP generated (Testing Fallback Mode)",
             "note": "Read the code directly from your Render Console Logs"
