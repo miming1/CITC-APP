@@ -107,10 +107,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')          # Gmail address, e.g. citcapp@gmail.com
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')  # 16-char Gmail App Password
+EMAIL_PORT = 465           
+EMAIL_USE_TLS = False      
+EMAIL_USE_SSL = True       
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
 
 # OTP expires after this many minutes
