@@ -276,40 +276,39 @@ export default function UserDashboard() {
         </View>
 
         {/* ── Popular Processes ────────────────────────────────────────── */}
-        {/* NOTE: the "Popular Processes" title + See all lives HERE only. */}
-        {/* If your PopularProcesses component also renders its own title,  */}
-        {/* remove that title from inside the component to avoid duplicates. */}
-        <View style={styles.sectionSpacing}>
-          <TouchableOpacity
-            style={styles.sectionHeaderRow}
-            onPress={() => router.push('/process-list')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.sectionTitle, { color: textPri }]}>
-              Popular Processes
-            </Text>
-            <View style={styles.seeAllChip}>
-              <Text style={[styles.seeAllText, { color: accentColor }]}>
-                See all
-              </Text>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={16}
-                color={accentColor}
-              />
-            </View>
-          </TouchableOpacity>
+<View style={styles.section}>
+  <TouchableOpacity
+    style={styles.sectionHeaderRow}
+    onPress={() => router.push('/process-list')}
+    activeOpacity={0.7}
+  >
+    <Text style={[styles.sectionTitle, { color: textPri }]}>
+      Popular Processes
+    </Text>
 
-          <PopularProcesses
-            processes={POPULAR_PROCESSES}
-            onPressProcess={(process: Process) =>
-              router.push({
-                pathname: '/process',
-                params: { id: process.id, roleId: 1 },
-              })
-            }
-          />
-        </View>
+    <View style={styles.seeAllChip}>
+      <Text style={[styles.seeAllText, { color: accentColor }]}>
+        See all
+      </Text>
+
+      <MaterialCommunityIcons
+        name="chevron-right"
+        size={16}
+        color={accentColor}
+      />
+    </View>
+  </TouchableOpacity>
+
+  <PopularProcesses
+    processes={POPULAR_PROCESSES}
+    onPressProcess={(process: Process) =>
+      router.push({
+        pathname: '/process',
+        params: { id: process.id, roleId: 1 },
+      })
+    }
+  />
+</View>
 
         {/* ── FAQs ─────────────────────────────────────────────────────── */}
         <View style={styles.section}>
