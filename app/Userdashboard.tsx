@@ -277,38 +277,17 @@ export default function UserDashboard() {
           </View>
         </View>
 
-        {/* ── Popular Processes (title clickable) ──────────────────────── */}
-        <View style={styles.sectionSpacing}>
-          <TouchableOpacity
-            style={styles.sectionHeaderRow}
-            onPress={() => router.push('/process-list')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.sectionTitle, { color: textPri }]}>
-              Popular Processes
-            </Text>
-            <View style={styles.seeAllChip}>
-              <Text style={[styles.seeAllText, { color: accentColor }]}>
-                See all
-              </Text>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={16}
-                color={accentColor}
-              />
-            </View>
-          </TouchableOpacity>
-
+        {/* ── Popular Processes ──────────────────────────────────────────── */}
           <PopularProcesses
             processes={POPULAR_PROCESSES}
             onPressProcess={(process: Process) =>
-              router.push({
-                pathname: '/process',
-                params: { id: process.id, roleId: 1 },
-              })
-            }
-          />
-        </View>
+            router.push({
+            pathname: '/process',
+            params: { id: process.id, roleId: 1 },
+          })
+        }
+           onPressSeeAll={() => router.push('/process-list')}
+        />
 
         {/* ── FAQs (title clickable) ────────────────────────────────────── */}
         <View style={styles.section}>

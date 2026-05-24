@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -11,6 +12,7 @@ interface PopularProcessesProps {
   processes: Process[];
   title?: string;
   onPressProcess?: (process: Process) => void;
+  onPressSeeAll?: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -19,15 +21,29 @@ export default function PopularProcesses({
   processes,
   title = 'Popular Processes',
   onPressProcess,
+  onPressSeeAll,
 }: PopularProcessesProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const isDark = colorScheme === 'dark';
+  const accentColor = isDark ? '#B8A4FF' : '#5D3FD3';
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: isDark ? '#E8E0FF' : '#1E1340' }]}>
-        {title}
-      </Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.title, { color: isDark ? '#E8E0FF' : '#1E1340' }]}>
+          {title}
+        </Text>
+        {onPressSeeAll && (
+          <TouchableOpacity
+            style={styles.seeAllChip}
+            onPress={onPressSeeAll}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.seeAllText, { color: accentColor }]}>See all</Text>
+            <MaterialCommunityIcons name="chevron-right" size={16} color={accentColor} />
+          </TouchableOpacity>
+        )}
+      </View>
       <View style={styles.grid}>
         {processes.map((item) => (
           <TouchableOpacity
@@ -52,26 +68,34 @@ export default function PopularProcesses({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
-  // ── Section wrapper ────────────────────────────────────────────────────────
   container: {
     marginTop: 24,
     paddingHorizontal: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
   title: {
     fontSize: 17,
     fontWeight: '700',
-    marginBottom: 16,
   },
-
-  // ── Pill grid ──────────────────────────────────────────────────────────────
+  seeAllChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-
-  // ── Pill button — dynamic width, capped at 166, fixed height 30 ────────────
   pill: {
     height: 30,
     maxWidth: 166,
@@ -84,5 +108,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-
 });
