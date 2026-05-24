@@ -79,42 +79,40 @@ export default function FAQScreen() {
           Frequently Asked Questions
         </Text>
 
-        {/* Loading */}
-        {loading && (
-          <View style={s.centered}>
-            <ActivityIndicator size="large" color="#9B7FD4" />
+        <View>
+          {loading && (
+            <View style={s.centered}>
+              <ActivityIndicator size="large" color="#9B7FD4" />
+              <Text style={[s.hint, { color: isDark ? "#9BA1A6" : "#6B6485" }]}>
+                Loading FAQs…
+              </Text>
+            </View>
+          )}
+
+          {!loading && error && (
             <Text style={[s.hint, { color: isDark ? "#9BA1A6" : "#6B6485" }]}>
-              Loading FAQs…
+              {error}
             </Text>
-          </View>
-        )}
+          )}
 
-        {/* Error */}
-        {!loading && error && (
-          <Text style={[s.hint, { color: isDark ? "#9BA1A6" : "#6B6485" }]}>
-            {error}
-          </Text>
-        )}
+          {!loading && !error && (
+            <View style={s.cardList}>
+              {filtered.map((item) => (
+                <FAQCard
+                  key={item.id}
+                  question={item.question}
+                  answer={item.answer}
+                />
+              ))}
+            </View>
+          )}
 
-        {/* FAQ Cards */}
-        {!loading && !error && (
-          <View style={s.cardList}>
-            {filtered.map((item) => (
-              <FAQCard
-                key={item.id}
-                question={item.question}
-                answer={item.answer}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* No results */}
-        {!loading && !error && filtered.length === 0 && faqs.length > 0 && (
-          <Text style={[s.hint, { color: isDark ? "#9BA1A6" : "#6B6485" }]}>
-            No FAQs found.
-          </Text>
-        )}
+          {!loading && !error && filtered.length === 0 && faqs.length > 0 && (
+            <Text style={[s.hint, { color: isDark ? "#9BA1A6" : "#6B6485" }]}>
+              No FAQs found.
+            </Text>
+          )}
+        </View>
 
       </ScrollView>
 

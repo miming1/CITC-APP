@@ -25,7 +25,7 @@ interface QuickAccessItem {
   id: string;
   label: string;
   processId: string;
-  icon: string; // MaterialCommunityIcons name
+  icon: string;
 }
 
 interface FAQItem {
@@ -82,7 +82,6 @@ const POPULAR_PROCESSES: Process[] = [
   { id: '8', title: 'Scholarship Application' },
 ];
 
-// Suggestions shown in search dropdown
 const ALL_SUGGESTIONS = [
   'Special Exam',
   'Petition for Completion',
@@ -171,7 +170,6 @@ export default function UserDashboard() {
 
   // ── Responsive circle size ────────────────────────────────────────────────
   const screenWidth = Dimensions.get('window').width;
-  // 6 items per row with some padding: subtract horizontal padding (32) and gaps
   const itemCount = QUICK_ACCESS_ITEMS.length;
   const COLS = itemCount <= 4 ? 4 : Math.min(itemCount, 6);
   const horizontalPadding = 32;
@@ -277,7 +275,10 @@ export default function UserDashboard() {
           </View>
         </View>
 
-        {/* ── Popular Processes (title clickable) ──────────────────────── */}
+        {/* ── Popular Processes ────────────────────────────────────────── */}
+        {/* NOTE: the "Popular Processes" title + See all lives HERE only. */}
+        {/* If your PopularProcesses component also renders its own title,  */}
+        {/* remove that title from inside the component to avoid duplicates. */}
         <View style={styles.sectionSpacing}>
           <TouchableOpacity
             style={styles.sectionHeaderRow}
@@ -310,7 +311,7 @@ export default function UserDashboard() {
           />
         </View>
 
-        {/* ── FAQs (title clickable) ────────────────────────────────────── */}
+        {/* ── FAQs ─────────────────────────────────────────────────────── */}
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeaderRow}
@@ -342,15 +343,15 @@ export default function UserDashboard() {
         </View>
       </ScrollView>
 
-      {/* ── Chat-only floating button ─────────────────────────────────── */}
-      <ChatFloatingButton />
+      {/* ── Chat FAB ─────────────────────────────────────────────────── */}
+      <ChatFloatingButton onPress={() => router.push('/chatbot')} />
     </SafeAreaView>
   );
 }
 
-// ─── Chat-only FAB ────────────────────────────────────────────────────────────
+// ─── Chat FAB ─────────────────────────────────────────────────────────────────
 
-function ChatFloatingButton() {
+function ChatFloatingButton({ onPress }: { onPress: () => void }) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme as 'light' | 'dark'];
 
@@ -358,7 +359,7 @@ function ChatFloatingButton() {
     <View style={fabStyles.container}>
       <TouchableOpacity
         style={[fabStyles.button, { backgroundColor: colors.tint }]}
-        onPress={() => console.log('Chatbot pressed')}
+        onPress={onPress}
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="chat-processing-outline" size={26} color="#fff" />
