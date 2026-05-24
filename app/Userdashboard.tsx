@@ -13,11 +13,12 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
+
 import FAQCard from '../components/FAQCard';
 import Header from '../components/Header';
 import PopularProcesses from '../components/PopularProcesses';
 import SearchBar from '../components/SearchBar';
-import { Colors } from "../constants/theme";
+import { Colors } from '../constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,12 +43,12 @@ interface Process {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const QUICK_ACCESS_ITEMS: QuickAccessItem[] = [
-  { id: '1', label: 'INC',          processId: '4', icon: 'file-document-edit-outline' },
-  { id: '2', label: 'Med Cert',     processId: '5', icon: 'medical-bag' },
+  { id: '1', label: 'INC', processId: '4', icon: 'file-document-edit-outline' },
+  { id: '2', label: 'Med Cert', processId: '5', icon: 'medical-bag' },
   { id: '3', label: 'Special Exam', processId: '1', icon: 'clipboard-text-outline' },
-  { id: '4', label: 'Drop',         processId: '3', icon: 'calendar-remove-outline' },
-  { id: '5', label: 'Good Moral',   processId: '2', icon: 'certificate-outline' },
-  { id: '6', label: 'Excuse Ltr',   processId: '6', icon: 'email-outline' },
+  { id: '4', label: 'Drop', processId: '3', icon: 'calendar-remove-outline' },
+  { id: '5', label: 'Good Moral', processId: '2', icon: 'certificate-outline' },
+  { id: '6', label: 'Excuse Ltr', processId: '6', icon: 'email-outline' },
 ];
 
 const FAQ_ITEMS: FAQItem[] = [
@@ -143,6 +144,7 @@ function QuickAccessItemCard({
           color={isDark ? '#C8B8FF' : '#5D3FD3'}
         />
       </View>
+
       <Text
         style={[
           styles.quickLabel,
@@ -160,8 +162,10 @@ function QuickAccessItemCard({
 
 export default function UserDashboard() {
   const router = useRouter();
+
   const colorScheme = useColorScheme() ?? 'light';
   const isDark = colorScheme === 'dark';
+
   const colors = Colors[colorScheme as 'light' | 'dark'];
 
   const bg = colors.background;
@@ -169,22 +173,36 @@ export default function UserDashboard() {
   const accentColor = isDark ? '#B8A4FF' : '#5D3FD3';
 
   // ── Responsive circle size ────────────────────────────────────────────────
+
   const screenWidth = Dimensions.get('window').width;
+
   const itemCount = QUICK_ACCESS_ITEMS.length;
   const COLS = itemCount <= 4 ? 4 : Math.min(itemCount, 6);
+
   const horizontalPadding = 32;
   const totalGap = (COLS - 1) * 8;
-  const availableWidth = screenWidth - horizontalPadding - totalGap;
-  const circleSize = Math.max(44, Math.min(64, Math.floor(availableWidth / COLS)));
+
+  const availableWidth =
+    screenWidth - horizontalPadding - totalGap;
+
+  const circleSize = Math.max(
+    44,
+    Math.min(64, Math.floor(availableWidth / COLS))
+  );
 
   // ── Search suggestions ────────────────────────────────────────────────────
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const suggestions = useMemo(() => {
     if (!searchQuery.trim()) return [];
+
     const q = searchQuery.toLowerCase();
-    return ALL_SUGGESTIONS.filter((s) => s.toLowerCase().includes(q)).slice(0, 6);
+
+    return ALL_SUGGESTIONS.filter((s) =>
+      s.toLowerCase().includes(q)
+    ).slice(0, 6);
   }, [searchQuery]);
 
   const handleSearchChange = (text: string) => {
@@ -194,17 +212,27 @@ export default function UserDashboard() {
 
   const handleSearchSubmit = (query: string) => {
     setShowSuggestions(false);
-    router.push({ pathname: '/SearchResults', params: { query } });
+
+    router.push({
+      pathname: '/SearchResults',
+      params: { query },
+    });
   };
 
   const handleSuggestionPress = (suggestion: string) => {
     setSearchQuery(suggestion);
     setShowSuggestions(false);
-    router.push({ pathname: '/SearchResults', params: { query: suggestion } });
+
+    router.push({
+      pathname: '/SearchResults',
+      params: { query: suggestion },
+    });
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: bg }]}
+    >
       <Header title="Welcome!" showBack={false} />
 
       <ScrollView
@@ -213,13 +241,14 @@ export default function UserDashboard() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Search Bar with suggestions ─────────────────────────────── */}
+        {/* ── Search Bar ─────────────────────────────────────────────── */}
         <View style={styles.searchWrapper}>
           <SearchBar
             placeholder="Search processes, offices..."
             onSearch={handleSearchSubmit}
             onChangeText={handleSearchChange}
           />
+
           {showSuggestions && suggestions.length > 0 && (
             <View
               style={[
@@ -235,7 +264,11 @@ export default function UserDashboard() {
                   key={s}
                   style={[
                     styles.suggestionRow,
-                    { borderBottomColor: isDark ? '#2A2040' : '#F0EBF8' },
+                    {
+                      borderBottomColor: isDark
+                        ? '#2A2040'
+                        : '#F0EBF8',
+                    },
                   ]}
                   onPress={() => handleSuggestionPress(s)}
                   activeOpacity={0.7}
@@ -245,21 +278,38 @@ export default function UserDashboard() {
                     size={16}
                     color={isDark ? '#7A6A99' : '#9B7FD4'}
                     style={styles.suggestionIcon}
-                    aria-hidden={true}
                   />
-                  <Text style={[styles.suggestionText, { color: textPri }]}>{s}</Text>
+
+                  <Text
+                    style={[
+                      styles.suggestionText,
+                      { color: textPri },
+                    ]}
+                  >
+                    {s}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
 
-        {/* ── Quick Access ─────────────────────────────────────────────── */}
+        {/* ── Quick Access ───────────────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: textPri }]}>
+          <Text
+            style={[styles.sectionTitle, { color: textPri }]}
+          >
             Quick Access
           </Text>
-          <Text style={[styles.sectionSubtitle, { color: isDark ? '#6B6485' : '#9B8FBB' }]}>
+
+          <Text
+            style={[
+              styles.sectionSubtitle,
+              {
+                color: isDark ? '#6B6485' : '#9B8FBB',
+              },
+            ]}
+          >
             Tap a shortcut to start your request
           </Text>
 
@@ -275,16 +325,35 @@ export default function UserDashboard() {
           </View>
         </View>
 
-        {/* ── Popular Processes ────────────────────────────────────────── */}
-        {/* NOTE: the "Popular Processes" title + See all lives HERE only. */}
-        {/* If your PopularProcesses component also renders its own title,  */}
-        {/* remove that title from inside the component to avoid duplicates. */}
-        <View style={styles.sectionSpacing}>
+        {/* ── Popular Processes ─────────────────────────────────────── */}
+        <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeaderRow}
             onPress={() => router.push('/process-list')}
             activeOpacity={0.7}
           >
+            <Text
+              style={[styles.sectionTitle, { color: textPri }]}
+            >
+              Popular Processes
+            </Text>
+
+            <View style={styles.seeAllChip}>
+              <Text
+                style={[
+                  styles.seeAllText,
+                  { color: accentColor },
+                ]}
+              >
+                See all
+              </Text>
+
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={16}
+                color={accentColor}
+              />
+            </View>
           </TouchableOpacity>
 
           <PopularProcesses
@@ -292,28 +361,38 @@ export default function UserDashboard() {
             onPressProcess={(process: Process) =>
               router.push({
                 pathname: '/process',
-                params: { id: process.id, roleId: 1 },
+                params: {
+                  id: process.id,
+                  roleId: 1,
+                },
               })
-
-              
             }
           />
         </View>
 
-        {/* ── FAQs ─────────────────────────────────────────────────────── */}
+        {/* ── FAQs ──────────────────────────────────────────────────── */}
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeaderRow}
             onPress={() => router.push('/faq')}
             activeOpacity={0.7}
           >
-            <Text style={[styles.sectionTitle, { color: textPri }]}>
+            <Text
+              style={[styles.sectionTitle, { color: textPri }]}
+            >
               FAQs
             </Text>
+
             <View style={styles.seeAllChip}>
-              <Text style={[styles.seeAllText, { color: accentColor }]}>
+              <Text
+                style={[
+                  styles.seeAllText,
+                  { color: accentColor },
+                ]}
+              >
                 See all
               </Text>
+
               <MaterialCommunityIcons
                 name="chevron-right"
                 size={16}
@@ -332,26 +411,40 @@ export default function UserDashboard() {
         </View>
       </ScrollView>
 
-      {/* ── Chat FAB ─────────────────────────────────────────────────── */}
-      <ChatFloatingButton onPress={() => router.push('/chatbot')} />
+      {/* ── Chat FAB ───────────────────────────────────────────────── */}
+      <ChatFloatingButton
+        onPress={() => router.push('/chatbot')}
+      />
     </SafeAreaView>
   );
 }
 
 // ─── Chat FAB ─────────────────────────────────────────────────────────────────
 
-function ChatFloatingButton({ onPress }: { onPress: () => void }) {
+function ChatFloatingButton({
+  onPress,
+}: {
+  onPress: () => void;
+}) {
   const colorScheme = useColorScheme() ?? 'light';
+
   const colors = Colors[colorScheme as 'light' | 'dark'];
 
   return (
     <View style={fabStyles.container}>
       <TouchableOpacity
-        style={[fabStyles.button, { backgroundColor: colors.tint }]}
+        style={[
+          fabStyles.button,
+          { backgroundColor: colors.tint },
+        ]}
         onPress={onPress}
         activeOpacity={0.85}
       >
-        <MaterialCommunityIcons name="chat-processing-outline" size={26} color="#fff" />
+        <MaterialCommunityIcons
+          name="chat-processing-outline"
+          size={26}
+          color="#fff"
+        />
       </TouchableOpacity>
     </View>
   );
@@ -362,14 +455,22 @@ function ChatFloatingButton({ onPress }: { onPress: () => void }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    paddingTop:
+      Platform.OS === 'android'
+        ? StatusBar.currentHeight
+        : 0,
   },
 
-  scrollView: { flex: 1 },
+  scrollView: {
+    flex: 1,
+  },
 
-  scrollContent: { paddingBottom: 160 },
+  scrollContent: {
+    paddingBottom: 160,
+  },
 
-  // ── Search wrapper ─────────────────────────────────────────────────────────
+  // ── Search wrapper ──────────────────────────────────────────────
+
   searchWrapper: {
     position: 'relative',
     zIndex: 100,
@@ -380,13 +481,21 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 16,
     right: 16,
+
     borderRadius: 12,
     borderWidth: 1,
+
     elevation: 8,
+
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+
     shadowOpacity: 0.1,
     shadowRadius: 8,
+
     overflow: 'hidden',
     zIndex: 200,
   },
@@ -394,34 +503,35 @@ const styles = StyleSheet.create({
   suggestionRow: {
     flexDirection: 'row',
     alignItems: 'center',
+
     paddingVertical: 11,
     paddingHorizontal: 14,
+
     borderBottomWidth: 1,
   },
 
-  suggestionIcon: { marginRight: 10 },
+  suggestionIcon: {
+    marginRight: 10,
+  },
 
   suggestionText: {
     fontSize: 14,
     flex: 1,
   },
 
-  // ── Section ────────────────────────────────────────────────────────────────
+  // ── Sections ────────────────────────────────────────────────────
+
   section: {
     marginTop: 24,
     paddingHorizontal: 16,
-  },
-
-  sectionSpacing: {
-    marginTop: 24,
   },
 
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+
     marginBottom: 16,
-    paddingHorizontal: 16,
   },
 
   sectionTitle: {
@@ -446,7 +556,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ── Quick Access ───────────────────────────────────────────────────────────
+  // ── Quick Access ────────────────────────────────────────────────
+
   quickRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -478,15 +589,23 @@ const fabStyles = StyleSheet.create({
     right: 24,
     bottom: 40,
   },
+
   button: {
     width: 58,
     height: 58,
     borderRadius: 29,
+
     justifyContent: 'center',
     alignItems: 'center',
+
     elevation: 6,
+
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+
     shadowOpacity: 0.25,
     shadowRadius: 5,
   },
