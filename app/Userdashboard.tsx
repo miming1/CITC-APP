@@ -25,7 +25,7 @@ interface QuickAccessItem {
   id: string;
   label: string;
   processId: string;
-  icon: string;
+  icon: string; // MaterialCommunityIcons name
 }
 
 interface FAQItem {
@@ -82,6 +82,7 @@ const POPULAR_PROCESSES: Process[] = [
   { id: '8', title: 'Scholarship Application' },
 ];
 
+// Suggestions shown in search dropdown
 const ALL_SUGGESTIONS = [
   'Special Exam',
   'Petition for Completion',
@@ -170,6 +171,7 @@ export default function UserDashboard() {
 
   // ── Responsive circle size ────────────────────────────────────────────────
   const screenWidth = Dimensions.get('window').width;
+  // 6 items per row with some padding: subtract horizontal padding (32) and gaps
   const itemCount = QUICK_ACCESS_ITEMS.length;
   const COLS = itemCount <= 4 ? 4 : Math.min(itemCount, 6);
   const horizontalPadding = 32;
@@ -275,42 +277,40 @@ export default function UserDashboard() {
           </View>
         </View>
 
-        {/* ── Popular Processes ────────────────────────────────────────── */}
-<View style={styles.section}>
-  <TouchableOpacity
-    style={styles.sectionHeaderRow}
-    onPress={() => router.push('/process-list')}
-    activeOpacity={0.7}
-  >
-    <Text style={[styles.sectionTitle, { color: textPri }]}>
-      Popular Processes
-    </Text>
+        {/* ── Popular Processes (title clickable) ──────────────────────── */}
+        <View style={styles.sectionSpacing}>
+          <TouchableOpacity
+            style={styles.sectionHeaderRow}
+            onPress={() => router.push('/process-list')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.sectionTitle, { color: textPri }]}>
+              Popular Processes
+            </Text>
+            <View style={styles.seeAllChip}>
+              <Text style={[styles.seeAllText, { color: accentColor }]}>
+                See all
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={16}
+                color={accentColor}
+              />
+            </View>
+          </TouchableOpacity>
 
-    <View style={styles.seeAllChip}>
-      <Text style={[styles.seeAllText, { color: accentColor }]}>
-        See all
-      </Text>
+          <PopularProcesses
+            processes={POPULAR_PROCESSES}
+            onPressProcess={(process: Process) =>
+              router.push({
+                pathname: '/process',
+                params: { id: process.id, roleId: 1 },
+              })
+            }
+          />
+        </View>
 
-      <MaterialCommunityIcons
-        name="chevron-right"
-        size={16}
-        color={accentColor}
-      />
-    </View>
-  </TouchableOpacity>
-
-  <PopularProcesses
-    processes={POPULAR_PROCESSES}
-    onPressProcess={(process: Process) =>
-      router.push({
-        pathname: '/process',
-        params: { id: process.id, roleId: 1 },
-      })
-    }
-  />
-</View>
-
-        {/* ── FAQs ─────────────────────────────────────────────────────── */}
+        {/* ── FAQs (title clickable) ────────────────────────────────────── */}
         <View style={styles.section}>
           <TouchableOpacity
             style={styles.sectionHeaderRow}
@@ -342,15 +342,15 @@ export default function UserDashboard() {
         </View>
       </ScrollView>
 
-      {/* ── Chat FAB ─────────────────────────────────────────────────── */}
-      <ChatFloatingButton onPress={() => router.push('/chatbot')} />
+      {/* ── Chat-only floating button ─────────────────────────────────── */}
+      <FloatingButtons />
     </SafeAreaView>
   );
 }
 
-// ─── Chat FAB ─────────────────────────────────────────────────────────────────
+// ─── Chat-only FAB ────────────────────────────────────────────────────────────
 
-function ChatFloatingButton({ onPress }: { onPress: () => void }) {
+function FloatingButtons() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme as 'light' | 'dark'];
 
@@ -358,7 +358,7 @@ function ChatFloatingButton({ onPress }: { onPress: () => void }) {
     <View style={fabStyles.container}>
       <TouchableOpacity
         style={[fabStyles.button, { backgroundColor: colors.tint }]}
-        onPress={onPress}
+        onPress={() => console.log('Chatbot pressed')} 
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="chat-processing-outline" size={26} color="#fff" />
