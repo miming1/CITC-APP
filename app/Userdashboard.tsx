@@ -330,14 +330,19 @@ export default function UserDashboard() {
 // ─── Chat-only FAB ────────────────────────────────────────────────────────────
 
 function FloatingButtons() {
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme as 'light' | 'dark'];
+  const handleChatbotPress = () => {
+    router.push('/chatbot');
+  };
+
 
   return (
     <View style={fabStyles.container}>
       <TouchableOpacity
         style={[fabStyles.button, { backgroundColor: colors.tint }]}
-        onPress={() => console.log('Chatbot pressed')} 
+        onPress={handleChatbotPress} 
         activeOpacity={0.85}
       >
         <MaterialCommunityIcons name="chat-processing-outline" size={26} color="#fff" />
