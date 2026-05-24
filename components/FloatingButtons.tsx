@@ -1,4 +1,5 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
   StyleSheet,
   TouchableOpacity,
@@ -23,6 +24,7 @@ export default function FloatingButtons({
   onTrackPress,
   onFAQPress,
 }: FloatingButtonsProps) {
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
 
@@ -63,17 +65,11 @@ export default function FloatingButtons({
   // USER MODE
   // =========================================================
 
-  const secondTooltip = isFAQTab
-    ? "Send a Question"
-    : "Track Document";
-
-  const secondIcon = isFAQTab
-    ? "send"
-    : "description";
+  const secondTooltip = isFAQTab ? "Send a Question" : "Track Document";
+  const secondIcon    = isFAQTab ? "send" : "description";
 
   const handleChatbotPress = () => {
-    // TODO: replace with navigation when chatbot screen exists
-    console.log("Chatbot pressed (not implemented yet)");
+    router.push('/chatbot');
   };
 
   const handleSecondButton = () => {
@@ -93,10 +89,7 @@ export default function FloatingButtons({
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.button,
-            { backgroundColor: theme.tint },
-          ]}
+          style={[styles.button, { backgroundColor: theme.tint }]}
           onPress={handleChatbotPress}
           activeOpacity={0.85}
         >
@@ -111,10 +104,7 @@ export default function FloatingButtons({
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.button,
-            { backgroundColor: theme.tint },
-          ]}
+          style={[styles.button, { backgroundColor: theme.tint }]}
           onPress={handleSecondButton}
           activeOpacity={0.85}
         >
