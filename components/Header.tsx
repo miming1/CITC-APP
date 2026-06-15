@@ -105,8 +105,8 @@ export default function Header({ title, showBack = true }: HeaderProps) {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const HEADER_COLOR = '#D3C1FF';
-const MENU_ACTIVE_COLOR = '#5D429D';
+const HEADER_COLOR = '#0a1036';
+const MENU_ACTIVE_COLOR = '#0a1036';
 const Logout_Button = '#AE74F8';
 
 const styles = StyleSheet.create({

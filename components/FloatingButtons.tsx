@@ -44,12 +44,12 @@ export default function FloatingButtons({
             <TouchableOpacity
               style={[
                 styles.button,
-                { backgroundColor: theme.tint },
+                { backgroundColor: theme.tint2 },
               ]}
               onPress={onFAQPress}
               activeOpacity={0.85}
             >
-              <MaterialIcons name="add" size={26} color="#fff" />
+              <MaterialIcons name="add" size={26} color={theme.background} />
             </TouchableOpacity>
           </View>
         </View>
@@ -95,12 +95,12 @@ export default function FloatingButtons({
         <TouchableOpacity
           style={[
             styles.button,
-            { backgroundColor: theme.tint },
+            { backgroundColor: theme.tint2 },
           ]}
           onPress={handleChatbotPress}
           activeOpacity={0.85}
         >
-          <MaterialIcons name="chat" size={26} color="#fff" />
+          <MaterialIcons name="chat" size={26} color={theme.background} />
         </TouchableOpacity>
       </View>
 
@@ -113,12 +113,12 @@ export default function FloatingButtons({
         <TouchableOpacity
           style={[
             styles.button,
-            { backgroundColor: theme.tint },
+            { backgroundColor: theme.tint2 },
           ]}
           onPress={handleSecondButton}
           activeOpacity={0.85}
         >
-          <MaterialIcons name={secondIcon as any} size={26} color="#fff" />
+          <MaterialIcons name={secondIcon as any} size={26} color={theme.background} />
         </TouchableOpacity>
       </View>
     </View>

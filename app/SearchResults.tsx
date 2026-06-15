@@ -148,7 +148,7 @@ export default function SearchResults() {
 
       </ScrollView>
 
-      <FloatingButtons activeTab="faq" />
+      <FloatingButtons activeTab="faq" onTrackPress={() => {}} onFAQPress={() => {}} />
 
     </SafeAreaView>
   );
