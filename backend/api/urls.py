@@ -15,6 +15,7 @@ urlpatterns = [
     path('procedures/', views.get_procedures),
     path('procedures/<int:pk>/', views.update_procedure),
     path('procedures/<int:pk>/delete/', views.delete_procedure),
+    path('process/<int:procedure_id>/save/', views.save_full_process),
 
     # =========================
     # PROCESS SCREEN (service layer)

@@ -265,6 +265,87 @@ def delete_procedure(request, pk):
         'message': 'Procedure deleted successfully'
     }, status=204)
 
+@api_view(['POST'])
+def save_full_process(request, procedure_id):
+
+    try:
+        procedure = Procedures.objects.get(pk=procedure_id)
+    except Procedures.DoesNotExist:
+        return Response({"error": "Procedure not found"}, status=404)
+
+    data = request.data
+
+    # =========================
+    # UPDATE PROCEDURE
+    # =========================
+    procedure.procedure_name = data.get("procedure_name", procedure.procedure_name)
+    procedure.description = data.get("description", procedure.description)
+    procedure.save()
+
+    # =========================
+    # SYNC REQUIREMENTS
+    # =========================
+    incoming_requirements = data.get("requirements", [])
+
+    existing_reqs = ProcedureRequirements.objects.filter(procedure_id=procedure_id)
+
+    incoming_req_ids = []
+
+    for req in incoming_requirements:
+        req_id = req.get("requirement_id")
+
+        if req_id:
+            obj = ProcedureRequirements.objects.get(pk=req_id)
+            obj.requirement_text = req.get("requirement_text")
+            obj.save()
+            incoming_req_ids.append(obj.requirement_id)
+        else:
+            new_req = ProcedureRequirements.objects.create(
+                procedure_id=procedure_id,
+                requirement_text=req.get("requirement_text")
+            )
+            incoming_req_ids.append(new_req.requirement_id)
+
+    # delete removed requirements
+    existing_reqs.exclude(requirement_id__in=incoming_req_ids).delete()
+
+    # =========================
+    # SYNC STEPS
+    # =========================
+    incoming_steps = data.get("steps", [])
+
+    existing_steps = ProcedureSteps.objects.filter(procedure_id=procedure_id)
+
+    incoming_step_ids = []
+
+    for step in incoming_steps:
+        step_id = step.get("step_id")
+
+        if step_id:
+            obj = ProcedureSteps.objects.get(pk=step_id)
+            obj.step_description = step.get("step_description")
+            obj.office_location = step.get("office_location")
+            obj.reference_link = step.get("reference_link")
+            obj.step_number = step.get("step_number")
+            obj.save()
+            incoming_step_ids.append(obj.step_id)
+
+        else:
+            new_step = ProcedureSteps.objects.create(
+                procedure_id=procedure_id,
+                step_number=step.get("step_number"),
+                step_description=step.get("step_description"),
+                office_location=step.get("office_location"),
+                reference_link=step.get("reference_link"),
+            )
+            incoming_step_ids.append(new_step.step_id)
+
+    # delete removed steps
+    existing_steps.exclude(step_id__in=incoming_step_ids).delete()
+
+    return Response({
+        "message": "Process updated successfully"
+    }, status=200)
 
 # =========================
 # FAQS
