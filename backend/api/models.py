@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 import uuid
 import datetime
+from django.utils import timezone
 
 
 class Documents(models.Model):
@@ -125,18 +126,42 @@ class Notifications(models.Model):
         db_table = 'notifications'
 
 
+from django.db import models
+from django.utils import timezone
+import datetime
+
+
 class OtpTokens(models.Model):
+    PURPOSE_SIGNUP = "signup"
+    PURPOSE_RESET = "reset"
+
+    PURPOSE_CHOICES = [
+        (PURPOSE_SIGNUP, "Signup"),
+        (PURPOSE_RESET, "Reset Password"),
+    ]
+
     id = models.BigAutoField(primary_key=True)
     email = models.CharField(max_length=254)
     otp = models.CharField(max_length=6)
-    purpose = models.CharField(max_length=10)
+
+    purpose = models.CharField(
+        max_length=10,
+        choices=PURPOSE_CHOICES
+    )
+
     pending_data = models.JSONField(blank=True, null=True)
-    created_at = models.DateTimeField()
-    is_used = models.BooleanField()
+
+    # ✅ FIX: prevents NULL crash
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    is_used = models.BooleanField(default=False)
+
+    def is_expired(self):
+        expiry_minutes = 5
+        return timezone.now() > self.created_at + datetime.timedelta(minutes=expiry_minutes)
 
     class Meta:
-        managed = True
-        db_table = 'otp_tokens'
+        db_table = "otp_tokens"
 
 
 class ProcedureDocuments(models.Model):
