@@ -57,6 +57,10 @@ def _invalidate_previous_otps(email: str, purpose: str):
     ).update(is_used=True)
 
 
+from urllib.error import HTTPError
+import urllib.request
+import json
+
 def _send_otp_email(to_email: str, otp: str, purpose: str):
 
     api_key = getattr(settings, 'BREVO_API_KEY', '')
@@ -65,6 +69,7 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
 
     if not api_key:
         raise Exception("BREVO_API_KEY not set.")
+
     if not from_email:
         raise Exception("BREVO_FROM_EMAIL not set.")
 
@@ -75,17 +80,24 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
     )
 
     html = f"""
-    <div style='font-family:sans-serif;padding:20px;'>
-        <h2 style='color:#422780;'>CITC Verification</h2>
+    <div style="font-family:sans-serif;padding:20px;">
+        <h2 style="color:#422780;">CITC Verification</h2>
         <p>Your OTP code:</p>
-        <div style='font-size:32px;font-weight:bold;'>{otp}</div>
+        <div style="font-size:32px;font-weight:bold;">{otp}</div>
         <p>Expires in {getattr(settings, 'OTP_EXPIRY_MINUTES', 5)} minutes.</p>
     </div>
     """
 
     payload = json.dumps({
-        "sender": {"name": from_name, "email": from_email},
-        "to": [{"email": to_email}],
+        "sender": {
+            "name": from_name,
+            "email": from_email
+        },
+        "to": [
+            {
+                "email": to_email
+            }
+        ],
         "subject": subject,
         "htmlContent": html,
     }).encode("utf-8")
@@ -99,8 +111,43 @@ def _send_otp_email(to_email: str, otp: str, purpose: str):
     req.add_header("api-key", api_key)
     req.add_header("Content-Type", "application/json")
 
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        print("[Brevo]", resp.read().decode())
+    print("\n========== BREVO DEBUG ==========")
+    print("To:", to_email)
+    print("From:", from_email)
+    print("Key Start:", api_key[:15] if api_key else "EMPTY")
+    print("Key Length:", len(api_key))
+    print("Raw Key:", repr(api_key))
+    print("=================================\n")
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode()
+
+            print("\n========== BREVO SUCCESS ==========")
+            print(body)
+            print("===================================\n")
+
+    except HTTPError as e:
+        print("\n========== BREVO ERROR ==========")
+        print("Status:", e.code)
+
+        try:
+            error_body = e.read().decode()
+            print("Response:", error_body)
+        except Exception as ex:
+            print("Could not read error response:", ex)
+
+        print("=================================\n")
+
+        raise
+
+    except Exception as e:
+        print("\n========== GENERAL ERROR ==========")
+        print(type(e).__name__)
+        print(str(e))
+        print("===================================\n")
+
+        raise
 
 # ─────────────────────────────────────────────
 # SIGNUP OTP

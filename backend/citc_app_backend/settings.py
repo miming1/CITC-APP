@@ -158,6 +158,9 @@ BREVO_API_KEY = config("BREVO_API_KEY", default="")
 BREVO_FROM_EMAIL = config("BREVO_FROM_EMAIL", default="")
 BREVO_FROM_NAME = config("BREVO_FROM_NAME", default="CITC App")
 
+print("BREVO_API_KEY:", BREVO_API_KEY[:10] if BREVO_API_KEY else "EMPTY")
+print("BREVO_FROM_EMAIL:", BREVO_FROM_EMAIL)
+
 # =========================
 # OTP SETTINGS
 # =========================
