@@ -43,11 +43,13 @@ export async function submitRequest(procedureId: number) {
   return res.json();
 }
 
-// ── Edit Profile (needs auth token) ───────────────────────────
 export async function updateProfile(
   id_number?: string,
   email?: string,
-  password?: string
+  password?: string,
+  student_name?: string,
+  program?: string,
+  year_level?: number
 ) {
   const token = await getToken();
 
@@ -61,6 +63,9 @@ export async function updateProfile(
       id_number,
       email,
       password,
+      student_name,
+      program,
+      year_level,
     }),
   });
 

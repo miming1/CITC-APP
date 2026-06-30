@@ -29,7 +29,7 @@ export default function FloatingButtons({
   const isFAQTab = activeTab === "faq";
 
   // =========================================================
-  // ADMIN RULES
+  // ADMIN MODE
   // =========================================================
 
   if (isAdmin) {
@@ -49,7 +49,11 @@ export default function FloatingButtons({
               onPress={onFAQPress}
               activeOpacity={0.85}
             >
-              <MaterialIcons name="add" size={26} color={theme.background} />
+              <MaterialIcons
+                name="add"
+                size={26}
+                color={theme.background}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -60,30 +64,43 @@ export default function FloatingButtons({
   }
 
   // =========================================================
-  // USER MODE
+  // STUDENT MODE
   // =========================================================
 
-  const secondTooltip = isFAQTab
-    ? "Send a Question"
-    : "Track Document";
-
-  const secondIcon = isFAQTab
-    ? "send"
-    : "description";
-
   const handleChatbotPress = () => {
-    // TODO: replace with navigation when chatbot screen exists
+    // TODO: Navigate to AI Assistant screen
     console.log("Chatbot pressed (not implemented yet)");
   };
 
-  const handleSecondButton = () => {
-    if (isFAQTab) {
-      onFAQPress();
-    } else {
-      onTrackPress();
-    }
-  };
+  // FAQ TAB → Chat only
+  if (isFAQTab) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.wrapper}>
+          <View style={styles.tooltip}>
+            <Tooltip text="Chat with AI Assistant" />
+          </View>
 
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: theme.tint2 },
+            ]}
+            onPress={handleChatbotPress}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons
+              name="chat"
+              size={26}
+              color={theme.background}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // PROCEDURE TAB → Chat + Track
   return (
     <View style={styles.container}>
       {/* CHATBOT BUTTON */}
@@ -100,14 +117,18 @@ export default function FloatingButtons({
           onPress={handleChatbotPress}
           activeOpacity={0.85}
         >
-          <MaterialIcons name="chat" size={26} color={theme.background} />
+          <MaterialIcons
+            name="chat"
+            size={26}
+            color={theme.background}
+          />
         </TouchableOpacity>
       </View>
 
-      {/* SECOND BUTTON */}
+      {/* TRACK DOCUMENT BUTTON */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
-          <Tooltip text={secondTooltip} />
+          <Tooltip text="Track Document" />
         </View>
 
         <TouchableOpacity
@@ -115,10 +136,14 @@ export default function FloatingButtons({
             styles.button,
             { backgroundColor: theme.tint2 },
           ]}
-          onPress={handleSecondButton}
+          onPress={onTrackPress}
           activeOpacity={0.85}
         >
-          <MaterialIcons name={secondIcon as any} size={26} color={theme.background} />
+          <MaterialIcons
+            name="description"
+            size={26}
+            color={theme.background}
+          />
         </TouchableOpacity>
       </View>
     </View>

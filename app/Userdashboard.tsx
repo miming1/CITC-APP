@@ -6,21 +6,21 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   useColorScheme,
-  View,
+  View
 } from 'react-native';
+
+import { useEffect, useState } from 'react';
 
 import { Colors } from "../constants/theme";
 
-// ─── Components ───────────────────────────────────────────────────────────────
 import FAQCard from '../components/FAQCard';
 import FloatingButtons from '../components/FloatingButtons';
 import Header from '../components/Header';
 import PopularProcesses from '../components/PopularProcesses';
 import SearchBar from '../components/SearchBar';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { API_BASE_URL } from "../constants/api";
 
 interface HelpCategory {
   id: string;
@@ -39,99 +39,74 @@ interface Process {
   title: string;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const HELP_CATEGORIES: HelpCategory[] = [
-  { id: '1', label: 'INC', processId: '4' },
-  { id: '2', label: 'Med Cert', processId: '5' },
-  { id: '3', label: 'Special Exam', processId: '1' },
-  { id: '4', label: 'Drop', processId: '3' },
-];
-
-const FAQ_ITEMS: FAQItem[] = [
-  {
-    id: '1',
-    question: 'Where do I submit my medical certificate?',
-    answer:
-      'You may submit your medical certificate at the Office of the University Registrar (OUR) or through the designated submission portal on the student portal.',
-  },
-  {
-    id: '2',
-    question: 'Is there a payment for the medical certificate?',
-    answer:
-      "Yes, there is a minimal processing fee. Please check the cashier's office or the official fee schedule for the exact amount.",
-  },
-  {
-    id: '3',
-    question: 'How do I get a medical certificate?',
-    answer:
-      'You can obtain a medical certificate from the University Health Services (UHS) or from a licensed physician. Make sure it is signed and bears the official clinic stamp.',
-  },
-];
-
-const POPULAR_PROCESSES: Process[] = [
-  { id: '1', title: 'Special Exam' },
-  { id: '2', title: 'Petition for C..' },
-  { id: '3', title: 'Leave of Absence' },
-  { id: '4', title: 'INC' },
-  { id: '5', title: 'Medical Certificate Sub..' },
-  { id: '6', title: 'Process 6' },
-];
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function HelpCategoryItem({
-  item,
-  isDark,
-}: {
-  item: HelpCategory;
-  isDark: boolean;
-}) {
-  const router = useRouter();
-
-  return (
-    <TouchableOpacity
-      style={styles.helpItem}
-      onPress={() =>
-        router.push({
-          pathname: '/process',
-          params: { id: item.processId },
-        })
-      }
-      activeOpacity={0.75}
-    >
-      <View
-        style={[
-          styles.helpCircle,
-          { backgroundColor: isDark ? '#2A2040' : '#D8D3E8' },
-        ]}
-      />
-
-      <Text
-        style={[
-          styles.helpLabel,
-          { color: isDark ? '#9BA1A6' : '#6B6485' },
-        ]}
-      >
-        {item.label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 export default function UserDashboard() {
   const router = useRouter();
 
   const colorScheme = useColorScheme() ?? 'light';
   const isDark = colorScheme === 'dark';
-
   const colors = Colors[colorScheme as 'light' | 'dark'];
 
   const bg = colors.background;
   const textPri = isDark ? '#ECEDEE' : '#1E1340';
 
+  const [processes, setProcesses] = useState<Process[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [helpCategories, setHelpCategories] = useState<HelpCategory[]>([]);
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+
+  // =========================
+  // FETCH PROCEDURES
+  // =========================
+  const fetchProcesses = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/procedures/`);
+      const data = await res.json();
+
+      const mapped = data.map((item: any) => ({
+        id: String(item.procedure_id), // ✅ FIXED
+        title: item.procedure_name ?? item.title,
+      }));
+
+      setProcesses(mapped);
+    } catch (err) {
+      console.log("Failed to fetch processes:", err);
+    }
+  };
+
+
+
+  // =========================
+  // FAQS
+  // =========================
+  const fetchFaqs = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/faqs/`);
+      const data = await res.json();
+      setFaqs(data);
+    } catch (err) {
+      console.log("Failed to fetch faqs:", err);
+    }
+  };
+
+  useEffect(() => {
+    const loadAll = async () => {
+      setLoading(true);
+
+      await Promise.all([
+        fetchProcesses(),
+        fetchFaqs(),
+      ]);
+
+      setLoading(false);
+    };
+
+    loadAll();
+  }, []);
+
+  // =========================
+  // UI
+  // =========================
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
       <Header title="Welcome!" showBack={false} />
@@ -141,7 +116,7 @@ export default function UserDashboard() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Search Bar */}
+        {/* SEARCH */}
         <SearchBar
           placeholder="Search..."
           onSearch={(query) => {
@@ -152,41 +127,29 @@ export default function UserDashboard() {
           }}
         />
 
-        {/* Need Help */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: textPri }]}>
-            Need Help?
-          </Text>
+        
 
-          <View style={styles.helpRow}>
-            {HELP_CATEGORIES.map((item) => (
-              <HelpCategoryItem
-                key={item.id}
-                item={item}
-                isDark={isDark}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Popular Processes */}
+        {/* POPULAR */}
         <PopularProcesses
-          processes={POPULAR_PROCESSES}
+          processes={processes}
           onPressProcess={(process: Process) =>
             router.push({
               pathname: '/process',
-              params: { id: process.id, roleId: 1,},
+              params: {
+                id: process.id, // ✅ FIXED SOURCE NOW MATCHES BACKEND
+                roleId: 1,
+              },
             })
           }
         />
 
-        {/* FAQs */}
+        {/* FAQ */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: textPri }]}>
             FAQs
           </Text>
 
-          {FAQ_ITEMS.map((item) => (
+          {faqs.map((item) => (
             <FAQCard
               key={item.id}
               question={item.question}
@@ -196,16 +159,18 @@ export default function UserDashboard() {
         </View>
       </ScrollView>
 
-      <FloatingButtons 
-        activeTab="faq" 
+      <FloatingButtons
+        activeTab="faq"
         onTrackPress={() => router.push('/track-details')}
-        onQuestionPress={() => router.push('/faq')}
+        onFAQPress={() => router.push('/faq')}
       />
     </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// =========================
+// STYLES
+// =========================
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -233,8 +198,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 16,
   },
-
-  // ── Need Help ────────────────────────────────────────────────────────────
 
   helpRow: {
     flexDirection: 'row',

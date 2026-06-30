@@ -5,41 +5,66 @@ from ..models import (
     Faqs
 )
 
+
 def get_full_procedure(procedure_id):
 
+    # =========================
+    # MAIN PROCEDURE
+    # =========================
     procedure = Procedures.objects.get(
         pk=procedure_id
     )
 
+    # =========================
+    # STEPS
+    # =========================
     steps = ProcedureSteps.objects.filter(
         procedure_id=procedure_id
     ).order_by("step_number")
 
-    requirements = ProcedureRequirements.objects.filter(
-        procedure_id=procedure_id
+    # =========================
+    # REQUIREMENTS
+    # Flatten ProcedureRequirements -> Requirements
+    # =========================
+    requirement_links = (
+        ProcedureRequirements.objects
+        .filter(procedure_id=procedure_id)
+        .select_related("requirement")
     )
 
+    requirements = [
+        {
+            "requirement_id": link.requirement.requirement_id,
+            "requirement_name": link.requirement.requirement_name,
+        }
+        for link in requirement_links
+    ]
+
+    # =========================
     # ANSWERED FAQS
+    # =========================
+    # Faqs are related through FaqCategories -> Procedures
     faqs = Faqs.objects.exclude(
         answer=""
     ).filter(
-        procedure_id=procedure_id
+        category__procedure_id=procedure_id
     )
 
-    # PENDING USER QUESTIONS
+    # =========================
+    # PENDING QUESTIONS
+    # =========================
     pending_questions = Faqs.objects.filter(
-        procedure_id=procedure_id,
-        answer=""
+        answer="",
+        category__procedure_id=procedure_id
     )
 
+    # =========================
+    # RETURN
+    # =========================
     return {
         "procedure": procedure,
         "steps": steps,
         "requirements": requirements,
-
-        # visible to users
         "faqs": faqs,
-
-        # for admin panel
         "pending_questions": pending_questions,
     }
