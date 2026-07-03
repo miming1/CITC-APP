@@ -56,11 +56,11 @@ export default function UserDashboard() {
   // =========================
   const fetchProcesses = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/procedures/`);
+      const res = await fetch(`${API_BASE_URL}/procedures/`, { cache: "no-store" });
       const data = await res.json();
 
       const mapped = data.map((item: any) => ({
-        id: String(item.procedure_id), // ✅ FIXED
+        id: String(item.procedure_id), 
         title: item.procedure_name ?? item.title,
       }));
 
@@ -78,7 +78,8 @@ export default function UserDashboard() {
   const fetchFaqCategories = async () => {
     try {
       const res = await fetch(
-        `${API_BASE_URL}/faq-categories/`
+        `${API_BASE_URL}/faq-categories/`,
+        { cache: "no-store" } 
       );
 
       const data = await res.json();
