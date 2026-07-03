@@ -129,7 +129,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
           <Pressable style={s.card} onPress={() => {}}>
 
             <TouchableOpacity style={s.closeBtn} onPress={handleClose}>
-              <Ionicons name="chevron-back" size={20} color="#9B7FD4" />
+              <Ionicons name="chevron-back" size={20} color="#0a1036" />
               <Text style={s.closeText}>Forgot Password</Text>
             </TouchableOpacity>
 
@@ -137,10 +137,10 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
               <>
                 <View style={s.iconWrap}>
                   <View style={s.iconCircle}>
-                    <Ionicons name="mail-outline" size={40} color="#9B7FD4" />
+                    <Ionicons name="mail-outline" size={40} color="#0a1036" /> 
                   </View>
                   <View style={s.sparkle}>
-                    <Ionicons name="sparkles" size={14} color="#D3C1FF" />
+                    <Ionicons name="sparkles" size={14} color="#0a1036" />
                   </View>
                 </View>
                 <Text style={s.sub}>
@@ -148,7 +148,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                   We will send a one-time verification code.
                 </Text>
                 <View style={s.inputWrap}>
-                  <Ionicons name="mail-outline" size={18} color="#CCBACE" style={s.inputIcon} />
+                  <Ionicons name="mail-outline" size={18} color="#0a1036" style={s.inputIcon} />
                   <TextInput
                     style={s.input}
                     placeholder="example@gmail.com"
@@ -174,7 +174,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
               <>
                 <View style={s.iconWrap}>
                   <View style={s.iconCircle}>
-                    <Ionicons name="keypad-outline" size={40} color="#9B7FD4" />
+                    <Ionicons name="keypad-outline" size={40} color="#0a1036" />
                   </View>
                 </View>
                 <Text style={s.sentTitle}>Check Your Email</Text>
@@ -212,7 +212,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
               <>
                 <View style={s.iconWrap}>
                   <View style={s.iconCircle}>
-                    <Ionicons name="shield-checkmark-outline" size={40} color="#9B7FD4" />
+                    <Ionicons name="shield-checkmark-outline" size={40} color="#0a1036" />
                   </View>
                 </View>
                 <Text style={s.sentTitle}>Set New Password</Text>
@@ -254,7 +254,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                   onPress={handleResetPassword}
                   disabled={loading}
                 >
-                  {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Reset Password</Text>}
+                  {loading ? <ActivityIndicator color="#0a1036" /> : <Text style={s.btnText}>Reset Password</Text>}
                 </TouchableOpacity>
               </>
             )}
@@ -263,7 +263,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
               <>
                 <View style={s.iconWrap}>
                   <View style={[s.iconCircle, s.sentCircle]}>
-                    <Ionicons name="checkmark-circle-outline" size={40} color="#5D429D" />
+                    <Ionicons name="checkmark-circle-outline" size={40} color="#0a1036" />
                   </View>
                 </View>
                 <Text style={s.sentTitle}>Password Reset!</Text>
@@ -318,7 +318,7 @@ const s = StyleSheet.create({
     marginBottom: 20,
     gap: 4,
   },
-  closeText: { fontSize: 16, fontWeight: "700", color: "#422780" },
+  closeText: { fontSize: 16, fontWeight: "700", color: "#0a1036"},
   iconWrap: {
     position: "relative",
     marginBottom: 20,
@@ -335,15 +335,15 @@ const s = StyleSheet.create({
   },
   sentCircle: { backgroundColor: "#EFF7EE" },
   sparkle: { position: "absolute", top: 0, right: -8 },
-  sub: { fontSize: 13, color: "#6B5A8E", lineHeight: 20, marginBottom: 20, textAlign: "center" },
-  sentTitle: { fontSize: 20, fontWeight: "700", color: "#422780", marginBottom: 10 },
-  emailBold: { fontWeight: "700", color: "#422780" },
+  sub: { fontSize: 13, color: "#0a1036", lineHeight: 20, marginBottom: 20, textAlign: "center" },
+  sentTitle: { fontSize: 20, fontWeight: "700", color: "#0a1036", marginBottom: 10 },
+  emailBold: { fontWeight: "700", color: "#0a1036" },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
     borderWidth: 1.5,
-    borderColor: "#E0D5F5",
+    borderColor: "#0a1036",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -351,11 +351,11 @@ const s = StyleSheet.create({
     backgroundColor: "#FAFAFA",
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 14, color: "#4b2170", paddingVertical: 0 },
+  input: { flex: 1, fontSize: 14, color: "#0a1036", paddingVertical: 0 },
   errorText: { color: "#b91c1c", fontSize: 12, marginBottom: 10, alignSelf: "flex-start" },
   btn: {
     width: "100%",
-    backgroundColor: "#9B7FD4",
+    backgroundColor: "#0a1036",
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
@@ -366,5 +366,5 @@ const s = StyleSheet.create({
   btnDisabled: { opacity: 0.55 },
   btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
   cancelWrap: { marginTop: 14, paddingVertical: 4 },
-  cancel: { color: "#9B7FD4", fontSize: 14, fontWeight: "600" },
+  cancel: { color: "#0a1036", fontSize: 14, fontWeight: "600" },
 });

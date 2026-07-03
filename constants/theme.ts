@@ -5,7 +5,7 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#1E40AF'; // Navy Blue
+const tintColorLight = '#141A73'; // Navy Blue
 const tintColorDark = '#141A73'; // Brighter Blue for dark mode
 
 export const Colors = {
@@ -14,7 +14,7 @@ export const Colors = {
     background: '#FFFFFF',
     tint: tintColorLight,
     tint2: '#EBA937', // Gold Yellow
-    icon: '#64748B',
+    icon: '#0c0c0d',
     tabIconDefault: '#94A3B8',
     tabIconSelected: tintColorLight,
     border: '#E2E8F0',

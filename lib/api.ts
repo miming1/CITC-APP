@@ -3,7 +3,7 @@ import { getToken } from './auth';
 
 // ── Procedures ────────────────────────────────────────────────
 export async function fetchProcedures() {
-  const res = await fetch(ENDPOINTS.procedures);
+   const res = await fetch(ENDPOINTS.procedures, { cache: "no-store" });
   if (!res.ok) throw new Error('Failed to fetch procedures');
   return res.json();
   // returns: [{ id, procedure_name, description, created_at, updated_at }]

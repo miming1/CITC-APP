@@ -15,7 +15,7 @@ import { fetchProcedures } from "../lib/api";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Procedure {
-  id: number;
+  procedure_id: number;   // ✅ matches backend serializer (see AdminDashboard.tsx usage)
   procedure_name: string;
   description: string;
 }
@@ -106,7 +106,15 @@ export default function ProcessListScreen() {
     p.procedure_name.toLowerCase().includes(search.toLowerCase())
   );
 
-  function goToProcess() { router.push("/process"); }
+  function goToProcess(item: Procedure) {
+    router.push({
+      pathname: "/process",
+      params: {
+        id: item.procedure_id,   // ✅ FIXED — matches backend's actual PK field
+        roleId: 1,               // student view (matches PopularProcesses fix)
+      },
+    });
+  }
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: bg }]}>
@@ -154,9 +162,9 @@ export default function ProcessListScreen() {
         {/* Procedure cards from API */}
         {!loading && !error && filtered.map((item) => (
           <TouchableOpacity
-            key={item.id}
+            key={item.procedure_id}
             style={[s.card, { backgroundColor: bg, borderColor: border }]}
-            onPress={goToProcess}
+            onPress={() => goToProcess(item)}
             activeOpacity={0.75}
           >
             <View style={s.cardLeft}>
