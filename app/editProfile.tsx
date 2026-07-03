@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
   useColorScheme,
+  useWindowDimensions,
 } from "react-native";
 
 import Dropdown from "@/components/Dropdown";
@@ -55,6 +56,8 @@ const YEAR_LEVELS = [
 export default function EditProfile() {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
+  const { width } = useWindowDimensions();
+  const isLargeScreen = width >= 768;
 
   const [form, setForm] = useState<Profile>({
     id_number: "",
@@ -262,8 +265,10 @@ export default function EditProfile() {
           style={[
             styles.card,
             {
-              backgroundColor:
-                colors.background,
+              backgroundColor: colors.background,
+              width: "100%",
+              maxWidth: isLargeScreen ? 500 : undefined,
+              alignSelf: "center",
             },
           ]}
         >
@@ -468,9 +473,10 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
-
+  
   card: {
     borderRadius: 16,
     padding: 20,
@@ -511,7 +517,7 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: "#2563EB",
+    backgroundColor: "#EBA937",
     padding: 14,
     borderRadius: 10,
     marginTop: 10,

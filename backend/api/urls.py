@@ -25,6 +25,7 @@ urlpatterns = [
     # =========================
     # FAQS
     # =========================
+    path('faq-categories/', views.get_faq_categories),
     path('faqs/', views.get_faqs),
     path('faqs/<int:pk>/', views.update_faq),
     path('faqs/<int:pk>/delete/', views.delete_faq),

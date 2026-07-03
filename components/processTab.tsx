@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 
 import StepItem from "../components/StepItem";
@@ -60,6 +61,8 @@ export default function ProcessTab({
   deletedRequirements = [],
 }: Props) {
   const [showMenu, setShowMenu] = useState(false);
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   // =========================================================
   // REQUIREMENTS
@@ -127,7 +130,15 @@ export default function ProcessTab({
   };
 
   return (
-    <View style={{ position: "relative" }}>
+    <View
+      style={[
+        styles.container,
+        {
+          position: "relative",
+        },
+        isDesktop && styles.desktopContainer,
+      ]}
+    >
       {/* ========================= */}
       {/* MENU */}
       {/* ========================= */}
@@ -239,6 +250,7 @@ export default function ProcessTab({
           style={{
             color: colors.icon,
             marginTop: 8,
+            marginBottom: 16,
           }}
         >
           {procedure?.description}
@@ -469,6 +481,16 @@ export default function ProcessTab({
 }
 
 const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+  },
+
+  desktopContainer: {
+    width: "97%",
+    maxWidth: 1600,
+    alignSelf: "center",
+  },
+  
   menuButton: {
     position: "absolute",
     top: 0,
@@ -515,7 +537,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 5,
   },
 
   input: {

@@ -19,6 +19,7 @@ from .models import (
     ProcedureSteps,
     Requirements,
     ProcedureRequirements,
+    FaqCategories,
     Faqs,
     Requests,
     Users,
@@ -29,6 +30,7 @@ from .serializers import (
     ProcedureSerializer,
     ProcedureStepSerializer,
     ProcedureRequirementSerializer,
+    FAQCategorySerializer,
     FAQSerializer,
     RequestSerializer
 )
@@ -403,6 +405,18 @@ def save_full_process(request, procedure_id):
 # =========================
 # FAQS
 # =========================
+@api_view(["GET"])
+def get_faq_categories(request):
+
+    categories = FaqCategories.objects.all()
+
+    return Response(
+        FAQCategorySerializer(
+            categories,
+            many=True
+        ).data
+    )
+
 @api_view(['GET'])
 def get_faqs(request):
 

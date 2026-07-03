@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   title: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '700',
     marginBottom: 16,
   },
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pillText: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '500',
   },
 

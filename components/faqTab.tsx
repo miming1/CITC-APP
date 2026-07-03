@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 
 import FAQCard from "../components/FAQCard";
@@ -13,7 +14,7 @@ interface Props {
   faqs: any[];
   setFaqs: (f: any[]) => void;
 
-  procedure: any; // 🔥 NEW
+  procedure: any;
 
   isAdmin: boolean;
   colors: any;
@@ -33,6 +34,12 @@ export default function FAQTab({
 }: Props) {
   const [editingFAQId, setEditingFAQId] = useState<number | null>(null);
 
+  // =========================
+  // RESPONSIVE LAYOUT
+  // =========================
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+
   const handleEdit = (faqId: number) => {
     setEditingFAQId(faqId);
   };
@@ -42,9 +49,14 @@ export default function FAQTab({
   };
 
   return (
-    <View>
+    <View
+      style={[
+        styles.container,
+        isDesktop && styles.desktopContainer,
+      ]}
+    >
       {/* ========================= */}
-      {/* PROCEDURE HEADER (NEW) */}
+      {/* PROCEDURE HEADER */}
       {/* ========================= */}
 
       <Text style={[styles.title, { color: colors.text }]}>
@@ -52,7 +64,12 @@ export default function FAQTab({
       </Text>
 
       {procedure?.description ? (
-        <Text style={[styles.description, { color: colors.icon }]}>
+        <Text
+          style={[
+            styles.description,
+            { color: colors.icon },
+          ]}
+        >
           {procedure.description}
         </Text>
       ) : null}
@@ -61,28 +78,53 @@ export default function FAQTab({
       {/* FAQ TITLE */}
       {/* ========================= */}
 
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+      <Text
+        style={[
+          styles.sectionTitle,
+          { color: colors.text },
+        ]}
+      >
         Frequently Asked Questions
       </Text>
 
       {/* ========================= */}
-      {/* LIST */}
+      {/* FAQ LIST */}
       {/* ========================= */}
 
       {faqs.map((faq, index) => {
-        const isEditing = editingFAQId === faq.faq_id;
+        const isEditing =
+          editingFAQId === faq.faq_id;
 
         return (
-          <View key={faq.faq_id} style={styles.faqWrapper}>
+          <View
+            key={faq.faq_id}
+            style={styles.faqWrapper}
+          >
             {/* ACTIONS */}
             {isAdmin && !isEditing && (
               <View style={styles.actionRow}>
-                <TouchableOpacity onPress={() => handleEdit(faq.faq_id)}>
-                  <Text style={{ color: colors.tint }}>Edit</Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    handleEdit(faq.faq_id)
+                  }
+                >
+                  <Text
+                    style={{
+                      color: colors.tint,
+                    }}
+                  >
+                    Edit
+                  </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity onPress={() => onRequestDelete(faq)}>
-                  <Text style={{ color: "red" }}>Delete</Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    onRequestDelete(faq)
+                  }
+                >
+                  <Text style={{ color: "red" }}>
+                    Delete
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -94,15 +136,22 @@ export default function FAQTab({
                   value={faq.question}
                   onChangeText={(text) => {
                     const updated = [...faqs];
-                    updated[index].question = text;
+                    updated[index].question =
+                      text;
                     setFaqs(updated);
                   }}
                   multiline
                   placeholder="Question"
-                  placeholderTextColor={colors.icon}
+                  placeholderTextColor={
+                    colors.icon
+                  }
                   style={[
                     styles.input,
-                    { color: colors.text, borderColor: colors.border },
+                    {
+                      color: colors.text,
+                      borderColor:
+                        colors.border,
+                    },
                   ]}
                 />
 
@@ -110,31 +159,65 @@ export default function FAQTab({
                   value={faq.answer}
                   onChangeText={(text) => {
                     const updated = [...faqs];
-                    updated[index].answer = text;
+                    updated[index].answer =
+                      text;
                     setFaqs(updated);
                   }}
                   multiline
                   placeholder="Answer"
-                  placeholderTextColor={colors.icon}
+                  placeholderTextColor={
+                    colors.icon
+                  }
                   style={[
                     styles.textArea,
-                    { color: colors.text, borderColor: colors.border },
+                    {
+                      color: colors.text,
+                      borderColor:
+                        colors.border,
+                    },
                   ]}
                 />
 
-                <View style={styles.inlineButtons}>
-                  <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
-                    <Text style={{ color: "white" }}>Cancel</Text>
+                <View
+                  style={
+                    styles.inlineButtons
+                  }
+                >
+                  <TouchableOpacity
+                    style={
+                      styles.cancelBtn
+                    }
+                    onPress={
+                      handleCancel
+                    }
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                      }}
+                    >
+                      Cancel
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.saveBtn}
                     onPress={() => {
-                      onSaveFAQInline(faq);
-                      setEditingFAQId(null);
+                      onSaveFAQInline(
+                        faq
+                      );
+                      setEditingFAQId(
+                        null
+                      );
                     }}
                   >
-                    <Text style={{ color: "white" }}>Save</Text>
+                    <Text
+                      style={{
+                        color: "white",
+                      }}
+                    >
+                      Save
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -153,6 +236,20 @@ export default function FAQTab({
 }
 
 const styles = StyleSheet.create({
+  // =========================
+  // RESPONSIVE CONTAINER
+  // =========================
+  container: {
+    width: "100%",
+    paddingTop: 15,
+  },
+
+  desktopContainer: {
+    width: "95%",
+    maxWidth: 1600,
+    alignSelf: "center",
+  },
+
   title: {
     fontSize: 22,
     fontWeight: "700",
@@ -165,7 +262,7 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    marginTop: 10,
+    marginTop: 30,
     marginBottom: 14,
     fontSize: 18,
     fontWeight: "700",

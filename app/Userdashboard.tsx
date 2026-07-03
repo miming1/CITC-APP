@@ -1,20 +1,21 @@
 import { useRouter } from 'expo-router';
 import {
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
-  View
+  useWindowDimensions,
+  View,
 } from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useEffect, useState } from 'react';
 
 import { Colors } from "../constants/theme";
 
-import FAQCard from '../components/FAQCard';
 import FloatingButtons from '../components/FloatingButtons';
 import Header from '../components/Header';
 import PopularProcesses from '../components/PopularProcesses';
@@ -22,16 +23,10 @@ import SearchBar from '../components/SearchBar';
 
 import { API_BASE_URL } from "../constants/api";
 
-interface HelpCategory {
+interface FAQCategory {
   id: string;
-  label: string;
-  processId: string;
-}
-
-interface FAQItem {
-  id: string;
-  question: string;
-  answer: string;
+  category_name: string;
+  procedure_id: string;
 }
 
 interface Process {
@@ -46,14 +41,15 @@ export default function UserDashboard() {
   const isDark = colorScheme === 'dark';
   const colors = Colors[colorScheme as 'light' | 'dark'];
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 1024;
+
   const bg = colors.background;
   const textPri = isDark ? '#ECEDEE' : '#1E1340';
 
   const [processes, setProcesses] = useState<Process[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [helpCategories, setHelpCategories] = useState<HelpCategory[]>([]);
-  const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [faqCategories, setFaqCategories] = useState<FAQCategory[]>([]);
 
   // =========================
   // FETCH PROCEDURES
@@ -79,13 +75,26 @@ export default function UserDashboard() {
   // =========================
   // FAQS
   // =========================
-  const fetchFaqs = async () => {
+  const fetchFaqCategories = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/faqs/`);
+      const res = await fetch(
+        `${API_BASE_URL}/faq-categories/`
+      );
+
       const data = await res.json();
-      setFaqs(data);
+
+      const mapped = data.map((item: any) => ({
+        id: String(item.category_id),
+        category_name: item.category_name,
+        procedure_id: String(item.procedure),
+      }));
+
+      setFaqCategories(mapped);
     } catch (err) {
-      console.log("Failed to fetch faqs:", err);
+      console.log(
+        "Failed to fetch FAQ categories:",
+        err
+      );
     }
   };
 
@@ -95,7 +104,7 @@ export default function UserDashboard() {
 
       await Promise.all([
         fetchProcesses(),
-        fetchFaqs(),
+        fetchFaqCategories(),
       ]);
 
       setLoading(false);
@@ -116,46 +125,79 @@ export default function UserDashboard() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* SEARCH */}
-        <SearchBar
-          placeholder="Search..."
-          onSearch={(query) => {
-            router.push({
-              pathname: '/SearchResults',
-              params: { query },
-            });
-          }}
-        />
+        <View
+          style={[
+            styles.container,
+            isDesktop && styles.desktopContainer,
+          ]}
+        >
+          {/* SEARCH */}
+          <SearchBar
+            placeholder="Search..."
+            onSearch={(query) => {
+              router.push({
+                pathname: "/SearchResults",
+                params: { query },
+              });
+            }}
+          />
 
-        
+          {/* POPULAR */}
+          <PopularProcesses
+            processes={processes}
+            onPressProcess={(process: Process) =>
+              router.push({
+                pathname: "/process",
+                params: {
+                  id: process.id,
+                  roleId: 1,
+                },
+              })
+            }
+          />
 
-        {/* POPULAR */}
-        <PopularProcesses
-          processes={processes}
-          onPressProcess={(process: Process) =>
-            router.push({
-              pathname: '/process',
-              params: {
-                id: process.id, // ✅ FIXED SOURCE NOW MATCHES BACKEND
-                roleId: 1,
-              },
-            })
-          }
-        />
+          {/* QUESTION CATEGORIES */}
+          <View style={styles.section}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: textPri },
+              ]}
+            >
+              Question Categories
+            </Text>
 
-        {/* FAQ */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: textPri }]}>
-            FAQs
-          </Text>
-
-          {faqs.map((item) => (
-            <FAQCard
-              key={item.id}
-              question={item.question}
-              answer={item.answer}
-            />
-          ))}
+            {faqCategories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryCard,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() =>
+                  router.push({
+                    pathname: "/faq",
+                    params: {
+                      categoryId: category.id,
+                      procedureId: category.procedure_id,
+                    },
+                  })
+                }
+              >
+                <Text
+                  style={[
+                    styles.categoryTitle,
+                    { color: textPri },
+                  ]}
+                >
+                  {category.category_name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
@@ -180,6 +222,28 @@ const styles = StyleSheet.create({
       : 0,
   },
 
+  container: {
+    width: "100%",
+  },
+
+  desktopContainer: {
+    width: "95%",
+    maxWidth: 1600,
+    alignSelf: "center",
+  },
+
+  categoryCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+
+  categoryTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
   scrollView: {
     flex: 1,
   },
@@ -194,31 +258,8 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: '700',
     marginBottom: 16,
-  },
-
-  helpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  helpItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-
-  helpCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 8,
-  },
-
-  helpLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'center',
   },
 });
