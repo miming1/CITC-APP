@@ -266,9 +266,24 @@ export default function EditProfile() {
             styles.card,
             {
               backgroundColor: colors.background,
+
+              // Responsive width
               width: "100%",
               maxWidth: isLargeScreen ? 500 : undefined,
               alignSelf: "center",
+
+              // iOS
+              shadowColor: colors.text,
+
+              // Web
+              ...(Platform.OS === "web"
+                ? {
+                    boxShadow:
+                      colorScheme === "dark"
+                        ? "0px 4px 16px rgba(255,255,255,0.08)"
+                        : "0px 4px 16px rgba(0,0,0,0.12)",
+                  }
+                : {}),
             },
           ]}
         >
@@ -480,9 +495,16 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     padding: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
+
+    // iOS
+    shadowOpacity: 0.12,
     shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+
+    // Android
     elevation: 5,
   },
 

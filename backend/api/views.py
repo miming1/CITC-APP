@@ -403,30 +403,53 @@ def save_full_process(request, procedure_id):
     }, status=200)
 
 # =========================
-# FAQS
+# FAQ CATEGORIES
 # =========================
 @api_view(["GET"])
 def get_faq_categories(request):
 
-    categories = FaqCategories.objects.all()
+    categories = FaqCategories.objects.all().order_by("category_name")
 
-    return Response(
-        FAQCategorySerializer(
-            categories,
-            many=True
-        ).data
-    )
+    data = []
 
+    for category in categories:
+
+        # count FAQs per category (IMPORTANT for UI empty state)
+        faq_count = Faqs.objects.filter(category=category).count()
+
+        data.append({
+            "category_id": category.category_id,
+            "category_name": category.category_name,
+
+            # procedure link (can be null if orphan category exists)
+            "procedure": (
+                category.procedure.procedure_id
+                if category.procedure
+                else None
+            ),
+
+            # 👇 KEY FIX: lets frontend know if empty
+            "faq_count": faq_count
+        })
+
+    return Response(data)
+
+
+# =========================
+# FAQS
+# =========================
 @api_view(['GET'])
 def get_faqs(request):
 
+    category_id = request.query_params.get("category_id")
+
     faqs = Faqs.objects.all()
 
+    if category_id:
+        faqs = faqs.filter(category_id=category_id)
+
     return Response(
-        FAQSerializer(
-            faqs,
-            many=True
-        ).data
+        FAQSerializer(faqs, many=True).data
     )
 
 
@@ -566,35 +589,39 @@ def get_process_screen(request, procedure_id):
 
     try:
         data = get_full_procedure(procedure_id)
-
     except Procedures.DoesNotExist:
-        return Response({
-            "error": "Procedure not found"
-        }, status=404)
+        return Response({"error": "Procedure not found"}, status=404)
+
+    procedure = data["procedure"]
+    steps = data["steps"]
+    requirements = data["requirements"]
+
+    # =========================
+    # GROUP CATEGORIES UNDER PROCEDURE
+    # =========================
+    categories = FaqCategories.objects.filter(
+        procedure_id=procedure_id
+    ).order_by("category_name")
+
+    faq_categories = []
+
+    for category in categories:
+
+        faqs = Faqs.objects.filter(category=category)
+
+        faq_categories.append({
+            "category_id": category.category_id,
+            "category_name": category.category_name,
+            "faqs": FAQSerializer(faqs, many=True).data
+        })
 
     return Response({
-
-        "procedure":
-            ProcedureSerializer(
-                data["procedure"]
-            ).data,
-
-        "steps":
-            ProcedureStepSerializer(
-                data["steps"],
-                many=True
-            ).data,
-
-        # procedure_service already converts these into dictionaries
-        "requirements":
-            data["requirements"],
-
-        "faqs":
-            FAQSerializer(
-                data["faqs"],
-                many=True
-            ).data,
+        "procedure": ProcedureSerializer(procedure).data,
+        "steps": ProcedureStepSerializer(steps, many=True).data,
+        "requirements": requirements,
+        "faq_categories": faq_categories,
     })
+
 
 
 # =========================

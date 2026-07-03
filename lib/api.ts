@@ -1,4 +1,4 @@
-import { ENDPOINTS } from '../constants/api';
+import { API_BASE_URL, ENDPOINTS } from '../constants/api';
 import { getToken } from './auth';
 
 // ── Procedures ────────────────────────────────────────────────
@@ -10,12 +10,14 @@ export async function fetchProcedures() {
 }
 
 // ── FAQs ──────────────────────────────────────────────────────
-export async function fetchFAQs() {
-  const res = await fetch(ENDPOINTS.faqs);
-  if (!res.ok) throw new Error('Failed to fetch FAQs');
+export const fetchFAQs = async (categoryId?: string) => {
+  const url = categoryId
+    ? `${API_BASE_URL}/faqs/?category_id=${categoryId}`
+    : `${API_BASE_URL}/faqs/`;
+
+  const res = await fetch(url);
   return res.json();
-  // returns: [{ id, question, answer, category, created_at }]
-}
+};
 
 // ── My Requests (needs auth token) ───────────────────────────
 export async function fetchMyRequests() {

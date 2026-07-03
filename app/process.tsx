@@ -39,7 +39,7 @@ export default function ProcessScreen() {
   const [procedure, setProcedure] = useState<any>(null);
   const [steps, setSteps] = useState<any[]>([]);
   const [requirements, setRequirements] = useState<any[]>([]);
-  const [faqs, setFaqs] = useState<any[]>([]);
+  const [faqCategories, setFaqCategories] = useState<any[]>([]);
 
   // NEW
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
@@ -139,7 +139,7 @@ export default function ProcessScreen() {
       setProcedure(data.procedure ?? null);
       setSteps(data.steps ?? []);
       setRequirements(data.requirements ?? []);
-      setFaqs(data.faqs ?? []);
+      setFaqCategories(data.faq_categories ?? []);
     } catch (err) {
       console.error(
         "Failed to fetch process:",
@@ -322,8 +322,8 @@ export default function ProcessScreen() {
           />
                   ) : (
           <FAQTab
-            faqs={faqs}
-            setFaqs={setFaqs}
+            faqs={faqCategories.flatMap((c: any) => c.faqs ?? [])}
+            setFaqs={setFaqCategories}
             procedure={procedure}
             isAdmin={isAdmin}
             colors={colors}

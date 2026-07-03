@@ -34,9 +34,6 @@ export default function FAQTab({
 }: Props) {
   const [editingFAQId, setEditingFAQId] = useState<number | null>(null);
 
-  // =========================
-  // RESPONSIVE LAYOUT
-  // =========================
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
@@ -88,157 +85,114 @@ export default function FAQTab({
       </Text>
 
       {/* ========================= */}
-      {/* FAQ LIST */}
+      {/* EMPTY STATE (NEW) */}
       {/* ========================= */}
 
-      {faqs.map((faq, index) => {
-        const isEditing =
-          editingFAQId === faq.faq_id;
+      {faqs.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+            No FAQs available
+          </Text>
 
-        return (
-          <View
-            key={faq.faq_id}
-            style={styles.faqWrapper}
-          >
-            {/* ACTIONS */}
-            {isAdmin && !isEditing && (
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  onPress={() =>
-                    handleEdit(faq.faq_id)
-                  }
-                >
-                  <Text
-                    style={{
-                      color: colors.tint,
-                    }}
-                  >
-                    Edit
-                  </Text>
-                </TouchableOpacity>
+          <Text style={[styles.emptySubtitle, { color: colors.icon }]}>
+            This category doesn’t have any questions yet.
+          </Text>
+        </View>
+      ) : (
+        faqs.map((faq, index) => {
+          const isEditing = editingFAQId === faq.faq_id;
 
-                <TouchableOpacity
-                  onPress={() =>
-                    onRequestDelete(faq)
-                  }
-                >
-                  <Text style={{ color: "red" }}>
-                    Delete
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* EDIT MODE */}
-            {isEditing ? (
-              <View style={styles.editCard}>
-                <TextInput
-                  value={faq.question}
-                  onChangeText={(text) => {
-                    const updated = [...faqs];
-                    updated[index].question =
-                      text;
-                    setFaqs(updated);
-                  }}
-                  multiline
-                  placeholder="Question"
-                  placeholderTextColor={
-                    colors.icon
-                  }
-                  style={[
-                    styles.input,
-                    {
-                      color: colors.text,
-                      borderColor:
-                        colors.border,
-                    },
-                  ]}
-                />
-
-                <TextInput
-                  value={faq.answer}
-                  onChangeText={(text) => {
-                    const updated = [...faqs];
-                    updated[index].answer =
-                      text;
-                    setFaqs(updated);
-                  }}
-                  multiline
-                  placeholder="Answer"
-                  placeholderTextColor={
-                    colors.icon
-                  }
-                  style={[
-                    styles.textArea,
-                    {
-                      color: colors.text,
-                      borderColor:
-                        colors.border,
-                    },
-                  ]}
-                />
-
-                <View
-                  style={
-                    styles.inlineButtons
-                  }
-                >
-                  <TouchableOpacity
-                    style={
-                      styles.cancelBtn
-                    }
-                    onPress={
-                      handleCancel
-                    }
-                  >
-                    <Text
-                      style={{
-                        color: "white",
-                      }}
-                    >
-                      Cancel
-                    </Text>
+          return (
+            <View key={faq.faq_id} style={styles.faqWrapper}>
+              {/* ACTIONS */}
+              {isAdmin && !isEditing && (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity onPress={() => handleEdit(faq.faq_id)}>
+                    <Text style={{ color: colors.tint }}>Edit</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.saveBtn}
-                    onPress={() => {
-                      onSaveFAQInline(
-                        faq
-                      );
-                      setEditingFAQId(
-                        null
-                      );
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "white",
-                      }}
-                    >
-                      Save
-                    </Text>
+                  <TouchableOpacity onPress={() => onRequestDelete(faq)}>
+                    <Text style={{ color: "red" }}>Delete</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-            ) : (
-              <FAQCard
-                question={faq.question}
-                answer={faq.answer}
-                isAdmin={false}
-              />
-            )}
-          </View>
-        );
-      })}
+              )}
+
+              {/* EDIT MODE */}
+              {isEditing ? (
+                <View style={styles.editCard}>
+                  <TextInput
+                    value={faq.question}
+                    onChangeText={(text) => {
+                      const updated = [...faqs];
+                      updated[index].question = text;
+                      setFaqs(updated);
+                    }}
+                    multiline
+                    placeholder="Question"
+                    placeholderTextColor={colors.icon}
+                    style={[
+                      styles.input,
+                      {
+                        color: colors.text,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  />
+
+                  <TextInput
+                    value={faq.answer}
+                    onChangeText={(text) => {
+                      const updated = [...faqs];
+                      updated[index].answer = text;
+                      setFaqs(updated);
+                    }}
+                    multiline
+                    placeholder="Answer"
+                    placeholderTextColor={colors.icon}
+                    style={[
+                      styles.textArea,
+                      {
+                        color: colors.text,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  />
+
+                  <View style={styles.inlineButtons}>
+                    <TouchableOpacity
+                      style={styles.cancelBtn}
+                      onPress={handleCancel}
+                    >
+                      <Text style={{ color: "white" }}>Cancel</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.saveBtn}
+                      onPress={() => {
+                        onSaveFAQInline(faq);
+                        setEditingFAQId(null);
+                      }}
+                    >
+                      <Text style={{ color: "white" }}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <FAQCard
+                  question={faq.question}
+                  answer={faq.answer}
+                  isAdmin={false}
+                />
+              )}
+            </View>
+          );
+        })
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // =========================
-  // RESPONSIVE CONTAINER
-  // =========================
   container: {
     width: "100%",
     paddingTop: 15,
@@ -314,5 +268,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#6B7280",
     padding: 10,
     borderRadius: 8,
+  },
+
+  // NEW EMPTY STATE
+  emptyState: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+
+  emptySubtitle: {
+    fontSize: 13,
+    textAlign: "center",
   },
 });

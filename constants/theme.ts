@@ -10,7 +10,7 @@ const tintColorDark = '#141A73'; // Brighter Blue for dark mode
 
 export const Colors = {
   light: {
-    text: '#1E293B',
+    text: '#000000',
     background: '#FFFFFF',
     tint: tintColorLight,
     tint2: '#EBA937', // Gold Yellow
@@ -20,7 +20,7 @@ export const Colors = {
     border: '#E2E8F0',
   },
   dark: {
-    text: '#F8FAFC',
+    text: '#ffffff',
     background: '#111827',
     tint: tintColorDark,
     tint2: '#EBA937', // Slightly brighter yellow for dark mode

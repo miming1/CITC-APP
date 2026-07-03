@@ -58,24 +58,23 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: 16,
   },
+
   title: {
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 16,
+    marginTop: 20,
   },
 
-  // ── Pill grid ──────────────────────────────────────────────────────────────
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
 
-  // ── Pill button — dynamic width, capped at 166, fixed height 30 ────────────
   pill: {
-    height: 30,
-    maxWidth: 166,
-    paddingHorizontal: 14,
+    maxWidth: 1000,
+    paddingHorizontal: 20,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -83,6 +82,7 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 15,
     fontWeight: '500',
+    marginVertical: 10,
   },
 
 });

@@ -2,6 +2,7 @@ from ..models import (
     Procedures,
     ProcedureSteps,
     ProcedureRequirements,
+    FaqCategories,
     Faqs
 )
 
@@ -11,9 +12,7 @@ def get_full_procedure(procedure_id):
     # =========================
     # MAIN PROCEDURE
     # =========================
-    procedure = Procedures.objects.get(
-        pk=procedure_id
-    )
+    procedure = Procedures.objects.get(pk=procedure_id)
 
     # =========================
     # STEPS
@@ -24,7 +23,6 @@ def get_full_procedure(procedure_id):
 
     # =========================
     # REQUIREMENTS
-    # Flatten ProcedureRequirements -> Requirements
     # =========================
     requirement_links = (
         ProcedureRequirements.objects
@@ -41,21 +39,13 @@ def get_full_procedure(procedure_id):
     ]
 
     # =========================
-    # ANSWERED FAQS
+    # FAQ CATEGORIES (OPTIONAL RAW SOURCE ONLY)
     # =========================
-    # Faqs are related through FaqCategories -> Procedures
-    faqs = Faqs.objects.exclude(
-        answer=""
-    ).filter(
-        category__procedure_id=procedure_id
-    )
+    # NOTE: We DO NOT flatten FAQs here anymore.
+    # Views will handle category → faqs grouping.
 
-    # =========================
-    # PENDING QUESTIONS
-    # =========================
-    pending_questions = Faqs.objects.filter(
-        answer="",
-        category__procedure_id=procedure_id
+    faq_categories = FaqCategories.objects.filter(
+        procedure_id=procedure_id
     )
 
     # =========================
@@ -65,6 +55,7 @@ def get_full_procedure(procedure_id):
         "procedure": procedure,
         "steps": steps,
         "requirements": requirements,
-        "faqs": faqs,
-        "pending_questions": pending_questions,
+
+        # optional raw categories only (not used directly in UI anymore)
+        "faq_categories": faq_categories,
     }
