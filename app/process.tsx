@@ -2,8 +2,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 import { API_BASE_URL } from "../constants/api";
-import { supabase } from "../lib/supabase";
 
 import DeleteModal from "../components/DeleteModal";
 import FAQModal from "../components/FAQModal";
@@ -16,153 +16,252 @@ import TermsModal from "../components/TermsModal";
 
 import { Colors } from "../constants/theme";
 
+const CHECKLIST_PREFIX = "procedure_checklist_";
+
 export default function ProcessScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
   const router = useRouter();
 
   const { id, roleId } = useLocalSearchParams();
-  const procedureId = id ? Number(id) : 1;
+
+  const procedureId = parseInt(String(id), 10);
 
   const isAdmin = Number(roleId) === 2;
 
-  const [activeTab, setActiveTab] = useState<"procedure" | "faq">("procedure");
+  const [activeTab, setActiveTab] =
+    useState<"procedure" | "faq">("procedure");
 
+  // =========================
   // DATA
+  // =========================
+
   const [procedure, setProcedure] = useState<any>(null);
   const [steps, setSteps] = useState<any[]>([]);
   const [requirements, setRequirements] = useState<any[]>([]);
-  const [faqs, setFaqs] = useState<any[]>([]);
+  const [faqCategories, setFaqCategories] = useState<any[]>([]);
 
-  // EDIT STATE
-  const [isEditingProcedure, setIsEditingProcedure] = useState(false);
+  // NEW
+  const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
 
+  // =========================
+  // EDIT
+  // =========================
+
+  const [isEditingProcedure, setIsEditingProcedure] =
+    useState(false);
+
+  // =========================
   // MODALS
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showFAQModal, setShowFAQModal] = useState(false);
+  // =========================
 
-  const [deleteType, setDeleteType] = useState<"procedure" | "faq" | null>(null);
-  const [selectedFAQ, setSelectedFAQ] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] =
+    useState(false);
 
-  const [deletedSteps, setDeletedSteps] = useState<number[]>([]);
-  const [deletedRequirements, setDeletedRequirements] = useState<number[]>([]);
+  const [showDeleteModal, setShowDeleteModal] =
+    useState(false);
+
+  const [showFAQModal, setShowFAQModal] =
+    useState(false);
+
+  const [deleteType, setDeleteType] =
+    useState<"procedure" | "faq" | null>(null);
+
+  const [selectedFAQ, setSelectedFAQ] =
+    useState<any>(null);
+
+  const [deletedSteps, setDeletedSteps] =
+    useState<number[]>([]);
+
+  const [deletedRequirements, setDeletedRequirements] =
+    useState<number[]>([]);
+
+  // =========================
+  // LOAD CHECKLIST
+  // =========================
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !procedureId
+    ) {
+      return;
+    }
+
+    const saved = localStorage.getItem(
+      `${CHECKLIST_PREFIX}${procedureId}`
+    );
+
+    if (saved) {
+      try {
+        setCheckedSteps(JSON.parse(saved));
+      } catch {
+        setCheckedSteps([]);
+      }
+    } else {
+      setCheckedSteps([]);
+    }
+  }, [procedureId]);
+
+  // =========================
+  // SAVE CHECKLIST
+  // =========================
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      !procedureId
+    ) {
+      return;
+    }
+
+    localStorage.setItem(
+      `${CHECKLIST_PREFIX}${procedureId}`,
+      JSON.stringify(checkedSteps)
+    );
+  }, [checkedSteps, procedureId]);
+
+  // =========================
+  // FETCH ALL
+  // =========================
 
   const fetchAll = async () => {
-    const [proc, stepsRes, reqRes, faqRes] = await Promise.all([
-      supabase.from("procedures").select("*").eq("procedure_id", procedureId).maybeSingle(),
-      supabase.from("procedure_steps").select("*").eq("procedure_id", procedureId).order("step_number"),
-      supabase.from("procedure_requirements").select("*").eq("procedure_id", procedureId),
-      supabase.from("faqs").select("*").eq("procedure_id", procedureId),
-    ]);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/process/${procedureId}/`,
+        {
+          cache: "no-store",
+        }
+      );
 
-    setProcedure(proc.data);
-    setSteps(stepsRes.data || []);
-    setRequirements(reqRes.data || []);
-    setFaqs(faqRes.data || []);
+      const data = await res.json();
+
+      setProcedure(data.procedure ?? null);
+      setSteps(data.steps ?? []);
+      setRequirements(data.requirements ?? []);
+      setFaqCategories(data.faq_categories ?? []);
+    } catch (err) {
+      console.error(
+        "Failed to fetch process:",
+        err
+      );
+    }
   };
 
   useEffect(() => {
+    if (!procedureId || isNaN(procedureId))
+      return;
+
     fetchAll();
   }, [procedureId]);
 
   // =========================
-  // SAVE PROCEDURE
+  // SAVE PROCESS
   // =========================
+
   const handleAuthSuccess = async () => {
     try {
-      await fetch(`${API_BASE_URL}/procedures/${procedureId}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          procedure_name: procedure.procedure_name,
-          description: procedure.description,
-        }),
-      });
-
-      for (const id of deletedRequirements) {
-        await supabase
-          .from("procedure_requirements")
-          .delete()
-          .eq("requirement_id", id);
-      }
-
-      for (const req of requirements) {
-        if (req.requirement_id) {
-          await supabase
-            .from("procedure_requirements")
-            .update({ requirement_text: req.requirement_text })
-            .eq("requirement_id", req.requirement_id);
-        } else {
-          await supabase.from("procedure_requirements").insert({
-            procedure_id: procedureId,
-            requirement_text: req.requirement_text,
-          });
+      await fetch(
+        `${API_BASE_URL}/process/${procedureId}/save/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            procedure_name:
+              procedure.procedure_name,
+            description:
+              procedure.description,
+            steps,
+            requirements:
+              requirements.map((req: any) => ({
+                requirement_id:
+                  req.requirement_id,
+                requirement_name:
+                  req.requirement_name ??
+                  req.requirement_text ??
+                  req.name ??
+                  "",
+              })),
+          }),
         }
-      }
-
-      for (const id of deletedSteps) {
-        await supabase
-          .from("procedure_steps")
-          .delete()
-          .eq("step_id", id);
-      }
-
-      for (const step of steps) {
-        if (step.step_id) {
-          await supabase
-            .from("procedure_steps")
-            .update({
-              step_description: step.step_description,
-              office_location: step.office_location,
-              reference_link: step.reference_link,
-            })
-            .eq("step_id", step.step_id);
-        } else {
-          await supabase.from("procedure_steps").insert({
-            procedure_id: procedureId,
-            step_number: step.step_number,
-            step_description: step.step_description,
-            office_location: step.office_location,
-            reference_link: step.reference_link,
-          });
-        }
-      }
+      );
 
       setDeletedSteps([]);
       setDeletedRequirements([]);
 
       alert("Updated successfully");
+
       setIsEditingProcedure(false);
-      fetchAll();
+
+      await fetchAll();
     } catch (err: any) {
       alert(err.message);
     }
   };
 
-  const handleDeleteProcedure = async () => {
-    await fetch(`${API_BASE_URL}/procedures/${procedureId}/delete/`, {
-      method: "DELETE",
-    });
+  // =========================
+  // DELETE PROCEDURE
+  // =========================
 
-    router.back();
-  };
+  const handleDeleteProcedure =
+    async () => {
+      await fetch(
+        `${API_BASE_URL}/procedures/${procedureId}/delete/`,
+        {
+          method: "DELETE",
+        }
+      );
 
-  const handleDeleteFAQ = async (id: number) => {
-    await fetch(`${API_BASE_URL}/faqs/${id}/delete/`, {
-      method: "DELETE",
-    });
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(
+          `${CHECKLIST_PREFIX}${procedureId}`
+        );
+      }
 
-    fetchAll();
+      router.back();
+    };
+
+  // =========================
+  // DELETE FAQ
+  // =========================
+
+  const handleDeleteFAQ = async (
+    id: number
+  ) => {
+    await fetch(
+      `${API_BASE_URL}/faqs/${id}/delete/`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    await fetchAll();
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor:
+          colors.background,
+      }}
+    >
       <Header title="Process" />
 
-      <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
+      <TabSwitcher
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: 16,
+          paddingBottom: 120,
+        }}
+      >
         {activeTab === "procedure" ? (
           <ProcessTab
             procedure={procedure}
@@ -170,40 +269,81 @@ export default function ProcessScreen() {
             steps={steps}
             setSteps={setSteps}
             requirements={requirements}
-            setRequirements={setRequirements}
+            setRequirements={
+              setRequirements
+            }
             isAdmin={isAdmin}
-            isEditing={isEditingProcedure}
+            isEditing={
+              isEditingProcedure
+            }
             colors={colors}
-            onEdit={() => setIsEditingProcedure(true)}
+
+            checkedSteps={checkedSteps}
+            setCheckedSteps={
+              setCheckedSteps
+            }
+
+            onEdit={() =>
+              setIsEditingProcedure(
+                true
+              )
+            }
             onCancel={() => {
-              setIsEditingProcedure(false);
+              setIsEditingProcedure(
+                false
+              );
               fetchAll();
             }}
-            onSave={() => setShowAuthModal(true)}
-            onDelete={() => setShowDeleteModal(true)}
-            setDeletedSteps={setDeletedSteps}
-            setDeletedRequirements={setDeletedRequirements}
-            deletedSteps={deletedSteps}
-            deletedRequirements={deletedRequirements}
+            onSave={() =>
+              setShowAuthModal(true)
+            }
+            onDelete={() => {
+              setDeleteType(
+                "procedure"
+              );
+              setShowDeleteModal(
+                true
+              );
+            }}
+
+            setDeletedSteps={
+              setDeletedSteps
+            }
+            setDeletedRequirements={
+              setDeletedRequirements
+            }
+
+            deletedSteps={
+              deletedSteps
+            }
+            deletedRequirements={
+              deletedRequirements
+            }
           />
-        ) : (
+                  ) : (
           <FAQTab
-            faqs={faqs}
-            setFaqs={setFaqs}
+            faqs={faqCategories.flatMap((c: any) => c.faqs ?? [])}
+            setFaqs={setFaqCategories}
             procedure={procedure}
             isAdmin={isAdmin}
             colors={colors}
             onSaveFAQInline={async (faq) => {
-              await fetch(`${API_BASE_URL}/faqs/${faq.faq_id}/`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  question: faq.question,
-                  answer: faq.answer,
-                }),
-              });
+              await fetch(
+                `${API_BASE_URL}/faqs/${faq.faq_id}/`,
+                {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type":
+                      "application/json",
+                  },
+                  body: JSON.stringify({
+                    question: faq.question,
+                    answer: faq.answer,
+                  }),
+                }
+              );
 
-              fetchAll();
+              await fetchAll();
             }}
             onRequestDelete={(faq) => {
               setSelectedFAQ(faq);
@@ -214,34 +354,47 @@ export default function ProcessScreen() {
         )}
       </ScrollView>
 
-      {/* ========================= */}
-      {/*   FLOATING BUTTONS        */}
-      {/* ========================= */}
+      {/* FLOATING BUTTONS */}
+
       <FloatingButtons
         activeTab={activeTab}
         isAdmin={isAdmin}
-
         onTrackPress={() => {
-          // TODO: replace with real screen when ready
           router.push({
-            pathname: "/scan", // or "/scan-document"
-            params: { id: procedureId },
+            pathname: "/scan",
+            params: {
+              id: procedureId,
+            },
           });
         }}
-
         onFAQPress={() => {
-          setShowFAQModal(true);
+          if (isAdmin) {
+            setShowFAQModal(true);
+          }
         }}
       />
 
-      {/* MODALS */}
+      {/* DELETE MODAL */}
+
       <DeleteModal
         visible={showDeleteModal}
-        onCancel={() => setShowDeleteModal(false)}
+        onCancel={() =>
+          setShowDeleteModal(false)
+        }
         onConfirm={async () => {
-          if (deleteType === "procedure") await handleDeleteProcedure();
-          if (deleteType === "faq" && selectedFAQ) {
-            await handleDeleteFAQ(selectedFAQ.faq_id);
+          if (
+            deleteType === "procedure"
+          ) {
+            await handleDeleteProcedure();
+          }
+
+          if (
+            deleteType === "faq" &&
+            selectedFAQ
+          ) {
+            await handleDeleteFAQ(
+              selectedFAQ.faq_id
+            );
           }
 
           setShowDeleteModal(false);
@@ -250,31 +403,53 @@ export default function ProcessScreen() {
         }}
       />
 
+      {/* AUTH MODAL */}
+
       <TermsModal
         visible={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
+        onClose={() =>
+          setShowAuthModal(false)
+        }
       />
 
-      <FAQModal
-        visible={showFAQModal}
-        onClose={() => setShowFAQModal(false)}
-        procedureId={procedureId}
-        isAdmin={isAdmin}
-        onSave={async (procedureId, data) => {
-          await fetch(`${API_BASE_URL}/faqs/create/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              procedure: procedureId,
-              question: data.question,
-              answer: data.answer,
-            }),
-          });
+      {/* FAQ MODAL */}
 
-          setShowFAQModal(false);
-          fetchAll();
-        }}
-      />
+      {isAdmin && (
+        <FAQModal
+          visible={showFAQModal}
+          onClose={() =>
+            setShowFAQModal(false)
+          }
+          procedureId={procedureId}
+          isAdmin={isAdmin}
+          onSave={async (
+            procedureId,
+            data
+          ) => {
+            await fetch(
+              `${API_BASE_URL}/faqs/create/`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type":
+                    "application/json",
+                },
+                body: JSON.stringify({
+                  procedure: procedureId,
+                  question:
+                    data.question,
+                  answer:
+                    data.answer,
+                }),
+              }
+            );
+
+            setShowFAQModal(false);
+
+            await fetchAll();
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }

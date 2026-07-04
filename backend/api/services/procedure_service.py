@@ -2,44 +2,60 @@ from ..models import (
     Procedures,
     ProcedureSteps,
     ProcedureRequirements,
+    FaqCategories,
     Faqs
 )
 
+
 def get_full_procedure(procedure_id):
 
-    procedure = Procedures.objects.get(
-        pk=procedure_id
-    )
+    # =========================
+    # MAIN PROCEDURE
+    # =========================
+    procedure = Procedures.objects.get(pk=procedure_id)
 
+    # =========================
+    # STEPS
+    # =========================
     steps = ProcedureSteps.objects.filter(
         procedure_id=procedure_id
     ).order_by("step_number")
 
-    requirements = ProcedureRequirements.objects.filter(
+    # =========================
+    # REQUIREMENTS
+    # =========================
+    requirement_links = (
+        ProcedureRequirements.objects
+        .filter(procedure_id=procedure_id)
+        .select_related("requirement")
+    )
+
+    requirements = [
+        {
+            "requirement_id": link.requirement.requirement_id,
+            "requirement_name": link.requirement.requirement_name,
+        }
+        for link in requirement_links
+    ]
+
+    # =========================
+    # FAQ CATEGORIES (OPTIONAL RAW SOURCE ONLY)
+    # =========================
+    # NOTE: We DO NOT flatten FAQs here anymore.
+    # Views will handle category → faqs grouping.
+
+    faq_categories = FaqCategories.objects.filter(
         procedure_id=procedure_id
     )
 
-    # ANSWERED FAQS
-    faqs = Faqs.objects.exclude(
-        answer=""
-    ).filter(
-        procedure_id=procedure_id
-    )
-
-    # PENDING USER QUESTIONS
-    pending_questions = Faqs.objects.filter(
-        procedure_id=procedure_id,
-        answer=""
-    )
-
+    # =========================
+    # RETURN
+    # =========================
     return {
         "procedure": procedure,
         "steps": steps,
         "requirements": requirements,
 
-        # visible to users
-        "faqs": faqs,
-
-        # for admin panel
-        "pending_questions": pending_questions,
+        # optional raw categories only (not used directly in UI anymore)
+        "faq_categories": faq_categories,
     }

@@ -1,21 +1,23 @@
-import { ENDPOINTS } from '../constants/api';
+import { API_BASE_URL, ENDPOINTS } from '../constants/api';
 import { getToken } from './auth';
 
 // ── Procedures ────────────────────────────────────────────────
 export async function fetchProcedures() {
-  const res = await fetch(ENDPOINTS.procedures);
+   const res = await fetch(ENDPOINTS.procedures, { cache: "no-store" });
   if (!res.ok) throw new Error('Failed to fetch procedures');
   return res.json();
   // returns: [{ id, procedure_name, description, created_at, updated_at }]
 }
 
 // ── FAQs ──────────────────────────────────────────────────────
-export async function fetchFAQs() {
-  const res = await fetch(ENDPOINTS.faqs);
-  if (!res.ok) throw new Error('Failed to fetch FAQs');
+export const fetchFAQs = async (categoryId?: string) => {
+  const url = categoryId
+    ? `${API_BASE_URL}/faqs/?category_id=${categoryId}`
+    : `${API_BASE_URL}/faqs/`;
+
+  const res = await fetch(url);
   return res.json();
-  // returns: [{ id, question, answer, category, created_at }]
-}
+};
 
 // ── My Requests (needs auth token) ───────────────────────────
 export async function fetchMyRequests() {
@@ -43,11 +45,13 @@ export async function submitRequest(procedureId: number) {
   return res.json();
 }
 
-// ── Edit Profile (needs auth token) ───────────────────────────
 export async function updateProfile(
   id_number?: string,
   email?: string,
-  password?: string
+  password?: string,
+  student_name?: string,
+  program?: string,
+  year_level?: number
 ) {
   const token = await getToken();
 
@@ -61,6 +65,9 @@ export async function updateProfile(
       id_number,
       email,
       password,
+      student_name,
+      program,
+      year_level,
     }),
   });
 

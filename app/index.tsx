@@ -20,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
 import { loginUser } from "../lib/auth";
+import { useAuth } from "../lib/auth-context";
 
 import AuthLogo from "../components/AuthLogo";
 import AuthMessage from "../components/AuthMessage";
@@ -29,20 +30,15 @@ import LoginFormView from "../components/LoginFormView";
 import SignupFormView from "../components/SignupFormView";
 import TermsModal from "../components/TermsModal";
 
-
-// =========================================================
-// SCREEN
-// =========================================================
-
 export default function LoginScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme as "light" | "dark"];
   const TINT = Colors.light.tint;
 
-  // ── Tab ───────────────────────────────────────────────
+  const { setUser } = useAuth();
+
   const [tab, setTab] = useState<"login" | "signup">("login");
 
-  // ── Forms ─────────────────────────────────────────────
   const [loginForm, setLoginForm] = useState({ idNumber: "", password: "" });
   const [signupForm, setSignupForm] = useState({
     idNumber: "",
@@ -51,20 +47,17 @@ export default function LoginScreen() {
     confirmPassword: "",
   });
 
-  // ── State ─────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
-  // ── OTP Modal State ───────────────────────────────────
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState("");
 
-  // ── Helpers ───────────────────────────────────────────
   function switchTab(t: "login" | "signup") {
     setTab(t);
     setMessage(null);
@@ -101,13 +94,16 @@ export default function LoginScreen() {
       const roleId = (result as any).role_id;
 
       if (result.success) {
+        // Store the logged-in user once — every screen reads from context now
+        setUser({ idNumber, roleId });
+
         setMessage({ type: "success", text: "Login successful!" });
         setTimeout(() => {
           setMessage(null);
           if (roleId === 2) {
-            router.replace({ pathname: "/AdminDashboard", params: { idNumber } });
+            router.replace("/AdminDashboard");
           } else {
-            router.replace({ pathname: "/Userdashboard", params: { idNumber } });
+            router.replace("/Userdashboard");
           }
         }, 700);
       } else {
@@ -160,7 +156,6 @@ export default function LoginScreen() {
       if (!res.ok) {
         setMessage({ type: "error", text: data.error || "Failed to send OTP." });
       } else {
-        // Show OTP modal
         setOtp("");
         setOtpError("");
         setShowOtpModal(true);
@@ -196,7 +191,6 @@ export default function LoginScreen() {
       if (!res.ok) {
         setOtpError(data.error || "Invalid or expired OTP.");
       } else {
-        // Success — close modal and switch to login
         setShowOtpModal(false);
         setSignupForm({ idNumber: "", email: "", password: "", confirmPassword: "" });
         setTermsAccepted(false);
@@ -214,7 +208,6 @@ export default function LoginScreen() {
     }
   }
 
-  // ── Render ────────────────────────────────────────────
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
@@ -261,7 +254,6 @@ export default function LoginScreen() {
       <TermsModal visible={showTerms} onClose={() => setShowTerms(false)} />
       <ForgotPasswordModal visible={showForgot} onClose={() => setShowForgot(false)} />
 
-      {/* ── OTP Verification Modal ── */}
       <Modal
         visible={showOtpModal}
         transparent
@@ -275,31 +267,27 @@ export default function LoginScreen() {
           <Pressable style={s.overlay} onPress={() => setShowOtpModal(false)}>
             <Pressable style={s.otpCard} onPress={() => {}}>
 
-              {/* Header */}
               <TouchableOpacity style={s.closeBtn} onPress={() => setShowOtpModal(false)}>
-                <Ionicons name="chevron-back" size={20} color="#9B7FD4" />
+                <Ionicons name="chevron-back" size={20} color="#0a1036" />
                 <Text style={s.closeBtnText}>Verify Email</Text>
               </TouchableOpacity>
 
-              {/* Icon */}
               <View style={s.iconCircle}>
-                <Ionicons name="keypad-outline" size={40} color="#9B7FD4" />
+                <Ionicons name="keypad-outline" size={40} color="#0a1036" />
               </View>
 
-              {/* Title */}
               <Text style={s.otpTitle}>Check Your Email</Text>
               <Text style={s.otpSub}>
                 A 6-digit OTP was sent to{"\n"}
                 <Text style={s.otpEmail}>{signupForm.email}</Text>
               </Text>
 
-              {/* OTP Input */}
               <View style={s.inputWrap}>
-                <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
+                <Ionicons name="lock-closed-outline" size={18} color="#0a1036" style={s.inputIcon} />
                 <TextInput
                   style={s.input}
                   placeholder="Enter 6-digit OTP"
-                  placeholderTextColor="#CCBACE"
+                  placeholderTextColor="#0a1036"
                   value={otp}
                   onChangeText={(v) => { setOtp(v); setOtpError(""); }}
                   keyboardType="numeric"
@@ -309,7 +297,6 @@ export default function LoginScreen() {
 
               {otpError ? <Text style={s.errorText}>{otpError}</Text> : null}
 
-              {/* Verify Button */}
               <TouchableOpacity
                 style={[s.btn, (otp.length < 6 || otpLoading) && s.btnDisabled]}
                 onPress={handleVerifyOtp}
@@ -321,7 +308,6 @@ export default function LoginScreen() {
                 }
               </TouchableOpacity>
 
-              {/* Resend */}
               <TouchableOpacity
                 style={s.resendWrap}
                 onPress={() => {
@@ -363,8 +349,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 16,
   },
-
-  // ── OTP Modal ──────────────────────────────────────────
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
@@ -409,19 +393,19 @@ const s = StyleSheet.create({
   otpTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#422780",
+    color: "#0a1036",
     marginBottom: 10,
   },
   otpSub: {
     fontSize: 13,
-    color: "#6B5A8E",
+    color: "#0a1036",
     lineHeight: 20,
     marginBottom: 20,
     textAlign: "center",
   },
   otpEmail: {
     fontWeight: "700",
-    color: "#422780",
+    color: "#0a1036",
   },
   inputWrap: {
     flexDirection: "row",
@@ -439,7 +423,7 @@ const s = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    color: "#4b2170",
+    color: "#0a1036",
     paddingVertical: 0,
   },
   errorText: {

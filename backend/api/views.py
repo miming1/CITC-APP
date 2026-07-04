@@ -17,7 +17,9 @@ from django.conf import settings
 from .models import (
     Procedures,
     ProcedureSteps,
+    Requirements,
     ProcedureRequirements,
+    FaqCategories,
     Faqs,
     Requests,
     Users,
@@ -28,6 +30,7 @@ from .serializers import (
     ProcedureSerializer,
     ProcedureStepSerializer,
     ProcedureRequirementSerializer,
+    FAQCategorySerializer,
     FAQSerializer,
     RequestSerializer
 )
@@ -194,6 +197,9 @@ def me(request):
         "user_id": str(profile.user_id),
         "id_number": profile.id_number,
         "email": profile.email,
+        "student_name": profile.student_name,
+        "program": profile.program,
+        "year_level": profile.year_level,
         "role_id": profile.role.role_id if profile.role else None,
         "office_id": profile.office_id
     })
@@ -265,6 +271,169 @@ def delete_procedure(request, pk):
         'message': 'Procedure deleted successfully'
     }, status=204)
 
+@api_view(['POST'])
+def save_full_process(request, procedure_id):
+
+    try:
+        procedure = Procedures.objects.get(pk=procedure_id)
+    except Procedures.DoesNotExist:
+        return Response({"error": "Procedure not found"}, status=404)
+
+    data = request.data
+
+    # =========================
+    # UPDATE PROCEDURE
+    # =========================
+    procedure.procedure_name = data.get(
+        "procedure_name",
+        procedure.procedure_name
+    )
+
+    procedure.description = data.get(
+        "description",
+        procedure.description
+    )
+
+    procedure.save()
+
+    # =========================
+    # SYNC REQUIREMENTS
+    # =========================
+    incoming_requirements = data.get("requirements", [])
+
+    existing_links = ProcedureRequirements.objects.filter(
+        procedure=procedure
+    )
+
+    linked_requirement_ids = []
+
+    for req in incoming_requirements:
+
+        requirement_name = (
+            req.get("requirement_name") or ""
+        ).strip()
+
+        if not requirement_name:
+            continue
+
+        # Reuse existing requirement if it already exists
+        requirement, _ = Requirements.objects.get_or_create(
+            requirement_name=requirement_name
+        )
+
+        linked_requirement_ids.append(
+            requirement.requirement_id
+        )
+
+        # Create link if it doesn't already exist
+        ProcedureRequirements.objects.get_or_create(
+            procedure=procedure,
+            requirement=requirement
+        )
+
+    # Remove links that are no longer included
+    existing_links.exclude(
+        requirement_id__in=linked_requirement_ids
+    ).delete()
+
+    # =========================
+    # SYNC STEPS
+    # =========================
+    incoming_steps = data.get("steps", [])
+
+    existing_steps = ProcedureSteps.objects.filter(
+        procedure=procedure
+    )
+
+    incoming_step_ids = []
+
+    for step in incoming_steps:
+
+        step_id = step.get("step_id")
+
+        if step_id:
+
+            obj = ProcedureSteps.objects.get(
+                pk=step_id
+            )
+
+            obj.step_description = step.get(
+                "step_description"
+            )
+
+            obj.office_location = step.get(
+                "office_location"
+            )
+
+            obj.reference_link = step.get(
+                "reference_link"
+            )
+
+            obj.step_number = step.get(
+                "step_number"
+            )
+
+            obj.save()
+
+            incoming_step_ids.append(
+                obj.step_id
+            )
+
+        else:
+
+            new_step = ProcedureSteps.objects.create(
+                procedure=procedure,
+                step_number=step.get("step_number"),
+                step_description=step.get("step_description"),
+                office_location=step.get("office_location"),
+                reference_link=step.get("reference_link"),
+            )
+
+            incoming_step_ids.append(
+                new_step.step_id
+            )
+
+    # Delete removed steps
+    existing_steps.exclude(
+        step_id__in=incoming_step_ids
+    ).delete()
+
+    return Response({
+        "message": "Process updated successfully"
+    }, status=200)
+
+# =========================
+# FAQ CATEGORIES
+# =========================
+@api_view(["GET"])
+def get_faq_categories(request):
+
+    categories = FaqCategories.objects.all().order_by("category_name")
+
+    data = []
+
+    for category in categories:
+
+        # count FAQs per category (IMPORTANT for UI empty state)
+        faq_count = Faqs.objects.filter(category=category).count()
+
+        data.append({
+            "category_id": category.category_id,
+            "category_name": category.category_name,
+
+            # procedure link (can be null if orphan category exists)
+            "procedure": (
+                category.procedure.procedure_id
+                if category.procedure
+                else None
+            ),
+
+            # 👇 KEY FIX: lets frontend know if empty
+            "faq_count": faq_count
+        })
+
+    return Response(data)
+
 
 # =========================
 # FAQS
@@ -272,13 +441,15 @@ def delete_procedure(request, pk):
 @api_view(['GET'])
 def get_faqs(request):
 
+    category_id = request.query_params.get("category_id")
+
     faqs = Faqs.objects.all()
 
+    if category_id:
+        faqs = faqs.filter(category_id=category_id)
+
     return Response(
-        FAQSerializer(
-            faqs,
-            many=True
-        ).data
+        FAQSerializer(faqs, many=True).data
     )
 
 
@@ -417,40 +588,40 @@ def track_requests(request):
 def get_process_screen(request, procedure_id):
 
     try:
-
         data = get_full_procedure(procedure_id)
+    except Procedures.DoesNotExist:
+        return Response({"error": "Procedure not found"}, status=404)
 
-    except Exception:
+    procedure = data["procedure"]
+    steps = data["steps"]
+    requirements = data["requirements"]
 
-        return Response({
-            'error': 'Procedure not found'
-        }, status=404)
+    # =========================
+    # GROUP CATEGORIES UNDER PROCEDURE
+    # =========================
+    categories = FaqCategories.objects.filter(
+        procedure_id=procedure_id
+    ).order_by("category_name")
+
+    faq_categories = []
+
+    for category in categories:
+
+        faqs = Faqs.objects.filter(category=category)
+
+        faq_categories.append({
+            "category_id": category.category_id,
+            "category_name": category.category_name,
+            "faqs": FAQSerializer(faqs, many=True).data
+        })
 
     return Response({
-
-        "procedure":
-            ProcedureSerializer(
-                data["procedure"]
-            ).data,
-
-        "steps":
-            ProcedureStepSerializer(
-                data["steps"],
-                many=True
-            ).data,
-
-        "requirements":
-            ProcedureRequirementSerializer(
-                data["requirements"],
-                many=True
-            ).data,
-
-        "faqs":
-            FAQSerializer(
-                data["faqs"],
-                many=True
-            ).data,
+        "procedure": ProcedureSerializer(procedure).data,
+        "steps": ProcedureStepSerializer(steps, many=True).data,
+        "requirements": requirements,
+        "faq_categories": faq_categories,
     })
+
 
 
 # =========================
@@ -461,76 +632,72 @@ def get_process_screen(request, procedure_id):
 def update_profile(request):
 
     try:
-
-        profile = Users.objects.get(
-            auth_user_id=request.user.id
-        )
-
-        auth_user = User.objects.get(
-            id=request.user.id
-        )
+        profile = Users.objects.get(auth_user_id=request.user.id)
+        auth_user = User.objects.get(id=request.user.id)
 
     except Users.DoesNotExist:
-
-        return Response({
-            "error": "Profile not found"
-        }, status=404)
+        return Response({"error": "Profile not found"}, status=404)
 
     except User.DoesNotExist:
-
-        return Response({
-            "error": "Auth user not found"
-        }, status=404)
+        return Response({"error": "Auth user not found"}, status=404)
 
     data = request.data
 
     new_email = data.get("email")
     new_id_number = data.get("id_number")
     new_password = data.get("password")
+    new_student_name = data.get("student_name")
+    new_program = data.get("program")
+    new_year_level = data.get("year_level")
 
     # =========================
-    # UPDATE EMAIL
+    # EMAIL
     # =========================
     if new_email:
-
-        if Users.objects.filter(email=new_email).exclude(
-            user_id=profile.user_id
-        ).exists():
-
-            return Response({
-                "error": "Email already exists"
-            }, status=400)
+        if Users.objects.filter(email=new_email).exclude(user_id=profile.user_id).exists():
+            return Response({"error": "Email already exists"}, status=400)
 
         profile.email = new_email
         auth_user.email = new_email
 
     # =========================
-    # UPDATE ID NUMBER
+    # ID NUMBER
     # =========================
     if new_id_number:
-
-        if User.objects.filter(
-            username=str(new_id_number)
-        ).exclude(
-            id=auth_user.id
-        ).exists():
-
-            return Response({
-                "error": "ID Number already exists"
-            }, status=400)
+        if User.objects.filter(username=str(new_id_number)).exclude(id=auth_user.id).exists():
+            return Response({"error": "ID Number already exists"}, status=400)
 
         profile.id_number = new_id_number
         auth_user.username = str(new_id_number)
 
     # =========================
-    # UPDATE PASSWORD
+    # PASSWORD
     # =========================
     if new_password:
+        auth_user.password = make_password(new_password)
 
-        auth_user.password = make_password(
-            new_password
-        )
+    # =========================
+    # STUDENT NAME
+    # =========================
+    if new_student_name is not None:
+        profile.student_name = new_student_name
 
+    # =========================
+    # PROGRAM
+    # =========================
+    if new_program is not None:
+        profile.program = new_program
+
+    # =========================
+    # YEAR LEVEL
+    # =========================
+    if new_year_level is not None:
+        try:
+            profile.year_level = int(new_year_level)
+        except (ValueError, TypeError):
+            return Response({"error": "Invalid year level"}, status=400)
+
+    # SAVE EVERYTHING
     auth_user.save()
     profile.save()
 
@@ -538,7 +705,10 @@ def update_profile(request):
         "message": "Profile updated successfully",
         "user_id": str(profile.user_id),
         "email": profile.email,
-        "id_number": profile.id_number
+        "id_number": profile.id_number,
+        "student_name": profile.student_name,
+        "program": profile.program,
+        "year_level": profile.year_level,
     })
 
 
@@ -564,119 +734,3 @@ def verify_password(request):
     }, status=400)
 
 
-# =========================
-# OTP & PASSWORD RESET VIEWS
-# =========================
-OTP_STORAGE = {}
-
-@api_view(['POST'])
-def send_signup_otp(request):
-    email = request.data.get("email")
-    if not email:
-        return Response({"error": "Email is required"}, status=400)
-        
-    otp_code = str(random.randint(100000, 999999))
-    OTP_STORAGE[email] = otp_code
-    
-    try:
-        connection = get_connection(
-            backend=settings.EMAIL_BACKEND,
-            fail_silently=False,
-            timeout=3
-        )
-        
-        send_mail(
-            subject="CITC App - Your Verification OTP",
-            message=f"Your verification code is: {otp_code}. It will expire shortly.",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            connection=connection,
-            fail_silently=False,
-        )
-        return Response({"message": "OTP sent successfully to your inbox"}, status=200)
-        
-    except Exception:
-        print(f"FALLBACK SIGNUP CODE: {otp_code}")
-        return Response({
-            "message": "OTP generated (Testing Fallback Mode)",
-            "note": "Read the code directly from your Render Console Logs"
-        }, status=200)
-
-
-@api_view(['POST'])
-def verify_signup_otp(request):
-    email = request.data.get("email")
-    otp = request.data.get("otp")
-    
-    if OTP_STORAGE.get(email) == str(otp):
-        OTP_STORAGE.pop(email, None)
-        return Response({"message": "OTP verified successfully"}, status=200)
-        
-    return Response({"error": "Invalid or expired OTP code"}, status=400)
-
-
-@api_view(['POST'])
-def forgot_password(request):
-    email = request.data.get("email")
-    if not email:
-        return Response({"error": "Email is required"}, status=400)
-        
-    if not User.objects.filter(email=email).exists():
-        return Response({"error": "No user account found with this email"}, status=404)
-        
-    otp_code = str(random.randint(100000, 999999))
-    OTP_STORAGE[email] = otp_code
-    
-    try:
-        connection = get_connection(
-            backend=settings.EMAIL_BACKEND,
-            fail_silently=False,
-            timeout=3
-        )
-        
-        send_mail(
-            subject="CITC App - Password Reset Verification Code",
-            message=f"Use this OTP to reset your password: {otp_code}",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            connection=connection,
-            fail_silently=False,
-        )
-        return Response({"message": "Reset verification OTP sent"}, status=200)
-        
-    except Exception:
-        print(f"FALLBACK RESET CODE: {otp_code}")
-        return Response({
-            "message": "Reset OTP generated (Testing Fallback Mode)",
-            "note": "Read the code directly from your Render Console Logs"
-        }, status=200)
-
-
-@api_view(['POST'])
-def verify_reset_otp(request):
-    email = request.data.get("email")
-    otp = request.data.get("otp")
-    
-    if OTP_STORAGE.get(email) == str(otp):
-        return Response({"message": "OTP verified. You may now reset your password."}, status=200)
-    return Response({"error": "Invalid verification code"}, status=400)
-
-
-@api_view(['POST'])
-def reset_password(request):
-    email = request.data.get("email")
-    otp = request.data.get("otp")
-    new_password = request.data.get("password")
-    
-    if not email or not new_password:
-        return Response({"error": "Missing parameters"}, status=400)
-        
-    try:
-        user = User.objects.get(email=email)
-        user.set_password(new_password)
-        user.save()
-        
-        OTP_STORAGE.pop(email, None)
-        return Response({"message": "Password updated successfully!"}, status=200)
-    except User.DoesNotExist:
-        return Response({"error": "User could not be found"}, status=404)

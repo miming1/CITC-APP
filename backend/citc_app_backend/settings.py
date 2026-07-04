@@ -7,10 +7,18 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# =========================
+# CORE SETTINGS
+# =========================
+
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+
+# =========================
+# INSTALLED APPS
+# =========================
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -19,31 +27,55 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'rest_framework',
     'rest_framework.authtoken',
-    'api',
+
     'corsheaders',
+
+    'api',
 ]
+
+# =========================
+# MIDDLEWARE
+# =========================
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# =========================
+# CORS / CSRF
+# =========================
+
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-ROOT_URLCONF = 'citc_app_backend.urls'
 
 CSRF_TRUSTED_ORIGINS = [
     "https://citc-app-1.vercel.app",
 ]
+
+# =========================
+# URL / WSGI
+# =========================
+
+ROOT_URLCONF = 'citc_app_backend.urls'
+WSGI_APPLICATION = 'citc_app_backend.wsgi.application'
+
+# =========================
+# TEMPLATES
+# =========================
 
 TEMPLATES = [
     {
@@ -60,7 +92,9 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'citc_app_backend.wsgi.application'
+# =========================
+# DATABASE (POSTGRES)
+# =========================
 
 DATABASES = {
     'default': {
@@ -73,6 +107,10 @@ DATABASES = {
     }
 }
 
+# =========================
+# AUTH VALIDATORS
+# =========================
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -80,13 +118,25 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+# =========================
+# INTERNATIONALIZATION
+# =========================
+
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# =========================
+# STATIC FILES
+# =========================
+
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# =========================
+# REST FRAMEWORK
+# =========================
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -94,15 +144,25 @@ REST_FRAMEWORK = {
     ],
 }
 
+# =========================
+# DEFAULT AUTO FIELD
+# =========================
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # =========================
-# BREVO (EMAIL SERVICE) CONFIG
+# BREVO EMAIL CONFIG
 # =========================
 
-BREVO_API_KEY    = config('BREVO_API_KEY', default='')
-BREVO_FROM_EMAIL = config('BREVO_FROM_EMAIL', default='')
-BREVO_FROM_NAME  = config('BREVO_FROM_NAME', default='CITC App')
+BREVO_API_KEY = config("BREVO_API_KEY", default="")
+BREVO_FROM_EMAIL = config("BREVO_FROM_EMAIL", default="")
+BREVO_FROM_NAME = config("BREVO_FROM_NAME", default="CITC App")
 
-# OTP expires after this many minutes
+print("BREVO_API_KEY:", BREVO_API_KEY[:10] if BREVO_API_KEY else "EMPTY")
+print("BREVO_FROM_EMAIL:", BREVO_FROM_EMAIL)
+
+# =========================
+# OTP SETTINGS
+# =========================
+
 OTP_EXPIRY_MINUTES = 5

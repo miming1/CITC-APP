@@ -77,6 +77,7 @@ export default function SearchResults() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
+        {/* Reusable SearchBar — marginHorizontal:16 already built in, aligns with header */}
         <SearchBar
           placeholder="Search..."
           onSearch={(newQuery) => {
@@ -147,11 +148,7 @@ export default function SearchResults() {
 
       </ScrollView>
 
-      <FloatingButtons
-        activeTab="faq"
-        onTrackPress={() => router.push('/track-details')}
-        onFAQPress={() => router.push('/faq')}
-      />
+      <FloatingButtons activeTab="faq" onTrackPress={() => {}} onFAQPress={() => {}} />
 
     </SafeAreaView>
   );
@@ -163,6 +160,7 @@ const styles = StyleSheet.create({
 
   safeArea: { flex: 1 },
 
+  // paddingHorizontal: 0 — searchbar has its own marginHorizontal:16 matching header
   scroll: {
     paddingBottom: 160,
     paddingTop: 0,

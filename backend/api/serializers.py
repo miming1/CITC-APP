@@ -17,7 +17,7 @@ from .models import (
 # AUTH / USERS
 # =========================
 
-class UserSerializer(serializers.ModelSerializer):
+class AuthUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password']
@@ -29,8 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-# Supabase profile table
-class SupabaseUserSerializer(serializers.ModelSerializer):
+class AppUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = '__all__'
@@ -55,13 +54,27 @@ class ProcedureSerializer(serializers.ModelSerializer):
 class ProcedureStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProcedureSteps
-        fields = '__all__'
+        fields = [
+            'step_id',
+            'step_number',
+            'step_description',
+            'office_location',
+            'reference_link'
+        ]
 
 
 class ProcedureRequirementSerializer(serializers.ModelSerializer):
+    requirement_text = serializers.CharField(
+        source='requirement.requirement_name',
+        read_only=True
+    )
+
     class Meta:
         model = ProcedureRequirements
-        fields = '__all__'
+        fields = [
+            'requirement_id',
+            'requirement_text'
+        ]
 
 
 class ProcedureDocumentSerializer(serializers.ModelSerializer):

@@ -15,7 +15,7 @@ import { fetchProcedures } from "../lib/api";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Procedure {
-  id: number;
+  procedure_id: number;   // ✅ matches backend serializer (see AdminDashboard.tsx usage)
   procedure_name: string;
   description: string;
 }
@@ -78,13 +78,13 @@ export default function ProcessListScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
 
   // ── State ─────────────────────────────────────────────────────────────────
-  const [search, setSearch]                 = useState("");
-  const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
-  const [procedures, setProcedures]         = useState<Procedure[]>([]);
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState<string | null>(null);
+  const [search, setSearch]                     = useState("");
+  const [selectedOffice, setSelectedOffice]     = useState<Office | null>(null);
+  const [procedures, setProcedures]             = useState<Procedure[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [error, setError]                       = useState<string | null>(null);
 
-  // ── Fetch procedures from backend ─────────────────────────────────────────
+  // ── Fetch procedures from backend ────────────────────────────────
   useEffect(() => {
     async function loadProcedures() {
       try {
@@ -106,7 +106,15 @@ export default function ProcessListScreen() {
     p.procedure_name.toLowerCase().includes(search.toLowerCase())
   );
 
-  function goToProcess() { router.push("/process"); }
+  function goToProcess(item: Procedure) {
+    router.push({
+      pathname: "/process",
+      params: {
+        id: item.procedure_id,   // ✅ FIXED — matches backend's actual PK field
+        roleId: 1,               // student view (matches PopularProcesses fix)
+      },
+    });
+  }
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: bg }]}>
@@ -123,63 +131,65 @@ export default function ProcessListScreen() {
         {/* ── Processes Section ── */}
         <Text style={[s.sectionTitle, { color: textPri }]}>Processes</Text>
 
-        <View>
-          {loading && (
-            <View style={s.centered}>
-              <ActivityIndicator size="large" color={Colors.light.tint} />
-              <Text style={[s.loadingText, { color: textSec }]}>Loading procedures…</Text>
-            </View>
-          )}
+        {/* Loading state */}
+        {loading && (
+          <View style={s.centered}>
+            <ActivityIndicator size="large" color={Colors.light.tint} />
+            <Text style={[s.loadingText, { color: textSec }]}>Loading procedures…</Text>
+          </View>
+        )}
 
-          {!loading && error && (
-            <View style={s.centered}>
-              <MaterialIcons name="wifi-off" size={40} color={textSec} />
-              <Text style={[s.errorText, { color: textSec }]}>{error}</Text>
-              <TouchableOpacity
-                style={[s.retryBtn, { borderColor: Colors.light.tint }]}
-                onPress={() => {
-                  setLoading(true);
-                  fetchProcedures()
-                    .then((data) => { setProcedures(data); setError(null); })
-                    .catch(() => setError("Could not load procedures. Check your connection."))
-                    .finally(() => setLoading(false));
-                }}
-              >
-                <Text style={[s.retryText, { color: Colors.light.tint }]}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {!loading && !error && filtered.map((item) => (
+        {/* Error state */}
+        {!loading && error && (
+          <View style={s.centered}>
+            <MaterialIcons name="wifi-off" size={40} color={textSec} />
+            <Text style={[s.errorText, { color: textSec }]}>{error}</Text>
             <TouchableOpacity
-              key={item.id}
-              style={[s.card, { backgroundColor: bg, borderColor: border }]}
-              onPress={goToProcess}
-              activeOpacity={0.75}
+              style={[s.retryBtn, { borderColor: Colors.light.tint }]}
+              onPress={() => {
+                setLoading(true);
+                fetchProcedures()
+                  .then((data) => { setProcedures(data); setError(null); })
+                  .catch(() => setError("Could not load procedures. Check your connection."))
+                  .finally(() => setLoading(false));
+              }}
             >
-              <View style={s.cardLeft}>
-                <View style={s.cardIcon}>
-                  <MaterialIcons name="description" size={18} color="#fff" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.cardTitle, { color: textPri }]}>
-                    {item.procedure_name}
-                  </Text>
-                  <Text style={[s.cardDesc, { color: textSec }]} numberOfLines={1}>
-                    {item.description}
-                  </Text>
-                </View>
-              </View>
-              <MaterialIcons name="chevron-right" size={20} color={textSec} />
+              <Text style={[s.retryText, { color: Colors.light.tint }]}>Retry</Text>
             </TouchableOpacity>
-          ))}
+          </View>
+        )}
 
-          {!loading && !error && filtered.length === 0 && procedures.length > 0 && (
-            <Text style={[s.empty, { color: textSec }]}>No procedures match your search.</Text>
-          )}
-        </View>
+        {/* Procedure cards from API */}
+        {!loading && !error && filtered.map((item) => (
+          <TouchableOpacity
+            key={item.procedure_id}
+            style={[s.card, { backgroundColor: bg, borderColor: border }]}
+            onPress={() => goToProcess(item)}
+            activeOpacity={0.75}
+          >
+            <View style={s.cardLeft}>
+              <View style={s.cardIcon}>
+                <MaterialIcons name="description" size={18} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.cardTitle, { color: textPri }]}>
+                  {item.procedure_name}
+                </Text>
+                <Text style={[s.cardDesc, { color: textSec }]} numberOfLines={1}>
+                  {item.description}
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons name="chevron-right" size={20} color={textSec} />
+          </TouchableOpacity>
+        ))}
 
-        {/* ── Offices Section ── */}
+        {/* Empty search result */}
+        {!loading && !error && filtered.length === 0 && procedures.length > 0 && (
+          <Text style={[s.empty, { color: textSec }]}>No procedures match your search.</Text>
+        )}
+
+        {/* Offices Section — still hardcoded */}
         <Text style={[s.sectionTitle, { color: textPri }]}>Offices</Text>
 
         <View style={s.grid}>

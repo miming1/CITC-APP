@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 
 import StepItem from "../components/StepItem";
@@ -24,12 +25,14 @@ interface Props {
 
   colors: any;
 
+  checkedSteps: number[];
+  setCheckedSteps: (steps: number[]) => void;
+
   onEdit: () => void;
   onCancel: () => void;
   onSave: () => void;
   onDelete: () => void;
 
-  // 🔥 NEW (for ProcessScreen to sync deletes)
   setDeletedSteps?: (ids: number[]) => void;
   setDeletedRequirements?: (ids: number[]) => void;
   deletedSteps?: number[];
@@ -46,6 +49,8 @@ export default function ProcessTab({
   isAdmin,
   isEditing,
   colors,
+  checkedSteps,
+  setCheckedSteps,
   onEdit,
   onCancel,
   onSave,
@@ -56,14 +61,20 @@ export default function ProcessTab({
   deletedRequirements = [],
 }: Props) {
   const [showMenu, setShowMenu] = useState(false);
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
 
   // =========================================================
   // REQUIREMENTS
   // =========================================================
+
   const addRequirement = () => {
     setRequirements([
       ...requirements,
-      { requirement_id: null, requirement_text: "" },
+      {
+        requirement_id: null,
+        requirement_name: "",
+      },
     ]);
   };
 
@@ -71,17 +82,22 @@ export default function ProcessTab({
     const req = requirements[index];
 
     if (req?.requirement_id) {
-      setDeletedRequirements([...deletedRequirements, req.requirement_id]);
+      setDeletedRequirements([
+        ...deletedRequirements,
+        req.requirement_id,
+      ]);
     }
 
     const updated = [...requirements];
     updated.splice(index, 1);
+
     setRequirements(updated);
   };
 
   // =========================================================
   // STEPS
   // =========================================================
+
   const addStep = () => {
     setSteps([
       ...steps,
@@ -114,7 +130,15 @@ export default function ProcessTab({
   };
 
   return (
-    <View style={{ position: "relative" }}>
+    <View
+      style={[
+        styles.container,
+        {
+          position: "relative",
+        },
+        isDesktop && styles.desktopContainer,
+      ]}
+    >
       {/* ========================= */}
       {/* MENU */}
       {/* ========================= */}
@@ -124,18 +148,45 @@ export default function ProcessTab({
           onPress={() => setShowMenu(!showMenu)}
           style={styles.menuButton}
         >
-          <Text style={[styles.menuDots, { color: colors.icon }]}>⋯</Text>
+          <Text
+            style={[
+              styles.menuDots,
+              { color: colors.icon },
+            ]}
+          >
+            ⋯
+          </Text>
         </TouchableOpacity>
       )}
 
       {showMenu && isAdmin && (
-        <View style={[styles.menuBox, { backgroundColor: colors.background }]}>
-          <TouchableOpacity onPress={onEdit}>
-            <Text style={{ color: colors.text }}>Edit</Text>
+        <View
+          style={[
+            styles.menuBox,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              setShowMenu(false);
+              onEdit();
+            }}
+          >
+            <Text style={{ color: colors.text }}>
+              Edit
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onDelete}>
-            <Text style={{ color: "red" }}>Delete</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setShowMenu(false);
+              onDelete();
+            }}
+            style={{ marginTop: 10 }}
+          >
+            <Text style={{ color: "red" }}>
+              Delete
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -146,17 +197,28 @@ export default function ProcessTab({
 
       {isEditing ? (
         <TextInput
-          value={procedure?.procedure_name}
+          value={procedure?.procedure_name ?? ""}
           onChangeText={(text) =>
-            setProcedure({ ...procedure, procedure_name: text })
+            setProcedure({
+              ...procedure,
+              procedure_name: text,
+            })
           }
           style={[
             styles.titleInput,
-            { color: colors.text, borderColor: colors.border },
+            {
+              color: colors.text,
+              borderColor: colors.border,
+            },
           ]}
         />
       ) : (
-        <Text style={[styles.title, { color: colors.text }]}>
+        <Text
+          style={[
+            styles.title,
+            { color: colors.text },
+          ]}
+        >
           {procedure?.procedure_name}
         </Text>
       )}
@@ -167,18 +229,30 @@ export default function ProcessTab({
 
       {isEditing ? (
         <TextInput
-          value={procedure?.description || ""}
+          value={procedure?.description ?? ""}
           onChangeText={(text) =>
-            setProcedure({ ...procedure, description: text })
+            setProcedure({
+              ...procedure,
+              description: text,
+            })
           }
           multiline
           style={[
             styles.input,
-            { color: colors.text, borderColor: colors.border },
+            {
+              color: colors.text,
+              borderColor: colors.border,
+            },
           ]}
         />
       ) : (
-        <Text style={{ color: colors.icon, marginTop: 8 }}>
+        <Text
+          style={{
+            color: colors.icon,
+            marginTop: 8,
+            marginBottom: 16,
+          }}
+        >
           {procedure?.description}
         </Text>
       )}
@@ -188,41 +262,66 @@ export default function ProcessTab({
       {/* ========================= */}
 
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.text },
+          ]}
+        >
           Requirements
         </Text>
 
         {isEditing && (
           <TouchableOpacity onPress={addRequirement}>
-            <Text style={{ color: colors.tint }}>+ Add</Text>
+            <Text style={{ color: colors.tint }}>
+              + Add
+            </Text>
           </TouchableOpacity>
         )}
       </View>
 
       {requirements.map((req, index) => (
-        <View key={req.requirement_id || index} style={styles.rowItem}>
+        <View
+          key={req.requirement_id ?? index}
+          style={styles.rowItem}
+        >
           {isEditing ? (
             <>
               <TextInput
-                value={req.requirement_text}
+                value={req.requirement_name ?? ""}
                 onChangeText={(text) => {
                   const updated = [...requirements];
-                  updated[index].requirement_text = text;
+                  updated[index].requirement_name = text;
                   setRequirements(updated);
                 }}
+                placeholder="Requirement"
                 style={[
                   styles.input,
-                  { color: colors.text, borderColor: colors.border },
+                  {
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
                 ]}
               />
 
-              <TouchableOpacity onPress={() => removeRequirement(index)}>
-                <Text style={{ color: "red" }}>Remove</Text>
+              <TouchableOpacity
+                onPress={() =>
+                  removeRequirement(index)
+                }
+              >
+                <Text style={{ color: "red" }}>
+                  Remove
+                </Text>
               </TouchableOpacity>
             </>
           ) : (
-            <Text style={{ color: colors.text, marginVertical: 4 }}>
-              • {req.requirement_text}
+            <Text
+              style={{
+                color: colors.text,
+                marginVertical: 4,
+              }}
+            >
+              • {req.requirement_name}
             </Text>
           )}
         </View>
@@ -233,22 +332,37 @@ export default function ProcessTab({
       {/* ========================= */}
 
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.text },
+          ]}
+        >
           Steps
         </Text>
 
         {isEditing && (
           <TouchableOpacity onPress={addStep}>
-            <Text style={{ color: colors.tint }}>+ Add</Text>
+            <Text style={{ color: colors.tint }}>
+              + Add
+            </Text>
           </TouchableOpacity>
         )}
       </View>
 
       {steps.map((step, index) => (
-        <View key={step.step_id || index} style={styles.stepCard}>
+        <View
+          key={step.step_id ?? index}
+          style={styles.stepCard}
+        >
           {isEditing ? (
             <>
-              <Text style={{ color: colors.text, fontWeight: "600" }}>
+              <Text
+                style={{
+                  color: colors.text,
+                  fontWeight: "600",
+                }}
+              >
                 Step {index + 1}
               </Text>
 
@@ -262,12 +376,15 @@ export default function ProcessTab({
                 multiline
                 style={[
                   styles.input,
-                  { color: colors.text, borderColor: colors.border },
+                  {
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
                 ]}
               />
 
               <TextInput
-                value={step.office_location || ""}
+                value={step.office_location ?? ""}
                 onChangeText={(text) => {
                   const updated = [...steps];
                   updated[index].office_location = text;
@@ -276,12 +393,15 @@ export default function ProcessTab({
                 placeholder="Office location"
                 style={[
                   styles.input,
-                  { color: colors.text, borderColor: colors.border },
+                  {
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
                 ]}
               />
 
               <TextInput
-                value={step.reference_link || ""}
+                value={step.reference_link ?? ""}
                 onChangeText={(text) => {
                   const updated = [...steps];
                   updated[index].reference_link = text;
@@ -290,12 +410,19 @@ export default function ProcessTab({
                 placeholder="Reference link"
                 style={[
                   styles.input,
-                  { color: colors.text, borderColor: colors.border },
+                  {
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
                 ]}
               />
 
-              <TouchableOpacity onPress={() => removeStep(index)}>
-                <Text style={{ color: "red" }}>Remove Step</Text>
+              <TouchableOpacity
+                onPress={() => removeStep(index)}
+              >
+                <Text style={{ color: "red" }}>
+                  Remove Step
+                </Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -304,6 +431,21 @@ export default function ProcessTab({
               text={step.step_description}
               sub={step.office_location}
               link={step.reference_link}
+              checked={checkedSteps.includes(step.step_number)}
+              onToggle={() => {
+                if (checkedSteps.includes(step.step_number)) {
+                  setCheckedSteps(
+                    checkedSteps.filter(
+                      (n) => n !== step.step_number
+                    )
+                  );
+                } else {
+                  setCheckedSteps([
+                    ...checkedSteps,
+                    step.step_number,
+                  ]);
+                }
+              }}
             />
           )}
         </View>
@@ -315,12 +457,22 @@ export default function ProcessTab({
 
       {isEditing && (
         <View style={styles.actions}>
-          <TouchableOpacity onPress={onCancel} style={styles.cancelBtn}>
-            <Text style={{ color: "white" }}>Cancel</Text>
+          <TouchableOpacity
+            onPress={onCancel}
+            style={styles.cancelBtn}
+          >
+            <Text style={{ color: "#FFF" }}>
+              Cancel
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onSave} style={styles.saveBtn}>
-            <Text style={{ color: "white" }}>Save</Text>
+          <TouchableOpacity
+            onPress={onSave}
+            style={styles.saveBtn}
+          >
+            <Text style={{ color: "#FFF" }}>
+              Save
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -329,6 +481,16 @@ export default function ProcessTab({
 }
 
 const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+  },
+
+  desktopContainer: {
+    width: "97%",
+    maxWidth: 1600,
+    alignSelf: "center",
+  },
+  
   menuButton: {
     position: "absolute",
     top: 0,
@@ -336,10 +498,12 @@ const styles = StyleSheet.create({
     padding: 6,
     zIndex: 10,
   },
+
   menuDots: {
     fontSize: 26,
     fontWeight: "700",
   },
+
   menuBox: {
     position: "absolute",
     top: 30,
@@ -349,10 +513,12 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 20,
   },
+
   title: {
     fontSize: 24,
     fontWeight: "700",
   },
+
   titleInput: {
     fontSize: 20,
     fontWeight: "700",
@@ -360,42 +526,53 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
   },
+
   sectionTitle: {
     marginTop: 20,
     fontSize: 18,
     fontWeight: "700",
   },
+
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 20,
+    alignItems: "center",
+    marginTop: 5,
   },
+
   input: {
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
     marginTop: 8,
   },
+
   rowItem: {
     marginBottom: 8,
   },
+
   stepCard: {
     marginTop: 12,
   },
+
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 10,
     marginTop: 20,
   },
+
   saveBtn: {
     backgroundColor: "#2563EB",
-    padding: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 8,
   },
+
   cancelBtn: {
     backgroundColor: "#6B7280",
-    padding: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 8,
   },
 });

@@ -94,7 +94,10 @@ export async function registerUser(
 export async function updateUserProfile(
   id_number?: string,
   email?: string,
-  password?: string
+  password?: string,
+  student_name?: string,
+  program?: string,
+  year_level?: number
 ) {
   try {
     const token = await getStoredToken();
@@ -109,16 +112,16 @@ export async function updateUserProfile(
         id_number,
         email,
         password,
+        student_name,
+        program,
+        year_level,
       }),
     });
 
     const data = await res.json();
 
     if (res.ok) {
-      return {
-        success: true,
-        data,
-      };
+      return { success: true, data };
     }
 
     return {
@@ -126,7 +129,7 @@ export async function updateUserProfile(
       error: data.error ?? "Update failed",
     };
 
-  } catch (e) {
+  } catch {
     return {
       success: false,
       error: "Cannot reach server",

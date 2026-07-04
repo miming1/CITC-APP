@@ -59,9 +59,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 10,
+
     marginHorizontal: 16,
-    marginVertical: 12,
+    marginTop: 30,
   },
+
   iconWrapper: {
     marginRight: 10,
     justifyContent: 'center',

@@ -1,13 +1,8 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
-  Animated,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
+  Modal, Pressable,
+  StyleSheet, Text, TouchableOpacity,
   View,
 } from "react-native";
 
@@ -16,85 +11,41 @@ import {
 interface HeaderProps {
   title: string;
   showBack?: boolean;
-  userName?: string;
-  userRole?: string;
 }
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'Processes',                  route: '/process-list',      icon: 'format-list-bulleted'   },
-  { label: 'Frequently Asked Questions', route: '/faq',               icon: 'help-circle-outline'    },
-  { label: 'Form Submission Progress',   route: '/active-req',        icon: 'progress-check'         },
-  { label: 'Submission History',         route: '/SubmissionHistory',  icon: 'history'                },
-  { label: 'Profile',                    route: '/editProfile',        icon: 'account-circle-outline' },
+  { label: 'Processes',                  route: '/process-list'       },
+  { label: 'Frequently Asked Questions', route: '/faq'                },
+  { label: 'Form Submission Progress',   route: '/active-req'         },
+  { label: 'Submission History',         route: '/SubmissionHistory'  },
+  { label: 'Profile',                    route: '/editProfile'            },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function Header({
-  title,
-  showBack = true,
-  userName = 'Student',
-  userRole = 'University Portal',
-}: HeaderProps) {
+export default function Header({ title, showBack = true }: HeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-
-  // ── Slide-down animation ──────────────────────────────────────────────────
-  const slideAnim = useRef(new Animated.Value(-300)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (menuOpen) {
-      Animated.parallel([
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          damping: 18,
-          stiffness: 200,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: -300,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [menuOpen]);
-
-  const closeMenu = () => setMenuOpen(false);
 
   return (
     <>
       <View style={styles.container}>
 
-        {/* ── Left: Back Button or Spacer ── */}
+        {/* ── Left: Back Button or Empty Spacer ── */}
         {showBack ? (
           <TouchableOpacity onPress={() => router.back()} style={styles.sideSlot}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
+            <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.sideSlot} />
         )}
 
-        {/* ── Center: Title ── */}
+        {/* ── Center: Dynamic Page Title ── */}
         <Text style={styles.title}>{title}</Text>
 
-        {/* ── Right: Hamburger ── */}
+        {/* ── Right: Hamburger Menu Button ── */}
         <TouchableOpacity
           style={styles.sideSlot}
           onPress={() => setMenuOpen(true)}
@@ -102,85 +53,50 @@ export default function Header({
         >
           <View style={styles.hamburger}>
             <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
-            <View style={[styles.menuLine, styles.menuLineMid, menuOpen && styles.menuLineActive]} />
+            <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
             <View style={[styles.menuLine, menuOpen && styles.menuLineActive]} />
           </View>
         </TouchableOpacity>
 
       </View>
 
-      {/* ── Dropdown Menu ── */}
+      {/* ── Dropdown Menu (Modal overlay) ── */}
       <Modal
         visible={menuOpen}
         transparent
-        animationType="none"
-        onRequestClose={closeMenu}
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
       >
-        <Pressable style={styles.overlay} onPress={closeMenu}>
-          <Animated.View
-            style={[
-              styles.dropdown,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            {/* ── User Info Header ── */}
-            <View style={styles.userHeader}>
-              <View style={styles.avatarCircle}>
-                <MaterialCommunityIcons name="account" size={28} color="#fff" />
-              </View>
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{userName}</Text>
-                <Text style={styles.userRole}>{userRole}</Text>
-              </View>
-            </View>
+        <Pressable style={styles.overlay} onPress={() => setMenuOpen(false)}>
 
-            <View style={styles.divider} />
+          <View style={styles.dropdown}>
 
-            {/* ── Menu Items ── */}
-            {MENU_ITEMS.map((item, index) => (
+            {MENU_ITEMS.map((item) => (
               <TouchableOpacity
                 key={item.label}
-                style={[
-                  styles.dropdownItem,
-                  index === MENU_ITEMS.length - 1 && styles.dropdownItemLast,
-                ]}
+                style={styles.dropdownItem}
                 onPress={() => {
-                  closeMenu();
+                  setMenuOpen(false);
                   router.push(item.route as any);
                 }}
-                activeOpacity={0.7}
               >
-                <View style={styles.menuIconWrapper}>
-                  <MaterialCommunityIcons
-                    name={item.icon as any}
-                    size={18}
-                    color="#7B5EA7"
-                  />
-                </View>
                 <Text style={styles.dropdownText}>{item.label}</Text>
-                <MaterialCommunityIcons name="chevron-right" size={16} color="#C9B8F0" />
               </TouchableOpacity>
             ))}
-
-            <View style={styles.divider} />
 
             {/* ── Logout ── */}
             <TouchableOpacity
               style={styles.logoutBtn}
               onPress={() => {
-                closeMenu();
+                setMenuOpen(false);
                 router.replace('/');
               }}
-              activeOpacity={0.8}
             >
-              <MaterialCommunityIcons name="logout" size={18} color="#fff" />
-              <Text style={styles.logoutText}>Logout</Text>
+              <Text style={styles.logoutText}>Logout  →</Text>
             </TouchableOpacity>
 
-          </Animated.View>
+          </View>
+
         </Pressable>
       </Modal>
     </>
@@ -189,9 +105,9 @@ export default function Header({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const HEADER_COLOR    = '#D3C1FF';
-const ACCENT_COLOR    = '#5D3FD3';
-const LOGOUT_COLOR    = '#AE74F8';
+const HEADER_COLOR = '#0a1036';
+const MENU_ACTIVE_COLOR = '#EBA937';
+const Logout_Button = '#0a1036';
 
 const styles = StyleSheet.create({
 
@@ -205,12 +121,20 @@ const styles = StyleSheet.create({
     backgroundColor: HEADER_COLOR,
   },
 
+  // ── Left / Right slots ─────────────────────────────────────────────────────
   sideSlot: {
     width: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
+  // ── Back Arrow ─────────────────────────────────────────────────────────────
+  backArrow: {
+    color: '#fff',
+    fontSize: 22,
+  },
+
+  // ── Title ──────────────────────────────────────────────────────────────────
   title: {
     flex: 1,
     textAlign: 'center',
@@ -219,29 +143,28 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // ── Hamburger ──────────────────────────────────────────────────────────────
+  // ── Hamburger Wrapper ──────────────────────────────────────────────────────
   hamburger: {
     gap: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // ── Hamburger Lines ────────────────────────────────────────────────────────
   menuLine: {
     width: 22,
     height: 2.5,
     borderRadius: 999,
     backgroundColor: '#fff',
   },
-  menuLineMid: {
-    width: 16, // shorter middle line for style
-  },
   menuLineActive: {
-    backgroundColor: '#5D429D',
+    backgroundColor: MENU_ACTIVE_COLOR,
   },
 
   // ── Modal Overlay ──────────────────────────────────────────────────────────
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    backgroundColor: 'transparent',
     alignItems: 'flex-end',
   },
 
@@ -249,95 +172,38 @@ const styles = StyleSheet.create({
   dropdown: {
     marginTop: 56,
     marginRight: 8,
-    backgroundColor: '#F8F4FF',
-    borderRadius: 16,
-    minWidth: 240,
-    elevation: 16,
-    shadowColor: '#5D3FD3',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
+    backgroundColor: '#F1ECFF',
+    borderRadius: 10,
+    minWidth: 220,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
     overflow: 'hidden',
   },
-
-  // ── User Info ──────────────────────────────────────────────────────────────
-  userHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    gap: 12,
-    backgroundColor: '#EDE5FF',
-  },
-  avatarCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: ACCENT_COLOR,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1E1340',
-  },
-  userRole: {
-    fontSize: 12,
-    color: '#7B5EA7',
-    marginTop: 2,
-  },
-
-  // ── Divider ────────────────────────────────────────────────────────────────
-  divider: {
-    height: 1,
-    backgroundColor: '#E2D9F3',
-  },
-
-  // ── Menu Items ─────────────────────────────────────────────────────────────
   dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDE5FF',
-    gap: 12,
-  },
-  dropdownItemLast: {
-    borderBottomWidth: 0,
-  },
-  menuIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#EDE5FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dropdownText: {
-    flex: 1,
-    fontSize: 13.5,
-    color: '#3a256b',
-    fontWeight: '500',
-  },
-
-  // ── Logout ─────────────────────────────────────────────────────────────────
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: LOGOUT_COLOR,
     paddingVertical: 14,
     paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#C9B8F0',
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#3a256b',
+  },
+
+  // ── Logout Row ─────────────────────────────────────────────────────────────
+  logoutBtn: {
+    backgroundColor: Logout_Button,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
   logoutText: {
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
   },
+
 });
