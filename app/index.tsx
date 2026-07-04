@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -21,6 +21,7 @@ import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
 import { loginUser } from "../lib/auth";
 import { useAuth } from "../lib/auth-context";
+import { getRememberedId } from "../lib/tokenStore";
 
 import AuthLogo from "../components/AuthLogo";
 import AuthMessage from "../components/AuthMessage";
@@ -29,6 +30,9 @@ import ForgotPasswordModal from "../components/ForgotPasswordModal";
 import LoginFormView from "../components/LoginFormView";
 import SignupFormView from "../components/SignupFormView";
 import TermsModal from "../components/TermsModal";
+
+
+const FormTag: any = Platform.OS === "web" ? "form" : View;
 
 export default function LoginScreen() {
   const colorScheme = useColorScheme() ?? "light";
@@ -57,6 +61,18 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState("");
+
+  const loginFormRef = useRef<any>(null);
+  const signupFormRef = useRef<any>(null);
+
+  // Pre-fill ID Number from last successful login/signup — the browser's own
+  // native autofill handles suggesting other saved accounts.
+  useEffect(() => {
+    const saved = getRememberedId();
+    if (saved) {
+      setLoginForm((p) => ({ ...p, idNumber: saved }));
+    }
+  }, []);
 
   function switchTab(t: "login" | "signup") {
     setTab(t);
@@ -116,6 +132,14 @@ export default function LoginScreen() {
     }
   }
 
+  function triggerLoginSubmit() {
+    if (Platform.OS === "web" && loginFormRef.current?.requestSubmit) {
+      loginFormRef.current.requestSubmit();
+    } else {
+      handleLogin();
+    }
+  }
+
   // ── Signup Step 1: Send OTP ────────────────────────────
   async function handleSignup() {
     const { idNumber, email, password, confirmPassword } = signupForm;
@@ -164,6 +188,14 @@ export default function LoginScreen() {
       setMessage({ type: "error", text: "Something went wrong. Please try again." });
     } finally {
       setLoading(false);
+    }
+  }
+
+  function triggerSignupSubmit() {
+    if (Platform.OS === "web" && signupFormRef.current?.requestSubmit) {
+      signupFormRef.current.requestSubmit();
+    } else {
+      handleSignup();
     }
   }
 
@@ -225,25 +257,49 @@ export default function LoginScreen() {
             <AuthTabSwitcher active={tab} onChange={switchTab} />
 
             {tab === "login" ? (
-              <LoginFormView
-                form={loginForm}
-                onChange={updateLogin}
-                onSubmit={handleLogin}
-                onForgotPassword={() => setShowForgot(true)}
-                loading={loading}
-                tint={TINT}
-              />
+              <FormTag
+                ref={loginFormRef}
+                {...(Platform.OS === "web"
+                  ? {
+                      onSubmit: (e: any) => {
+                        e.preventDefault();
+                        handleLogin();
+                      },
+                    }
+                  : {})}
+              >
+                <LoginFormView
+                  form={loginForm}
+                  onChange={updateLogin}
+                  onSubmit={triggerLoginSubmit}
+                  onForgotPassword={() => setShowForgot(true)}
+                  loading={loading}
+                  tint={TINT}
+                />
+              </FormTag>
             ) : (
-              <SignupFormView
-                form={signupForm}
-                onChange={updateSignup}
-                onSubmit={handleSignup}
-                onViewTerms={() => setShowTerms(true)}
-                termsAccepted={termsAccepted}
-                onToggleTerms={() => setTermsAccepted((p) => !p)}
-                loading={loading}
-                tint={TINT}
-              />
+              <FormTag
+                ref={signupFormRef}
+                {...(Platform.OS === "web"
+                  ? {
+                      onSubmit: (e: any) => {
+                        e.preventDefault();
+                        handleSignup();
+                      },
+                    }
+                  : {})}
+              >
+                <SignupFormView
+                  form={signupForm}
+                  onChange={updateSignup}
+                  onSubmit={triggerSignupSubmit}
+                  onViewTerms={() => setShowTerms(true)}
+                  termsAccepted={termsAccepted}
+                  onToggleTerms={() => setTermsAccepted((p) => !p)}
+                  loading={loading}
+                  tint={TINT}
+                />
+              </FormTag>
             )}
 
             {message && <AuthMessage type={message.type} text={message.text} />}

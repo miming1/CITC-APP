@@ -44,6 +44,8 @@ export default function SignupFormView({
         onChangeText={(v) => onChange("idNumber", v)}
         placeholder="Enter ID Number"
         keyboardType="numeric"
+        autoComplete="username" 
+        textContentType="username"
       />
       <AuthInput
         label="Email"
@@ -51,6 +53,8 @@ export default function SignupFormView({
         onChangeText={(v) => onChange("email", v)}
         placeholder="Enter Email Address"
         keyboardType="email-address"
+        autoComplete="email" 
+        textContentType="emailAddress" 
       />
       <AuthInput
         label="Password"
@@ -58,6 +62,8 @@ export default function SignupFormView({
         onChangeText={(v) => onChange("password", v)}
         placeholder="Create a Password"
         secure
+        autoComplete="new-password"
+        textContentType="newPassword"
       />
       <AuthInput
         label="Confirm Password"
@@ -65,6 +71,8 @@ export default function SignupFormView({
         onChangeText={(v) => onChange("confirmPassword", v)}
         placeholder="Re-enter Password"
         secure
+        autoComplete="new-password"
+        textContentType="newPassword"
       />
 
       {/* Terms checkbox */}

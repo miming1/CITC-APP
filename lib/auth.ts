@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '../constants/api';
-import { clearToken, getStoredToken, saveToken } from './tokenStore';
+import { clearToken, getStoredToken, saveRememberedId, saveToken } from './tokenStore';
 
 // =========================
 // LOGIN (ID NUMBER + PASSWORD)
@@ -26,6 +26,7 @@ export async function loginUser(
     if (res.ok && data.token) {
 
       await saveToken(data.token);
+      saveRememberedId(id_number); 
 
       return {
         success: true,
@@ -73,6 +74,7 @@ export async function registerUser(
     const data = await res.json();
 
     if (res.ok) {
+      saveRememberedId(id_number); 
       return { success: true };
     }
 
@@ -121,6 +123,9 @@ export async function updateUserProfile(
     const data = await res.json();
 
     if (res.ok) {
+      if (id_number) {
+        saveRememberedId(id_number);
+      }
       return { success: true, data };
     }
 
@@ -178,4 +183,5 @@ export async function getToken() {
 
 export async function logout() {
   clearToken();
+
 }

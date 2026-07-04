@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface Props {
@@ -16,6 +16,15 @@ interface Props {
   secure?: boolean;
   keyboardType?: "default" | "email-address" | "numeric";
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
+
+  autoComplete?:
+    | "off"
+    | "username"
+    | "email"
+    | "password"
+    | "current-password"
+    | "new-password";
+  textContentType?: "username" | "password" | "newPassword" | "emailAddress" | "none";
 }
 
 export default function AuthInput({
@@ -26,6 +35,8 @@ export default function AuthInput({
   secure = false,
   keyboardType = "default",
   autoCapitalize = "none",
+  autoComplete = "off",
+  textContentType = "none",
 }: Props) {
   const [show, setShow] = useState(false);
 
@@ -42,6 +53,8 @@ export default function AuthInput({
           secureTextEntry={secure && !show}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
+          textContentType={textContentType}
         />
         {secure && (
           <TouchableOpacity
