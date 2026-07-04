@@ -7,6 +7,8 @@ from django.utils import timezone
 
 import uuid
 
+from .forms import CustomUserChangeForm
+
 from .models import (
     Procedures,
     Faqs,
@@ -14,16 +16,12 @@ from .models import (
     Requests,
     Users,
     Offices,
-    Roles
+    Roles,
 )
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-
-
-# =========================
-# DEFAULT TABLES
-# =========================
+# ======================================
+# NORMAL TABLES
+# ======================================
 
 admin.site.register(Procedures)
 admin.site.register(Faqs)
@@ -31,85 +29,108 @@ admin.site.register(FaqCategories)
 admin.site.register(Requests)
 admin.site.register(Offices)
 admin.site.register(Roles)
-admin.site.register(Users)
 
 
-# =========================
-# CUSTOM USERS ADMIN
-# =========================
+@admin.register(Users)
+class UsersAdmin(admin.ModelAdmin):
+    list_display = (
+        "id_number",
+        "email",
+        "role",
+        "office",
+        "auth_user",
+    )
 
-class UsersInline(admin.StackedInline):
-    model = Users
-    can_delete = False
-    extra = 0
+    readonly_fields = (
+        "user_id",
+        "created_at",
+    )
 
-    fields = (
-        'email',
-        'role',
-        'office',
+    search_fields = (
+        "id_number",
+        "email",
+        "auth_user__username",
     )
 
 
+# ======================================
+# USER ADMIN
+# ======================================
+
 class CustomUserAdmin(UserAdmin):
 
-    inlines = [UsersInline]
+    form = CustomUserChangeForm
 
-    # =========================
-    # HANDLE ADMIN-CREATED USERS
-    # =========================
+    fieldsets = UserAdmin.fieldsets + (
+        (
+            "Profile",
+            {
+                "fields": (
+                    "profile_email",
+                    "profile_role",
+                    "profile_office",
+                )
+            },
+        ),
+    )
+
     def save_model(self, request, obj, form, change):
+
         is_new = obj.pk is None
+
         super().save_model(request, obj, form, change)
 
         if is_new:
-            try:
-                admin_role = Roles.objects.get(role_id=2)
 
-                Users.objects.filter(auth_user_id=obj.id).update(
-                    role=admin_role
-                )
+            admin_role = Roles.objects.filter(
+                role_id=2
+            ).first()
 
-            except Roles.DoesNotExist:
-                pass
+            Users.objects.filter(
+                auth_user=obj
+            ).update(
+                role=admin_role
+            )
 
 
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 
 
-# =========================
-# SIGNAL (ONLY CREATE PROFILE)
-# =========================
+# ======================================
+# SIGNAL
+# ======================================
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
 
-    # normalize email
-    email_value = instance.email.strip() if instance.email else None
+    email = instance.email.strip() if instance.email else None
 
-    if email_value == "":
-        email_value = None
+    if email == "":
+        email = None
 
     if created:
 
         Users.objects.get_or_create(
-            auth_user_id=instance.id,
+            auth_user=instance,
             defaults={
                 "user_id": uuid.uuid4(),
                 "id_number": instance.username,
-                "email": email_value,
-                "role": None,
-                "created_at": timezone.now()
-            }
+                "email": email,
+                "created_at": timezone.now(),
+            },
         )
 
     else:
 
         try:
-            profile = Users.objects.get(auth_user_id=instance.id)
+            profile = instance.profile
 
-            profile.email = email_value if email_value else profile.email
             profile.id_number = instance.username
+
+            if email:
+                profile.email = email
+
             profile.save()
 
         except Users.DoesNotExist:

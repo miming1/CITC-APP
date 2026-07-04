@@ -56,7 +56,7 @@ class Offices(models.Model):
 
 
 class Users(models.Model):
-    user_id = models.UUIDField(primary_key=True)
+    user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False,)
     id_number = models.BigIntegerField(unique=True)
     email = models.TextField(unique=True, blank=True, null=True)
     role = models.ForeignKey(Roles, models.DO_NOTHING, blank=True, null=True)
