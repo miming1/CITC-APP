@@ -54,6 +54,22 @@ class Offices(models.Model):
         managed = True
         db_table = 'offices'
 
+class OfficeProcedures(models.Model):
+    office_procedure_id = models.AutoField(primary_key=True)
+
+    office = models.ForeignKey(
+        Offices,
+        on_delete=models.CASCADE
+    )
+
+    procedure = models.ForeignKey(
+        Procedures,
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        db_table = "office_procedures"
+        unique_together = ("office", "procedure")
 
 class Users(models.Model):
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False,)
