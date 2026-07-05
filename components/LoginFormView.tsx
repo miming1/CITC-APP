@@ -31,6 +31,8 @@ export default function LoginFormView({
         onChangeText={(v) => onChange("idNumber", v)}
         placeholder="Enter ID Number"
         keyboardType="numeric"
+        autoComplete="username"
+        textContentType="username"
       />
       <AuthInput
         label="Password"
@@ -38,6 +40,8 @@ export default function LoginFormView({
         onChangeText={(v) => onChange("password", v)}
         placeholder="Enter Password"
         secure
+        autoComplete="current-password"
+        textContentType="password"
       />
       <TouchableOpacity onPress={onForgotPassword} style={s.forgotWrap}>
         <Text style={s.forgot}>Forgot password?</Text>

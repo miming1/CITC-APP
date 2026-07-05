@@ -3,21 +3,54 @@ import { getToken } from './auth';
 
 // ── Procedures ────────────────────────────────────────────────
 export async function fetchProcedures() {
-   const res = await fetch(ENDPOINTS.procedures, { cache: "no-store" });
-  if (!res.ok) throw new Error('Failed to fetch procedures');
-  return res.json();
-  // returns: [{ id, procedure_name, description, created_at, updated_at }]
+  const token = await getToken();
+
+  const res = await fetch(`${API_BASE_URL}/procedures/`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Token ${token}`, // 🔥 THIS is what you were missing
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.detail || "Failed to fetch procedures");
+  }
+
+  return data;
 }
 
 // ── FAQs ──────────────────────────────────────────────────────
-export const fetchFAQs = async (categoryId?: string) => {
-  const url = categoryId
-    ? `${API_BASE_URL}/faqs/?category_id=${categoryId}`
-    : `${API_BASE_URL}/faqs/`;
+export async function fetchFAQs(categoryId?: string) {
+  try {
+    const token = await getToken();
 
-  const res = await fetch(url);
-  return res.json();
-};
+    const url = categoryId
+      ? `${API_BASE_URL}/faqs/?category_id=${categoryId}`
+      : `${API_BASE_URL}/faqs/`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`, // 🔥 THIS WAS MISSING
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to fetch FAQs");
+    }
+
+    return data;
+  } catch (err) {
+    console.log("fetchFAQs error:", err);
+    return [];
+  }
+}
 
 // ── My Requests (needs auth token) ───────────────────────────
 export async function fetchMyRequests() {

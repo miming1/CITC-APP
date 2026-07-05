@@ -1,5 +1,5 @@
-import { useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -14,9 +14,8 @@ import FAQCard from "../components/FAQCard";
 import FloatingButtons from "../components/FloatingButtons";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
-import { fetchFAQs } from "../lib/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { fetchFAQs } from "../lib/api";
 
 interface FAQItem {
   id: number;
@@ -25,8 +24,6 @@ interface FAQItem {
   category: number;
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-
 export default function FAQScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
@@ -34,47 +31,60 @@ export default function FAQScreen() {
   const bg = isDark ? "#151718" : "#fff";
   const textPri = isDark ? "#ECEDEE" : "#1E1340";
 
-  // ✅ get category from navigation params
-  const { categoryId } = useLocalSearchParams();
+  const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
 
-  // ── State ─────────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Fetch FAQs ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    async function loadFAQs() {
-      try {
-        setLoading(true);
-        setError(null);
+  // =========================
+  // FETCH FAQS (FIXED)
+  // =========================
+  const loadFAQs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const data = await fetchFAQs(
-          categoryId ? String(categoryId) : undefined
-        );
+      const data = await fetchFAQs(categoryId ?? undefined);
 
+      // safety check (prevents crash if API returns object)
+      if (Array.isArray(data)) {
         setFaqs(data);
-      } catch (err) {
-        setError("Could not load FAQs. Check your connection.");
-      } finally {
-        setLoading(false);
+      } else {
+        setFaqs([]);
       }
+
+    } catch (err) {
+      console.log("FAQ load error:", err);
+      setError("Could not load FAQs. Check your connection.");
+      setFaqs([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    loadFAQs();
-  }, [categoryId]);
+  // =========================
+  // LOAD ON MOUNT + WHEN SCREEN FOCUSED
+  // =========================
+  useFocusEffect(
+    useCallback(() => {
+      loadFAQs();
+    }, [categoryId])
+  );
 
-  // ── Filter by search ──────────────────────────────────────────────────────
+  // =========================
+  // SEARCH FILTER
+  // =========================
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase().trim();
 
     if (!q) return faqs;
 
     return faqs.filter(
       (item) =>
-        item.question.toLowerCase().includes(q) ||
-        item.answer.toLowerCase().includes(q)
+        item.question?.toLowerCase().includes(q) ||
+        item.answer?.toLowerCase().includes(q)
     );
   }, [search, faqs]);
 
@@ -113,7 +123,7 @@ export default function FAQScreen() {
           </Text>
         )}
 
-        {/* FAQ LIST */}
+        {/* LIST */}
         {!loading && !error && (
           <View style={styles.cardList}>
             {filtered.map((item) => (
@@ -126,7 +136,7 @@ export default function FAQScreen() {
           </View>
         )}
 
-        {/* EMPTY STATE */}
+        {/* EMPTY */}
         {!loading && !error && filtered.length === 0 && (
           <Text style={[styles.hint, { color: isDark ? "#9BA1A6" : "#6B6485" }]}>
             No FAQs found.
@@ -142,8 +152,6 @@ export default function FAQScreen() {
     </SafeAreaView>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
