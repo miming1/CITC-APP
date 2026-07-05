@@ -15,6 +15,7 @@ from django.core.mail import get_connection, send_mail
 from django.conf import settings
 
 from .models import (
+    OfficeProcedures,
     Procedures,
     ProcedureSteps,
     Requirements,
@@ -208,18 +209,30 @@ def me(request):
 # =========================
 # PROCEDURES
 # =========================
+
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_procedures(request):
 
-    procedures = Procedures.objects.all()
+    profile = Users.objects.get(auth_user_id=request.user.id)
+    role_id = getattr(profile.role, "role_id", None)
+
+    # STUDENT
+    if role_id == 1:
+        procedures = Procedures.objects.all()
+
+    # ADMIN
+    else:
+        if not profile.office_id:
+            return Response([])
+
+        procedures = Procedures.objects.filter(
+            officeprocedures__office_id=profile.office_id
+        ).distinct()
 
     return Response(
-        ProcedureSerializer(
-            procedures,
-            many=True
-        ).data
+        ProcedureSerializer(procedures, many=True).data
     )
-
 
 @api_view(['PUT', 'PATCH'])
 def update_procedure(request, pk):
@@ -406,30 +419,44 @@ def save_full_process(request, procedure_id):
 # FAQ CATEGORIES
 # =========================
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def get_faq_categories(request):
 
-    categories = FaqCategories.objects.all().order_by("category_name")
+    profile = Users.objects.get(auth_user_id=request.user.id)
+    role_id = getattr(profile.role, "role_id", None)
+
+    if role_id != 1 and not profile.office_id:
+        return Response([])
+
+    # STUDENT
+    if role_id == 1:
+        categories = FaqCategories.objects.all()
+
+    # ADMIN
+    else:
+        if not profile.office_id:
+            return Response([])
+
+        categories = FaqCategories.objects.all()
+
+        if role_id != 1 and profile.office_id:
+            categories = categories.filter(
+                procedure_id__in=OfficeProcedures.objects.filter(
+                    office_id=profile.office_id
+                ).values_list("procedure_id", flat=True)
+            )
 
     data = []
 
     for category in categories:
 
-        # count FAQs per category (IMPORTANT for UI empty state)
         faq_count = Faqs.objects.filter(category=category).count()
 
         data.append({
             "category_id": category.category_id,
             "category_name": category.category_name,
-
-            # procedure link (can be null if orphan category exists)
-            "procedure": (
-                category.procedure.procedure_id
-                if category.procedure
-                else None
-            ),
-
-            # 👇 KEY FIX: lets frontend know if empty
-            "faq_count": faq_count
+            "procedure": int(category.procedure_id) if category.procedure_id else None,
+            "faq_count": faq_count,
         })
 
     return Response(data)
@@ -439,11 +466,32 @@ def get_faq_categories(request):
 # FAQS
 # =========================
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_faqs(request):
+
+    profile = Users.objects.get(auth_user_id=request.user.id)
+    role_id = getattr(profile.role, "role_id", None)
+
+    if role_id != 1 and not profile.office_id:
+        return Response([])
 
     category_id = request.query_params.get("category_id")
 
+    # BASE QUERY
     faqs = Faqs.objects.all()
+
+    # ADMIN FILTER
+    if role_id != 1:
+        if profile.office_id:
+            allowed_procedures = OfficeProcedures.objects.filter(
+                office_id=profile.office_id
+            ).values_list("procedure_id", flat=True)
+
+            faqs = faqs.filter(
+                category__procedure_id__in=allowed_procedures
+            )
+        else:
+            return Response([])
 
     if category_id:
         faqs = faqs.filter(category_id=category_id)
@@ -558,55 +606,68 @@ def submit_request(request):
 def track_requests(request):
 
     try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
 
-        profile = Users.objects.get(
-            auth_user_id=request.user.id
+    # user requests only
+    requests = Requests.objects.filter(user=profile)
+
+    if profile.role.role_id == 2:
+
+        allowed = OfficeProcedures.objects.filter(
+            office_id=profile.office_id
+        ).values_list(
+            "procedure_id",
+            flat=True
         )
 
-    except Users.DoesNotExist:
+        requests = Requests.objects.filter(
+            procedure_id__in=allowed
+        )
 
-        return Response({
-            "error": "Profile not found"
-        }, status=404)
-
-    requests = Requests.objects.filter(
-        user=profile
-    )
+    else:
+        requests = Requests.objects.filter(
+            user=profile
+        )
 
     return Response(
-        RequestSerializer(
-            requests,
-            many=True
-        ).data
+        RequestSerializer(requests, many=True).data
     )
-
 
 # =========================
 # PROCESS SCREEN
 # =========================
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_process_screen(request, procedure_id):
 
-    try:
-        data = get_full_procedure(procedure_id)
-    except Procedures.DoesNotExist:
-        return Response({"error": "Procedure not found"}, status=404)
+    profile = Users.objects.get(auth_user_id=request.user.id)
+    role_id = getattr(profile.role, "role_id", None)
+
+    # OFFICE ACCESS CHECK
+    if role_id == 2:
+        allowed = OfficeProcedures.objects.filter(
+            office_id=profile.office_id,
+            procedure_id=procedure_id
+        ).exists()
+
+        if not allowed:
+            return Response({"error": "Not allowed"}, status=403)
+
+    data = get_full_procedure(procedure_id)
 
     procedure = data["procedure"]
     steps = data["steps"]
     requirements = data["requirements"]
 
-    # =========================
-    # GROUP CATEGORIES UNDER PROCEDURE
-    # =========================
     categories = FaqCategories.objects.filter(
         procedure_id=procedure_id
-    ).order_by("category_name")
+    )
 
     faq_categories = []
 
     for category in categories:
-
         faqs = Faqs.objects.filter(category=category)
 
         faq_categories.append({
@@ -618,6 +679,72 @@ def get_process_screen(request, procedure_id):
     return Response({
         "procedure": ProcedureSerializer(procedure).data,
         "steps": ProcedureStepSerializer(steps, many=True).data,
+        "requirements": requirements,
+        "faq_categories": faq_categories,
+    })
+
+    # =========================
+    # OFFICE ACCESS CHECK
+    # =========================
+    # only admins are office restricted
+    if profile.role.role_id == 2:
+
+        allowed = OfficeProcedures.objects.filter(
+            office_id=profile.office_id,
+            procedure_id=procedure_id
+        ).exists()
+
+        if not allowed:
+            return Response(
+                {"error":"Not allowed"},
+                status=403
+            )
+
+    # =========================
+    # LOAD PROCEDURE
+    # =========================
+    try:
+        data = get_full_procedure(procedure_id)
+    except Procedures.DoesNotExist:
+        return Response(
+            {"error": "Procedure not found"},
+            status=404
+        )
+
+    procedure = data["procedure"]
+    steps = data["steps"]
+    requirements = data["requirements"]
+
+    # =========================
+    # FAQ CATEGORIES
+    # =========================
+    categories = (
+        FaqCategories.objects
+        .filter(procedure_id=procedure_id)
+        .order_by("category_name")
+    )
+
+    faq_categories = []
+
+    for category in categories:
+
+        faqs = Faqs.objects.filter(category=category)
+
+        faq_categories.append({
+            "category_id": category.category_id,
+            "category_name": category.category_name,
+            "faqs": FAQSerializer(
+                faqs,
+                many=True
+            ).data
+        })
+
+    return Response({
+        "procedure": ProcedureSerializer(procedure).data,
+        "steps": ProcedureStepSerializer(
+            steps,
+            many=True
+        ).data,
         "requirements": requirements,
         "faq_categories": faq_categories,
     })
@@ -719,18 +846,8 @@ def update_profile(request):
 @permission_classes([IsAuthenticated])
 def verify_password(request):
 
-    password = request.data.get("password")
-
     user = request.user
 
-    if user.check_password(password):
-
-        return Response({
-            "valid": True
-        })
-
     return Response({
-        "valid": False
-    }, status=400)
-
-
+        "valid": user.check_password(request.data.get("password"))
+    })

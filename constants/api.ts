@@ -5,6 +5,7 @@ export const ENDPOINTS = {
   login:      `${API_BASE_URL}/auth/login/`,
   me:         `${API_BASE_URL}/auth/me/`,
   procedures: `${API_BASE_URL}/procedures/`,
+  faqCategories: `${API_BASE_URL}/faq-categories/`,
   faqs:       `${API_BASE_URL}/faqs/`,
   submitReq:  `${API_BASE_URL}/requests/`,
   trackReq:   `${API_BASE_URL}/requests/track/`,

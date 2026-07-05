@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
 import {
   Platform,
   ScrollView,
@@ -9,19 +9,20 @@ import {
   useColorScheme,
   useWindowDimensions,
   View,
-} from 'react-native';
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useEffect, useState } from 'react';
-
-import { Colors } from "../constants/theme";
-
-import FloatingButtons from '../components/FloatingButtons';
-import Header from '../components/Header';
-import PopularProcesses from '../components/PopularProcesses';
-import SearchBar from '../components/SearchBar';
+import { useEffect, useState } from "react";
 
 import { API_BASE_URL } from "../constants/api";
+import { Colors } from "../constants/theme";
+
+import FloatingButtons from "../components/FloatingButtons";
+import Header from "../components/Header";
+import PopularProcesses from "../components/PopularProcesses";
+import SearchBar from "../components/SearchBar";
+
+import { getToken } from "../lib/auth";
 
 interface FAQCategory {
   id: string;
@@ -37,76 +38,117 @@ interface Process {
 export default function UserDashboard() {
   const router = useRouter();
 
-  const colorScheme = useColorScheme() ?? 'light';
-  const isDark = colorScheme === 'dark';
-  const colors = Colors[colorScheme as 'light' | 'dark'];
+  const colorScheme = useColorScheme() ?? "light";
+  const isDark = colorScheme === "dark";
+  const colors = Colors[colorScheme as "light" | "dark"];
 
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
   const bg = colors.background;
-  const textPri = isDark ? '#ECEDEE' : '#1E1340';
+  const textPri = isDark ? "#ECEDEE" : "#1E1340";
 
   const [processes, setProcesses] = useState<Process[]>([]);
-  const [loading, setLoading] = useState(true);
   const [faqCategories, setFaqCategories] = useState<FAQCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // =========================
   // FETCH PROCEDURES
   // =========================
   const fetchProcesses = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/procedures/`, { cache: "no-store" });
-      const data = await res.json();
+  try {
+    const token = await getToken();
 
-      const mapped = data.map((item: any) => ({
-        id: String(item.procedure_id), 
-        title: item.procedure_name ?? item.title,
-      }));
-
-      setProcesses(mapped);
-    } catch (err) {
-      console.log("Failed to fetch processes:", err);
+    if (!token) {
+      console.log("NO TOKEN FOUND - user not authenticated");
+      return;
     }
-  };
 
+    const res = await fetch(`${API_BASE_URL}/procedures/`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+    });
 
+    const data = await res.json();
+
+    console.log("PROCEDURES:", res.status, data);
+
+    if (!res.ok) return;
+
+    if (!Array.isArray(data)) {
+      setProcesses([]); // 👈 IMPORTANT SAFE FALLBACK
+      return;
+    }
+
+    setProcesses(
+      data.map((item: any) => ({
+        id: String(item.procedure_id),
+        title: item.procedure_name,
+      }))
+    );
+  } catch (err) {
+    console.log("fetchProcesses error:", err);
+    setProcesses([]);
+  }
+};
 
   // =========================
-  // FAQS
+  // FETCH FAQ CATEGORIES
   // =========================
   const fetchFaqCategories = async () => {
-    try {
-      const res = await fetch(
-        `${API_BASE_URL}/faq-categories/`,
-        { cache: "no-store" } 
-      );
+  try {
+    const token = await getToken();
 
-      const data = await res.json();
+    if (!token) {
+      console.log("NO TOKEN FOUND - skipping FAQ fetch");
+      setFaqCategories([]);
+      return;
+    }
 
-      const mapped = data.map((item: any) => ({
+    const res = await fetch(`${API_BASE_URL}/faq-categories/`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    console.log("FAQ:", res.status, data);
+
+    if (!res.ok) {
+      setFaqCategories([]); // 👈 IMPORTANT
+      return;
+    }
+
+    if (!Array.isArray(data)) {
+      setFaqCategories([]); // 👈 THIS FIXES YOUR CRASH
+      return;
+    }
+
+    setFaqCategories(
+      data.map((item: any) => ({
         id: String(item.category_id),
         category_name: item.category_name,
         procedure_id: String(item.procedure),
-      }));
+      }))
+    );
+  } catch (err) {
+    console.log("fetchFaqCategories error:", err);
+    setFaqCategories([]); // 👈 CRASH PREVENTION
+  }
+};
 
-      setFaqCategories(mapped);
-    } catch (err) {
-      console.log(
-        "Failed to fetch FAQ categories:",
-        err
-      );
-    }
-  };
-
+  // =========================
+  // INIT LOAD
+  // =========================
   useEffect(() => {
     const loadAll = async () => {
       setLoading(true);
 
-      await Promise.all([
-        fetchProcesses(),
-        fetchFaqCategories(),
-      ]);
+      await Promise.all([fetchProcesses(), fetchFaqCategories()]);
 
       setLoading(false);
     };
@@ -126,12 +168,7 @@ export default function UserDashboard() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          style={[
-            styles.container,
-            isDesktop && styles.desktopContainer,
-          ]}
-        >
+        <View style={[styles.container, isDesktop && styles.desktopContainer]}>
           {/* SEARCH */}
           <SearchBar
             placeholder="Search..."
@@ -159,12 +196,7 @@ export default function UserDashboard() {
 
           {/* QUESTION CATEGORIES */}
           <View style={styles.section}>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: textPri },
-              ]}
-            >
+            <Text style={[styles.sectionTitle, { color: textPri }]}>
               Question Categories
             </Text>
 
@@ -189,10 +221,7 @@ export default function UserDashboard() {
                 }
               >
                 <Text
-                  style={[
-                    styles.categoryTitle,
-                    { color: textPri },
-                  ]}
+                  style={[styles.categoryTitle, { color: textPri }]}
                 >
                   {category.category_name}
                 </Text>
@@ -204,8 +233,8 @@ export default function UserDashboard() {
 
       <FloatingButtons
         activeTab="faq"
-        onTrackPress={() => router.push('/track-details')}
-        onFAQPress={() => router.push('/faq')}
+        onTrackPress={() => router.push("/track-details")}
+        onFAQPress={() => router.push("/faq")}
       />
     </SafeAreaView>
   );
@@ -214,13 +243,10 @@ export default function UserDashboard() {
 // =========================
 // STYLES
 // =========================
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'android'
-      ? StatusBar.currentHeight
-      : 0,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
 
   container: {
@@ -260,7 +286,7 @@ const styles = StyleSheet.create({
 
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 16,
     marginTop: 20,
   },
