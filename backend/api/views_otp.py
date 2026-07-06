@@ -241,14 +241,17 @@ def verify_signup_otp(request):
 
     role = Roles.objects.filter(role_id=1).first()
 
-    profile, _ = Users.objects.get_or_create(
-        auth_user=auth_user,
-        defaults={
-            "id_number": int(data["id_number"]),
-            "email": data["email"],
-            "role": role,
-        }
-    )
+    # NOTE: the post_save signal in admin.py already created the Users
+    # profile row for this auth_user (with role=None), the instant
+    # User.objects.create() ran above. Because of that, get_or_create()
+    # here would just return the existing row and silently skip
+    # "defaults" — role would never actually get set. So instead we
+    # fetch the row the signal made and set fields on it directly.
+    profile = auth_user.profile
+    profile.id_number = int(data["id_number"])
+    profile.email = data["email"]
+    profile.role = role
+    profile.save()
 
     return Response({
         "message": "Account created successfully",

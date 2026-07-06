@@ -22,22 +22,16 @@ export default function TermsModal({ visible, onClose }: Props) {
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <Pressable style={s.overlay} onPress={onClose}>
         {/* Inner Pressable stops tap-through closing when tapping content */}
-        <Pressable style={s.sheet} onPress={() => {}}>
-          <View style={s.handle} />
+        <Pressable style={s.card} onPress={() => {}}>
           <Text style={s.title}>Terms &amp; Conditions</Text>
 
-          {/*
-            KEY FIX for Expo Go / Android:
-            - Give ScrollView a fixed pixel height (not %) so native knows how tall to scroll
-            - flex:1 alone doesn't work inside a Modal sheet on Android
-          */}
           <ScrollView
-            style={{ height: SCREEN_H * 0.52 }}
+            style={s.scrollArea}
             contentContainerStyle={s.scrollContent}
             showsVerticalScrollIndicator
             nestedScrollEnabled
@@ -90,7 +84,7 @@ export default function TermsModal({ visible, onClose }: Props) {
               at USTP-CDO.
             </Text>
 
-            <View style={{ height: 24 }} />
+            <View style={{ height: 8 }} />
           </ScrollView>
 
           <TouchableOpacity style={s.btn} onPress={onClose}>
@@ -105,23 +99,27 @@ export default function TermsModal({ visible, onClose }: Props) {
 const s = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: "rgba(13,19,84,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
-    paddingBottom: Platform.OS === "ios" ? 36 : 24,
   },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: "#ddd",
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 16,
+  // This used to be a full-width, edge-to-edge bottom sheet (`width: "100%"`,
+  // `justifyContent: "flex-end"` on the overlay). On desktop/web that made it
+  // eat the whole viewport. Now it's a centered, capped-width card like the
+  // other auth modals (Forgot Password / Verify OTP).
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 24,
+    width: "100%",
+    maxWidth: 520,
+    maxHeight: Platform.OS === "web" ? "85vh" as any : SCREEN_H * 0.8,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
   },
   title: {
     fontSize: 20,
@@ -129,6 +127,9 @@ const s = StyleSheet.create({
     color: "#422780",
     marginBottom: 16,
     textAlign: "center",
+  },
+  scrollArea: {
+    maxHeight: SCREEN_H * 0.5,
   },
   scrollContent: {
     paddingBottom: 8,
@@ -149,7 +150,10 @@ const s = StyleSheet.create({
     backgroundColor: "#D3C1FF",
     borderRadius: 12,
     paddingVertical: 14,
+    paddingHorizontal: 32,
     alignItems: "center",
+    alignSelf: "center",
+    minWidth: 180,
     marginTop: 16,
   },
   btnText: {

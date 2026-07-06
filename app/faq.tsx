@@ -1,10 +1,11 @@
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
@@ -15,13 +16,20 @@ import FloatingButtons from "../components/FloatingButtons";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 
-import { fetchFAQs } from "../lib/api";
+import { fetchFAQCategories, fetchFAQs } from "../lib/api";
+
 
 interface FAQItem {
   id: number;
   question: string;
   answer: string;
   category: number;
+}
+
+interface FAQCategory {
+  id: string;
+  category_name: string;
+  procedure_id: string;
 }
 
 export default function FAQScreen() {
@@ -35,8 +43,11 @@ export default function FAQScreen() {
 
   const [search, setSearch] = useState("");
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [categories, setCategories] = useState<FAQCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
 
   // =========================
   // FETCH FAQS (FIXED)
@@ -64,15 +75,49 @@ export default function FAQScreen() {
     }
   };
 
+  const loadCategories = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    const data = await fetchFAQCategories();
+
+    console.log("FAQ Categories:", data);
+
+    if (Array.isArray(data)) {
+      setCategories(
+        data.map((item: any) => ({
+          id: String(item.category_id),
+          category_name: item.category_name,
+          procedure_id: String(item.procedure),
+        }))
+      );
+    } else {
+      setCategories([]);
+    }
+  } catch (err) {
+    console.log(err);
+    setCategories([]);
+    setError("Unable to load categories.");
+  } finally {
+    setLoading(false);
+  }
+};
+
   // =========================
   // LOAD ON MOUNT + WHEN SCREEN FOCUSED
   // =========================
-  useFocusEffect(
-    useCallback(() => {
-      loadFAQs();
-    }, [categoryId])
-  );
+useFocusEffect(
+  useCallback(() => {
 
+    if (categoryId) {
+      loadFAQs();
+    } else {
+      loadCategories();
+    }
+
+  }, [categoryId])
+);
   // =========================
   // SEARCH FILTER
   // =========================
@@ -122,9 +167,33 @@ export default function FAQScreen() {
             {error}
           </Text>
         )}
+      
+        {/* CATEGORY LIST */}
+        {!loading && !error && !categoryId && (
+          <View style={styles.cardList}>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={styles.categoryCard}
+                onPress={() =>
+                  router.push({
+                    pathname: "/faq",
+                    params: {
+                      categoryId: category.id,
+                    },
+                  })
+                }
+              >
+                <Text style={[styles.categoryTitle, { color: textPri }]}>
+                  {category.category_name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
-        {/* LIST */}
-        {!loading && !error && (
+        {/* FAQ LIST */}
+        {!loading && !error && categoryId && (
           <View style={styles.cardList}>
             {filtered.map((item) => (
               <FAQCard
@@ -137,7 +206,10 @@ export default function FAQScreen() {
         )}
 
         {/* EMPTY */}
-        {!loading && !error && filtered.length === 0 && (
+        {!loading &&
+        !error &&
+        categoryId &&
+        filtered.length === 0 && (
           <Text style={[styles.hint, { color: isDark ? "#9BA1A6" : "#6B6485" }]}>
             No FAQs found.
           </Text>
@@ -184,4 +256,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     paddingHorizontal: 16,
   },
+
+  categoryCard: {
+  borderWidth: 1,
+  borderColor: "#DDD",
+  borderRadius: 10,
+  padding: 16,
+  marginBottom: 12,
+},
+
+categoryTitle: {
+  fontSize: 16,
+  fontWeight: "600",
+},
+
 });
+
