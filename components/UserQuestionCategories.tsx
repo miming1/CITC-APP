@@ -1,13 +1,11 @@
-import {
-  MaterialIcons,
-} from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 
 import { Colors } from "../constants/theme";
@@ -18,16 +16,9 @@ import { Colors } from "../constants/theme";
 // =========================
 
 export interface FAQCategory {
-  category_id: number;
+  id: string;
   category_name: string;
-  procedure: number | null;
-  faq_count?: number;
-}
-
-
-export interface Procedure {
-  procedure_id: number;
-  procedure_name: string;
+  procedure_id: string;
 }
 
 
@@ -36,7 +27,6 @@ export interface Procedure {
 // =========================
 
 interface Props {
-  procedures: Procedure[];
   categories: FAQCategory[];
   onPressCategory: (category: FAQCategory) => void;
   onSeeAll?: () => void;
@@ -47,8 +37,7 @@ interface Props {
 // COMPONENT
 // =========================
 
-export default function AdminQuestionCategories({
-  procedures,
+export default function UserQuestionCategories({
   categories,
   onPressCategory,
   onSeeAll,
@@ -58,8 +47,8 @@ export default function AdminQuestionCategories({
   const colors = Colors[colorScheme];
 
 
-  // Limit dashboard preview
   const visibleCategories = categories.slice(0, 3);
+
 
 
   return (
@@ -67,6 +56,7 @@ export default function AdminQuestionCategories({
 
 
       {/* HEADER */}
+
       <View style={styles.header}>
 
         <Text
@@ -82,21 +72,25 @@ export default function AdminQuestionCategories({
 
 
         {categories.length > 3 && onSeeAll && (
+
           <TouchableOpacity
             onPress={onSeeAll}
             activeOpacity={0.7}
           >
+
             <Text
               style={[
                 styles.seeAll,
                 {
-                  color: colors.tint,
+                  color: colors.tint2,
                 },
               ]}
             >
               See All
             </Text>
+
           </TouchableOpacity>
+
         )}
 
       </View>
@@ -111,11 +105,15 @@ export default function AdminQuestionCategories({
           style={[
             styles.emptyCard,
             {
-              backgroundColor: colors.background,
-              borderColor: colors.border,
+              backgroundColor:
+                colors.background,
+
+              borderColor:
+                colors.border,
             },
           ]}
         >
+
           <Text
             style={[
               styles.emptyText,
@@ -135,18 +133,21 @@ export default function AdminQuestionCategories({
         visibleCategories.map((category) => (
 
           <TouchableOpacity
-            key={category.category_id}
+            key={category.id}
             activeOpacity={0.85}
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-              },
-            ]}
             onPress={() =>
               onPressCategory(category)
             }
+            style={[
+              styles.card,
+              {
+                backgroundColor:
+                  colors.background,
+
+                borderColor:
+                  colors.border,
+              },
+            ]}
           >
 
 
@@ -156,24 +157,24 @@ export default function AdminQuestionCategories({
               style={[
                 styles.accentBar,
                 {
-                  backgroundColor: "#EBA937",
+                  backgroundColor:
+                    "#EBA937",
                 },
               ]}
             />
 
 
 
-            {/* CONTENT */}
-
             <View style={styles.content}>
 
               <Text
                 style={[
-                  styles.title,
+                  styles.categoryTitle,
                   {
                     color: colors.text,
                   },
                 ]}
+                numberOfLines={1}
               >
                 {category.category_name}
               </Text>
@@ -190,12 +191,9 @@ export default function AdminQuestionCategories({
                 View FAQs in this category
               </Text>
 
-
             </View>
 
 
-
-            {/* ARROW */}
 
             <MaterialIcons
               name="chevron-right"
@@ -209,6 +207,7 @@ export default function AdminQuestionCategories({
         ))
 
       )}
+
 
     </View>
   );
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 30,
     paddingHorizontal: 16,
-    marginBottom: 140,
+    marginBottom: 40,
   },
 
 
@@ -233,6 +232,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+
     marginBottom: 16,
   },
 
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
 
-    padding: 18,
+    padding: 16,
     marginBottom: 12,
 
     overflow: "hidden",
@@ -265,10 +265,12 @@ const styles = StyleSheet.create({
 
     shadowColor: "#000",
     shadowOpacity: 0.08,
+
     shadowOffset: {
       width: 0,
       height: 2,
     },
+
     shadowRadius: 4,
   },
 
@@ -276,7 +278,9 @@ const styles = StyleSheet.create({
   accentBar: {
     width: 5,
     height: "100%",
+
     borderRadius: 10,
+
     marginRight: 14,
   },
 
@@ -287,23 +291,25 @@ const styles = StyleSheet.create({
   },
 
 
-  title: {
+  categoryTitle: {
     fontSize: 15,
     fontWeight: "700",
+
     marginBottom: 4,
   },
 
 
   subtitle: {
     fontSize: 13,
-    lineHeight: 18,
   },
 
 
   emptyCard: {
     borderWidth: 1,
     borderRadius: 14,
+
     padding: 22,
+
     alignItems: "center",
   },
 

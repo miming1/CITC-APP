@@ -1,8 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { StyleSheet, TextInput, useColorScheme, View } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import {
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { Colors } from "../constants/theme";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -10,69 +16,139 @@ interface SearchBarProps {
   onChangeText?: (text: string) => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function SearchBar({
-  placeholder = 'Search...',
+  placeholder = "Search...",
   onSearch,
   onChangeText,
 }: SearchBarProps) {
-  const [query, setQuery] = useState('');
-  const colorScheme = useColorScheme() ?? 'light';
-  const isDark = colorScheme === 'dark';
+  const [query, setQuery] = useState("");
+
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
+
+  const isDark = colorScheme === "dark";
 
   const handleChange = (text: string) => {
     setQuery(text);
     onChangeText?.(text);
   };
 
+  const clearSearch = () => {
+    setQuery("");
+    onChangeText?.("");
+    onSearch?.("");
+  };
+
   return (
-    <View style={[
-      styles.container,
-      { backgroundColor: isDark ? '#2A2040' : '#EDE8F7' },
-    ]}>
-      <View style={styles.iconWrapper}>
-        <Ionicons name="search" size={18} color={isDark ? '#B0A8C8' : '#5D429D'} />
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark
+            ? "#1F2937"
+            : "#F8FAFC",
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      {/* Search Icon */}
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: isDark
+              ? "#172554"
+              : "#DBEAFE",
+          },
+        ]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={colors.tint}
+        />
       </View>
+
+      {/* Input */}
       <TextInput
-        style={[styles.input, { color: isDark ? '#E8E0FF' : '#4b2170' }]}
+        style={[
+          styles.input,
+          {
+            color: colors.text,
+          },
+        ]}
         placeholder={placeholder}
-        placeholderTextColor={isDark ? '#6B6485' : '#B0A8C8'}
+        placeholderTextColor={colors.icon}
         value={query}
         onChangeText={handleChange}
         onSubmitEditing={() => onSearch?.(query)}
         returnKeyType="search"
         autoCorrect={false}
       />
+
+      {/* Clear Button */}
+      {query.length > 0 && (
+        <TouchableOpacity
+          onPress={clearSearch}
+          activeOpacity={0.7}
+          style={styles.clearButton}
+        >
+          <Ionicons
+            name="close-circle"
+            size={22}
+            color={colors.icon}
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-
-  // ── Container ──────────────────────────────────────────────────────────────
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
 
+    borderWidth: 1,
+    borderRadius: 18,
+
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+
+    marginTop: 20,
+    marginBottom: 8,
     marginHorizontal: 16,
-    marginTop: 30,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    elevation: 2,
   },
 
-  iconWrapper: {
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+  iconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginRight: 12,
   },
+
   input: {
     flex: 1,
     fontSize: 15,
+    fontWeight: "500",
     paddingVertical: 0,
   },
 
+  clearButton: {
+    marginLeft: 8,
+  },
 });

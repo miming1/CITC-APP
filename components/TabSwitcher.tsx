@@ -1,33 +1,85 @@
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+
 import { Colors } from "../constants/theme";
 
-export default function TabSwitcher({ activeTab, setActiveTab }: any) {
+interface Props {
+  activeTab: "procedure" | "faq";
+  setActiveTab: (tab: "procedure" | "faq") => void;
+}
+
+export default function TabSwitcher({
+  activeTab,
+  setActiveTab,
+}: Props) {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
-  
-  return (
-    <View style={styles.container}>
 
+  return (
+    <View
+      style={[
+        styles.container,
+        {
+          borderBottomColor: colors.border,
+        },
+      ]}
+    >
       <TouchableOpacity
+        activeOpacity={0.8}
         style={[
           styles.tab,
-          activeTab === "procedure" && styles.active,
+          activeTab === "procedure" && {
+            borderBottomColor: colors.tint,
+          },
         ]}
         onPress={() => setActiveTab("procedure")}
       >
-        <Text style={[styles.text, { color: colors.text }]}>Procedure</Text>
+        <Text
+          style={[
+            styles.text,
+            {
+              color:
+                activeTab === "procedure"
+                  ? colors.text
+                  : colors.icon,
+              fontWeight:
+                activeTab === "procedure"
+                  ? "700"
+                  : "500",
+            },
+          ]}
+        >
+          Procedure
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
+        activeOpacity={0.8}
         style={[
           styles.tab,
-          activeTab === "faq" && styles.active,
+          activeTab === "faq" && {
+            borderBottomColor: colors.tint2,
+          },
         ]}
         onPress={() => setActiveTab("faq")}
       >
-        <Text style={[styles.text, { color: colors.text }]}>FAQs</Text>
+        <Text
+          style={[
+            styles.text,
+            {
+              color:
+                activeTab === "faq"
+                  ? colors.text
+                  : colors.icon,
+              fontWeight:
+                activeTab === "faq"
+                  ? "700"
+                  : "500",
+            },
+          ]}
+        >
+          FAQs
+        </Text>
       </TouchableOpacity>
-
     </View>
   );
 }
@@ -35,22 +87,22 @@ export default function TabSwitcher({ activeTab, setActiveTab }: any) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
+    borderBottomWidth: 1,
+    marginTop: 12,
   },
 
   tab: {
     flex: 1,
-    padding: 12,
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-  },
+    justifyContent: "center",
 
-  active: {
+    paddingVertical: 8,
+
     borderBottomWidth: 3,
-    borderColor: Colors.light.tint,
+    borderBottomColor: "transparent",
   },
 
   text: {
-    fontWeight: "500",
+    fontSize: 15,
   },
 });

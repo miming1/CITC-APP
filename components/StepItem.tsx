@@ -4,8 +4,8 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
+  useColorScheme,
 } from "react-native";
 
 import { Colors } from "../constants/theme";
@@ -27,26 +27,31 @@ export default function StepItem({
   checked,
   onToggle,
 }: StepItemProps) {
+
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
 
+
   const checkColor =
     colorScheme === "light"
-      ? "#141A73"
-      : "#EBA937";
+      ? colors.tint
+      : colors.tint2;
+
+
 
   const handleOpenLink = async () => {
+
     if (!link) return;
 
     let formatted = link;
 
-    // Auto-fix missing https://
     if (
       !formatted.startsWith("http://") &&
       !formatted.startsWith("https://")
     ) {
       formatted = "https://" + formatted;
     }
+
 
     try {
       await Linking.openURL(formatted);
@@ -55,142 +60,225 @@ export default function StepItem({
     }
   };
 
+
   return (
     <View style={styles.container}>
+
+
       {/* CHECKBOX */}
+
       <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={onToggle}
         style={[
           styles.checkbox,
           {
             borderColor: checkColor,
-            backgroundColor: checked
-              ? checkColor
-              : "transparent",
+            backgroundColor:
+              checked
+                ? checkColor
+                : "transparent",
           },
         ]}
-        onPress={onToggle}
-        activeOpacity={0.8}
       >
+
         {checked && (
           <MaterialIcons
             name="check"
-            size={18}
+            size={16}
             color="#FFFFFF"
           />
         )}
+
       </TouchableOpacity>
 
-      {/* STEP NUMBER */}
+
+
+      {/* STEP BADGE */}
+
       <View
         style={[
           styles.badge,
           {
-            backgroundColor: colors.tint,
+            backgroundColor:
+              checked
+                ? colors.icon
+                : colors.tint,
           },
         ]}
       >
-        <Text style={styles.badgeText}>{number}</Text>
+
+        <Text style={styles.badgeText}>
+          {number}
+        </Text>
+
       </View>
 
-      {/* STEP CONTENT */}
+
+
+      {/* CONTENT */}
+
       <View
         style={[
-          styles.textContainer,
+          styles.content,
           checked && styles.completed,
         ]}
       >
+
         <Text
           style={[
-            styles.text,
-            { color: colors.text },
+            styles.title,
+            {
+              color: colors.text,
+            },
           ]}
         >
           {text}
         </Text>
 
-        {sub ? (
+
+
+        {sub && (
           <Text
             style={[
               styles.sub,
-              { color: colors.icon },
+              {
+                color: colors.icon,
+              },
             ]}
           >
             {sub}
           </Text>
-        ) : null}
+        )}
 
-        {link ? (
-          <TouchableOpacity onPress={handleOpenLink}>
+
+
+        {link && (
+          <TouchableOpacity
+            onPress={handleOpenLink}
+            activeOpacity={0.7}
+            style={styles.linkContainer}
+          >
+
+            <MaterialIcons
+              name="link"
+              size={15}
+              color={colors.tint}
+            />
+
             <Text
               style={[
                 styles.link,
-                checked && styles.completed,
+                {
+                  color: colors.tint,
+                },
               ]}
             >
-              {link}
+              Open Reference
             </Text>
+
           </TouchableOpacity>
-        ) : null}
+        )}
+
       </View>
+
+
     </View>
   );
 }
 
+
+
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 18,
+
+  container:{
+    flexDirection:"row",
+    alignItems:"flex-start",
+
+    marginBottom:22,
   },
 
-  badge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    marginTop: 2,
+
+  checkbox:{
+    width:24,
+    height:24,
+
+    borderRadius:6,
+    borderWidth:2,
+
+    alignItems:"center",
+    justifyContent:"center",
+
+    marginTop:5,
+    marginRight:12,
   },
 
-  badgeText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
+
+  badge:{
+    width:34,
+    height:34,
+
+    borderRadius:17,
+
+    alignItems:"center",
+    justifyContent:"center",
+
+    marginRight:14,
   },
 
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 2,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 4,
-    marginRight: 12,
+
+  badgeText:{
+    color:"#FFFFFF",
+    fontWeight:"700",
+    fontSize:14,
   },
 
-  textContainer: {
-    flex: 1,
+
+  content:{
+    flex:1,
+
+    paddingTop:2,
   },
 
-  text: {
-    fontWeight: "500",
-    fontSize: 15,
+
+  title:{
+    fontSize:15,
+    fontWeight:"700",
+
+    lineHeight:21,
   },
 
-  sub: {
-    fontSize: 12,
-    marginTop: 3,
+
+  sub:{
+    fontSize:13,
+
+    lineHeight:18,
+
+    marginTop:5,
   },
 
-  link: {
-    fontSize: 12,
-    marginTop: 6,
-    color: "#3B82F6",
-    textDecorationLine: "underline",
+
+  linkContainer:{
+    flexDirection:"row",
+    alignItems:"center",
+
+    marginTop:8,
   },
 
-  completed: {
-    opacity: 0.6,
+
+  link:{
+    fontSize:13,
+
+    fontWeight:"600",
+
+    marginLeft:5,
+
+    textDecorationLine:"underline",
   },
+
+
+  completed:{
+    opacity:0.55,
+  },
+
 });

@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 
+import AdminMenu from "../components/AdminMenu";
 import StepItem from "../components/StepItem";
 
 interface Props {
@@ -144,50 +145,34 @@ export default function ProcessTab({
       {/* ========================= */}
 
       {isAdmin && (
-        <TouchableOpacity
-          onPress={() => setShowMenu(!showMenu)}
-          style={styles.menuButton}
-        >
-          <Text
-            style={[
-              styles.menuDots,
-              { color: colors.icon },
-            ]}
-          >
-            ⋯
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {showMenu && isAdmin && (
-        <View
-          style={[
-            styles.menuBox,
-            { backgroundColor: colors.background },
-          ]}
-        >
+        <View style={styles.menuContainer}>
           <TouchableOpacity
-            onPress={() => {
-              setShowMenu(false);
-              onEdit();
-            }}
+            onPress={() => setShowMenu(!showMenu)}
+            style={styles.menuButton}
           >
-            <Text style={{ color: colors.text }}>
-              Edit
+            <Text
+              style={[
+                styles.menuDots,
+                { color: colors.icon },
+              ]}
+            >
+              ⋯
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => {
-              setShowMenu(false);
-              onDelete();
-            }}
-            style={{ marginTop: 10 }}
-          >
-            <Text style={{ color: "red" }}>
-              Delete
-            </Text>
-          </TouchableOpacity>
+
+          {showMenu && (
+            <AdminMenu
+              onEdit={() => {
+                setShowMenu(false);
+                onEdit();
+              }}
+              onDelete={() => {
+                setShowMenu(false);
+                onDelete();
+              }}
+            />
+          )}
         </View>
       )}
 
@@ -491,32 +476,26 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   
-  menuButton: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    padding: 6,
-    zIndex: 10,
+  menuContainer: {
+    alignItems: "flex-end",
+    marginBottom: 6,
+    zIndex: 50,
+    position: "relative",
   },
 
   menuDots: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "700",
   },
 
-  menuBox: {
-    position: "absolute",
-    top: 30,
-    right: 0,
-    padding: 10,
-    borderRadius: 8,
-    elevation: 5,
-    zIndex: 20,
+  menuButton: {
+    padding: 4,
   },
 
   title: {
     fontSize: 24,
     fontWeight: "700",
+    marginTop: 4,
   },
 
   titleInput: {
