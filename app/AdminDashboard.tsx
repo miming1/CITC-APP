@@ -212,6 +212,7 @@ export default function AdminDashboard() {
                 pathname: "/faq",
                 params: {
                   categoryId: category.category_id, 
+                  roleId: 2 
                 },
               });
             }}

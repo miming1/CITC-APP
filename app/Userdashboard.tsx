@@ -161,7 +161,7 @@ export default function UserDashboard() {
   // =========================
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
-      <Header title="Welcome!" showBack={false} />
+      <Header title="Welcome!" showBack={false} roleId={1} />
 
       <ScrollView
         style={styles.scrollView}
@@ -216,6 +216,7 @@ export default function UserDashboard() {
                     params: {
                       categoryId: category.id,
                       procedureId: category.procedure_id,
+                      roleId: 1 
                     },
                   })
                 }

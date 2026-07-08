@@ -6,11 +6,14 @@ import {
   View,
 } from "react-native";
 
+import { useAuth } from "@/lib/auth-context";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface HeaderProps {
   title: string;
   showBack?: boolean;
+  roleId?: string | number;
 }
 
 // ─── Menu Items ───────────────────────────────────────────────────────────────
@@ -20,20 +23,31 @@ const MENU_ITEMS = [
   { label: 'Frequently Asked Questions', route: '/faq'                },
   { label: 'Form Submission Progress',   route: '/active-req'         },
   { label: 'Submission History',         route: '/SubmissionHistory'  },
-  { label: 'Profile',                    route: '/editProfile'            },
+  { label: 'Profile',                    route: '/editProfile'        },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function Header({ title, showBack = true }: HeaderProps) {
+export default function Header({ title, showBack = true, roleId: roleIdProp }: HeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const { user } = useAuth();
+  const roleId = roleIdProp ?? user?.roleId;
+
+  const handleNavigate = (route: string) => {
+    setMenuOpen(false);
+
+    router.push({
+      pathname: route as any,
+      params: { roleId: roleId != null ? String(roleId) : '' },
+    });
+  };
 
   return (
     <>
       <View style={styles.container}>
 
-        {/* ── Left: Back Button or Empty Spacer ── */}
         {showBack ? (
           <TouchableOpacity onPress={() => router.back()} style={styles.sideSlot}>
             <Text style={styles.backArrow}>←</Text>
@@ -42,10 +56,8 @@ export default function Header({ title, showBack = true }: HeaderProps) {
           <View style={styles.sideSlot} />
         )}
 
-        {/* ── Center: Dynamic Page Title ── */}
         <Text style={styles.title}>{title}</Text>
 
-        {/* ── Right: Hamburger Menu Button ── */}
         <TouchableOpacity
           style={styles.sideSlot}
           onPress={() => setMenuOpen(true)}
@@ -60,7 +72,6 @@ export default function Header({ title, showBack = true }: HeaderProps) {
 
       </View>
 
-      {/* ── Dropdown Menu (Modal overlay) ── */}
       <Modal
         visible={menuOpen}
         transparent
@@ -75,16 +86,12 @@ export default function Header({ title, showBack = true }: HeaderProps) {
               <TouchableOpacity
                 key={item.label}
                 style={styles.dropdownItem}
-                onPress={() => {
-                  setMenuOpen(false);
-                  router.push(item.route as any);
-                }}
+                onPress={() => handleNavigate(item.route)}
               >
                 <Text style={styles.dropdownText}>{item.label}</Text>
               </TouchableOpacity>
             ))}
 
-            {/* ── Logout ── */}
             <TouchableOpacity
               style={styles.logoutBtn}
               onPress={() => {
@@ -110,8 +117,6 @@ const MENU_ACTIVE_COLOR = '#EBA937';
 const Logout_Button = '#0a1036';
 
 const styles = StyleSheet.create({
-
-  // ── Header Bar ─────────────────────────────────────────────────────────────
   container: {
     height: 56,
     flexDirection: 'row',
@@ -120,21 +125,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: HEADER_COLOR,
   },
-
-  // ── Left / Right slots ─────────────────────────────────────────────────────
   sideSlot: {
     width: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // ── Back Arrow ─────────────────────────────────────────────────────────────
   backArrow: {
     color: '#fff',
     fontSize: 22,
   },
-
-  // ── Title ──────────────────────────────────────────────────────────────────
   title: {
     flex: 1,
     textAlign: 'center',
@@ -142,15 +141,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-
-  // ── Hamburger Wrapper ──────────────────────────────────────────────────────
   hamburger: {
     gap: 5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // ── Hamburger Lines ────────────────────────────────────────────────────────
   menuLine: {
     width: 22,
     height: 2.5,
@@ -160,15 +155,11 @@ const styles = StyleSheet.create({
   menuLineActive: {
     backgroundColor: MENU_ACTIVE_COLOR,
   },
-
-  // ── Modal Overlay ──────────────────────────────────────────────────────────
   overlay: {
     flex: 1,
     backgroundColor: 'transparent',
     alignItems: 'flex-end',
   },
-
-  // ── Dropdown Card ──────────────────────────────────────────────────────────
   dropdown: {
     marginTop: 56,
     marginRight: 8,
@@ -192,8 +183,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#3a256b',
   },
-
-  // ── Logout Row ─────────────────────────────────────────────────────────────
   logoutBtn: {
     backgroundColor: Logout_Button,
     paddingVertical: 14,
@@ -205,5 +194,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-
 });
