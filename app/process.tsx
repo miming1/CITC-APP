@@ -231,7 +231,7 @@ export default function ProcessScreen() {
   // =========================
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header title="Process" />
+      <Header title="Process" roleId={roleId as string} />
 
       {successMessage && (
         <View
@@ -368,7 +368,7 @@ export default function ProcessScreen() {
         isAdmin={isAdmin}
         onTrackPress={() =>
           router.push({
-            pathname: "/scan",
+            pathname: "/track",
             params: { id: procedureId },
           })
         }

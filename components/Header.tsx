@@ -18,6 +18,7 @@ import { Colors } from "@/constants/theme";
 interface HeaderProps {
   title: string;
   showBack?: boolean;
+  roleId?: string | number;
 }
 
 const MENU_ITEMS = [
