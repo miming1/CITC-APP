@@ -289,7 +289,7 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
         >
 
           {/* ── Brand mark ── */}

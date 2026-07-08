@@ -91,7 +91,7 @@ export default function FAQScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
       <Header title="FAQs" roleId={roleId as string} />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={true}>
         <View style={[styles.container, isDesktop && styles.desktopContainer]}>
           <SearchBar placeholder="Search..." onChangeText={setSearch} />
           <Text style={[styles.sectionTitle, { color: textPri }]}>Frequently Asked Questions</Text>

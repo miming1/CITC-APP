@@ -93,7 +93,7 @@ export default function ProcessListScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: bg }]}>
       <Header title="Processes" roleId={roleId as string} />
 
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={true}>
         <View style={[s.container, isDesktop && s.desktopContainer]}>
           <SearchBar placeholder="Search processes…" onChangeText={setSearch} />
 
