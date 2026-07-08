@@ -151,7 +151,6 @@ export default function FAQScreen() {
           visible={showFAQModal}
           onClose={() => setShowFAQModal(false)}
           procedureId={0}
-          isAdmin
           onSave={handleCreateFAQ}
         />
       )}
