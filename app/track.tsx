@@ -371,15 +371,17 @@ export default function TrackScreen() {
             style={[
               styles.infoCard,
               {
-                backgroundColor:
-                  colorScheme === "dark"
-                    ? "#0a1036"
-                    : "#FFFFFF",
+                backgroundColor: colors.background,
 
                 borderColor:
                   colorScheme === "dark"
                     ? "#2c346b"
                     : "#FFFFFF",
+
+                boxShadow:
+                  colorScheme === "dark"
+                    ? "0px 4px 16px rgba(255,255,255,0.08)"
+                    : "0px 4px 16px rgba(0,0,0,0.12)",
               },
             ]}
           >
