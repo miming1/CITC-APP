@@ -21,6 +21,7 @@ urlpatterns = [
     # PROCESS SCREEN (service layer)
     # =========================
     path('process/<int:procedure_id>/', views.get_process_screen),
+    path('process/<int:procedure_id>/documents/', views.get_procedure_documents),
 
     # =========================
     # FAQS

@@ -1,19 +1,28 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
 import { Colors } from "../constants/theme";
 
-export default function DocList({ icon, text }: any) {
-  const [checked, setChecked] = useState(false);
+interface DocListProps {
+  icon: any;
+  text: string;
+  selected: boolean;
+  onPress: () => void;
+}
+
+export default function DocList({
+  icon,
+  text,
+  selected,
+  onPress,
+}: DocListProps) {
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
 
   return (
-    <View style={styles.container}>
-
+    <TouchableOpacity style={styles.container} onPress={onPress}>
       {/* ICON BADGE */}
-      <View style={styles.badge}>
-        <MaterialIcons name={icon} size={18} color="#fff" />
+      <View style={[styles.badge, { backgroundColor: (colors as any).tint2 ?? colors.icon }]}> 
+        <MaterialIcons name={icon} size={18} color={colors.background} />
       </View>
 
       {/* TEXT */}
@@ -21,19 +30,26 @@ export default function DocList({ icon, text }: any) {
         <Text style={[styles.text, { color: colors.text }]}>{text}</Text>
       </View>
 
-      {/* CIRCULAR CHECKBOX */}
-      <TouchableOpacity
+      {/* CHECKBOX */}
+      <View
         style={[
           styles.checkbox,
           { borderColor: colors.icon },
-          checked && { backgroundColor: Colors.light.tint, borderColor: Colors.light.tint }
+          selected && {
+            backgroundColor: "#EFA810",
+            borderColor: "#EFA810",
+          },
         ]}
-        onPress={() => setChecked(!checked)}
       >
-        {checked && <MaterialIcons name="check" size={14} color="#fff" />}
-      </TouchableOpacity>
-
-    </View>
+        {selected && (
+          <MaterialIcons
+            name="check"
+            size={14}
+            color="#fff"
+          />
+        )}
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -48,7 +64,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.light.tint,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -66,7 +81,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderWidth: 2,
-    borderRadius: 11, // 👈 makes it a circle
+    borderRadius: 11,
     justifyContent: "center",
     alignItems: "center",
   },

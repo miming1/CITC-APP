@@ -260,7 +260,7 @@ export default function ProcessScreen() {
         isAdmin={isAdmin}
         onTrackPress={() =>
           router.push({
-            pathname: "/scan",
+            pathname: "/track",
             params: { id: procedureId },
           })
         }

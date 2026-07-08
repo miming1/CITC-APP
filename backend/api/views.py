@@ -20,9 +20,12 @@ from .models import (
     ProcedureSteps,
     Requirements,
     ProcedureRequirements,
+    ProcedureDocuments,
+    Documents,
     FaqCategories,
     Faqs,
     Requests,
+    RequestDocuments,
     Users,
     Roles
 )
@@ -740,16 +743,45 @@ def get_process_screen(request, procedure_id):
         })
 
     return Response({
-        "procedure": ProcedureSerializer(procedure).data,
-        "steps": ProcedureStepSerializer(
-            steps,
-            many=True
-        ).data,
-        "requirements": requirements,
-        "faq_categories": faq_categories,
+
+        "procedure":
+            ProcedureSerializer(
+                data["procedure"]
+            ).data,
+
+        "steps":
+            ProcedureStepSerializer(
+                data["steps"],
+                many=True
+            ).data,
+
+        # procedure_service already converts these into dictionaries
+        "requirements":
+            data["requirements"],
+
+        "faqs":
+            FAQSerializer(
+                data["faqs"],
+                many=True
+            ).data,
     })
 
+@api_view(["GET"])
+def get_procedure_documents(request, procedure_id):
 
+    documents = (
+        ProcedureDocuments.objects
+        .filter(procedure_id=procedure_id)
+        .select_related("document")
+    )
+
+    return Response([
+        {
+            "document_id": item.document.document_id,
+            "document_name": item.document.document_name,
+        }
+        for item in documents
+    ])
 
 # =========================
 # PROFILE
