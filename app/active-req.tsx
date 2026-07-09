@@ -1,12 +1,10 @@
-import { useState } from "react";
-import {
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import React, { useState } from "react";
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useColorScheme, useWindowDimensions, } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { MaterialIcons } from "@expo/vector-icons";
+
+import Header from "@/components/Header";
+import { Colors } from "../constants/theme";
 
 type RequestItem = {
   title: string;
@@ -17,34 +15,59 @@ type RequestItem = {
   note?: string;
 };
 
-const mockData: RequestItem[] = [
+type ProcedureGroup = {
+  procedure: string;
+  requests: RequestItem[];
+};
+
+const mockData: ProcedureGroup[] = [
   {
-    title: "Medical Certificate \nSubmission",
-    studentId: "2023045033",
-    refNum: "67353279301",
-    date: "2026-04-07",
-    status: "pending",
-    note: "Your document is still under review.\nPlease allow some time for processing.",
+    procedure: "Request for Exam",
+    requests: [
+      {
+        title: "Medical Certificate",
+        studentId: "2023045033",
+        refNum: "0001-00000001",
+        date: "2026-04-07",
+        status: "pending",
+        note: "Your document is still under review.",
+      },
+      {
+        title: "Excuse Letter",
+        studentId: "2023045033",
+        refNum: "0001-00000002",
+        date: "2026-04-08",
+        status: "approved",
+        note: "Approved successfully.",
+      },
+    ],
   },
+
   {
-    title: "INC Form Submission",
-    studentId: "2023045033",
-    refNum: "67353279301",
-    date: "2026-03-28",
-    status: "approved",
-    note: "Your document has been approved.\nPlease check your email for further instructions.",
-  },
-  {
-    title: "Excuse Letter Submission",
-    studentId: "2023045033",
-    refNum: "67353279301",
-    date: "2026-02-11",
-    status: "rejected",
-    note: "Your submission was rejected.\nPlease review your document and resubmit.",
+    procedure: "Graduation Clearance",
+    requests: [
+      {
+        title: "Clearance Form",
+        studentId: "2023045033",
+        refNum: "0003-00000001",
+        date: "2026-05-02",
+        status: "pending",
+        note: "Waiting for office approval.",
+      },
+    ],
   },
 ];
 
 export default function UserActiveReq() {
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
+
+  const { width } = useWindowDimensions();
+
+  const horizontalMargin = width > 768 ? 100 : 20;
+
+  const isDesktop = width >= 1024;
+
   const [selectedItem, setSelectedItem] = useState<RequestItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -76,31 +99,116 @@ export default function UserActiveReq() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.pageTitle}>Active Requests</Text>
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
+      <Header title="Active Requests" />
 
-        {mockData.map((item, index) => (
-          <TouchableOpacity
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          isDesktop && styles.desktopContent,
+        ]}
+      >
+        {mockData.map((group, index) => (
+          <View
             key={index}
-            style={styles.card}
-            onPress={() => openModal(item)}
+            style={[
+              styles.procedureSection,
+              {
+                marginHorizontal: horizontalMargin,
+              },
+            ]}
           >
-            <View style={styles.statusContainer}>
-              <Text style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                {formatStatus(item.status)}
-              </Text>
-            </View>
-
-            <Text style={styles.cardTitle}>{item.title}</Text>
-
-            <Text style={styles.text}>
-              <Text style={styles.bold}>Date: </Text>
-              {item.date}
+            <Text
+              style={[
+                styles.procedureTitle,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              {group.procedure}
             </Text>
-          </TouchableOpacity>
+
+            {group.requests.map((item, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.card}
+                onPress={() => openModal(item)}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.documentInfo}>
+                    <MaterialIcons
+                      name="description"
+                      size={24}
+                      color={colors.tint}
+                    />
+
+                    <Text
+                      style={[
+                        styles.cardTitle,
+                        {
+                          color: colors.text,
+                        },
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.statusBadge,
+                      getStatusStyle(item.status),
+                    ]}
+                  >
+                    {formatStatus(item.status)}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.cardLabel,
+                    {
+                      color: colors.icon,
+                    },
+                  ]}
+                >
+                  Reference Code
+                </Text>
+
+                <Text
+                  style={[
+                    styles.referenceNumber,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  {item.refNum}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.cardDate,
+                    {
+                      color: colors.icon,
+                    },
+                  ]}
+                >
+                  {item.date}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         ))}
-      </View>
+      </ScrollView>
 
       {/* MODAL */}
       <Modal
@@ -174,19 +282,63 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f9fafb" },
   container: { padding: 20 },
 
-  pageTitle: {
-    textAlign: "center",
-    fontSize: 22,
+  desktopContent: {
+    width: "95%",
+    maxWidth: 1600,
+    alignSelf: "center",
+  },
+
+  procedureSection: {
+    marginBottom: 30,
+  },
+
+  procedureTitle: {
+    fontSize: 20,
     fontWeight: "700",
-    marginBottom: 15,
+    marginBottom: 12,
   },
 
   card: {
     backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
     elevation: 3,
+  },
+
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginLeft: 10,
+    flexShrink: 1,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  documentInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+
+  cardLabel: {
+    fontSize: 12,
+    marginTop: 16,
+  },
+
+  referenceNumber: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+
+  cardDate: {
+    marginTop: 14,
+    fontSize: 13,
   },
 
   statusContainer: {
@@ -217,12 +369,6 @@ const styles = StyleSheet.create({
   rejected: {
     backgroundColor: "#fee2e2",
     color: "#991b1b",
-  },
-
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 10,
   },
 
   text: {

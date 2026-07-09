@@ -22,6 +22,7 @@ urlpatterns = [
     # =========================
     path('process/<int:procedure_id>/', views.get_process_screen),
     path('process/<int:procedure_id>/documents/', views.get_procedure_documents),
+    path('process/<int:procedure_id>/offices/', views.get_procedure_offices),
 
     # =========================
     # FAQS

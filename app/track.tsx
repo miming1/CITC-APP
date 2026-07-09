@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Header from "@/components/Header";
 import DocList from "../components/DocList";
+import InfoCard from "@/components/InfoCard";
 
 import { API_BASE_URL, ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
@@ -48,13 +49,14 @@ export default function TrackScreen() {
   // =========================
 
   const { width } = useWindowDimensions();
+  const horizontalMargin = width > 768 ? 100 : 20;
 
   const isDesktop = width >= 1024;
 
   const [documents, setDocuments] = useState<Document[]>([]);
 
-  const [selectedDocumentIds, setSelectedDocumentIds] =
-    useState<number[]>([]);
+  const [selectedDocumentId, setSelectedDocumentId] =
+    useState<number | null>(null);
 
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -105,18 +107,18 @@ export default function TrackScreen() {
 
   const validateForm = () => {
     if (
-      selectedDocumentIds.length === 0 &&
+      selectedDocumentId === null &&
       missingFields.length > 0
     ) {
       setErrors([
-        "Please select at least one document and complete your profile before proceeding.",
+        "Please select a document and complete your profile before proceeding.",
       ]);
       return false;
     }
 
-    if (selectedDocumentIds.length === 0) {
+    if (selectedDocumentId === null) {
       setErrors([
-        "Please select at least one document before proceeding.",
+        "Please select a document before proceeding.",
       ]);
       return false;
     }
@@ -220,20 +222,59 @@ export default function TrackScreen() {
 
   const hasStudentInfo = missingFields.length === 0;
 
-  const canProceed = hasStudentInfo && selectedDocumentIds.length > 0;
+  const canProceed = hasStudentInfo && selectedDocumentId !== null;
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!validateForm()) return;
 
-    const reference = generateReference();
+    const token = await getStoredToken();
+
+    if (!token) {
+      showAlert("Error", "You are not logged in.");
+      return;
+    }
+
+    const response = await fetch(ENDPOINTS.submitReq, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({
+        procedure: procedureId,
+        document: selectedDocumentId,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showAlert("Error", data.error || "Failed to submit request.");
+      return;
+    }
+
+    const selectedDocument = documents.find(
+      (doc) => doc.document_id === selectedDocumentId
+    );
+
+    const today = new Date().toLocaleDateString();
 
     router.push({
       pathname: "/track-details",
       params: {
-        procedureId: String(procedureId),
-        documentIds: JSON.stringify(selectedDocumentIds),
+        reference: data.reference_code,
+
         studentId: studentInfo.studentId,
-        reference,
+        name: studentInfo.name,
+        program: studentInfo.program,
+        yearLevel: studentInfo.yearLevel,
+
+        procedureId: String(procedureId),
+
+        documentId: String(selectedDocument?.document_id ?? ""),
+        documentName: selectedDocument?.document_name ?? "",
+
+        date: today,
       },
     });
   };
@@ -264,7 +305,7 @@ export default function TrackScreen() {
             },
           ]}
         >
-          Choose Documents to Track
+          Choose Document to Track
         </Text>
 
         <Text
@@ -275,35 +316,8 @@ export default function TrackScreen() {
             },
           ]}
         >
-          Select one or more documents you want to track.
+          Select the document you want to track.
         </Text>
-
-        {documents.map((doc) => (
-          <DocList
-            key={doc.document_id}
-            icon="description"
-            text={doc.document_name}
-            selected={selectedDocumentIds.includes(doc.document_id)}
-            onPress={() => {
-              setErrors([]);
-              if (selectedDocumentIds.includes(doc.document_id)) {
-                setSelectedDocumentIds(
-                  selectedDocumentIds.filter(
-                    (id) => id !== doc.document_id
-                  )
-                );
-              } else {
-                setSelectedDocumentIds([
-                  ...selectedDocumentIds,
-                  doc.document_id,
-                ]);
-              }
-            }}
-          />
-        ))}
-
-
-
         {errors.length > 0 && (
           <View
             style={[
@@ -353,37 +367,43 @@ export default function TrackScreen() {
             ))}
           </View>
         )}
+        <View style={styles.docListContainer}>
+          {documents.map((doc) => (
+            <DocList
+              key={doc.document_id}
+              icon="description"
+              text={doc.document_name}
+              selected={selectedDocumentId === doc.document_id}
+              onPress={() => {
+                setErrors([]);
+
+                if (selectedDocumentId === doc.document_id) {
+                  setSelectedDocumentId(null);
+                } else {
+                  setSelectedDocumentId(doc.document_id);
+                }
+              }}
+            />
+          ))}
+        </View>
+
         <View
           style={styles.detailsContainer}
         >
-          <Text
-            style={[
-              styles.detailsTitle,
-              {
-                color: colors.text,
-              },
-            ]}
-          >
-            Student Information
-          </Text>
 
-          <View
-            style={[
-              styles.infoCard,
-              {
-                backgroundColor: colors.background,
-
-                borderColor:
-                  colorScheme === "dark"
-                    ? "#2c346b"
-                    : "#FFFFFF",
-
-                boxShadow:
-                  colorScheme === "dark"
-                    ? "0px 4px 16px rgba(255,255,255,0.08)"
-                    : "0px 4px 16px rgba(0,0,0,0.12)",
-              },
-            ]}
+          <InfoCard
+            marginHorizontal={horizontalMargin}
+            backgroundColor={colors.background}
+            borderColor={
+              colorScheme === "dark"
+                ? "#2c346b"
+                : "#FFFFFF"
+            }
+            shadow={
+              colorScheme === "dark"
+                ? "0px 4px 16px rgba(255,255,255,0.08)"
+                : "0px 4px 16px rgba(0,0,0,0.12)"
+            }
           >
             {loadingProfile ? (
               <Text
@@ -658,7 +678,7 @@ export default function TrackScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </InfoCard>
         </View>
       </ScrollView>
       <View
@@ -711,7 +731,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "600",
-    marginBottom: 8,
+    marginTop: 20,
+    marginBottom: 3,
   },
 
   description: {
@@ -722,20 +743,12 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 
-  detailsTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginTop: 5,
-    marginBottom: 10,
-  },
-
   errorContainer: {
     backgroundColor: "rgba(220,38,38,0.12)",
     borderWidth: 0.1,
     borderRadius: 10,
-    padding: 8,
+    padding: 6,
     marginTop: 2,
-    marginBottom: 10,
   },
 
   errorRow: {
@@ -751,18 +764,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  infoCard: {
-    borderRadius: 18,
-    padding: 20,
-    borderWidth: 0.1,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+  docListContainer: {
+    marginTop: 16,
   },
 
   loadingText: {
@@ -835,17 +838,20 @@ const styles = StyleSheet.create({
   },
 
   footer: {
+    borderColor: "#d8d8d8",
+    borderTopWidth: 0.1,
     position: "absolute",
     bottom: 0,
-    left: 16,
-    right: 16,
-    paddingVertical: 20,
+    left: 0,
+    right: 0,
+    paddingVertical: 15,
   },
 
   ProceedBtn: {
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
+    marginHorizontal: 500,
   },
 
   ProceedBtnText: {

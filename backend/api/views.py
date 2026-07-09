@@ -419,6 +419,27 @@ def save_full_process(request, procedure_id):
     }, status=200)
 
 # =========================
+# DISPLAY PROCEDURE OFFICES
+# =========================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_procedure_offices(request, procedure_id):
+
+    offices = (
+        OfficeProcedures.objects
+        .filter(procedure_id=procedure_id)
+        .select_related("office")
+    )
+
+    return Response([
+        {
+            "office_id": item.office.office_id,
+            "office_name": item.office.office_name,
+        }
+        for item in offices
+    ])
+
+# =========================
 # FAQ CATEGORIES
 # =========================
 @api_view(["GET"])
@@ -587,22 +608,71 @@ def delete_faq(request, pk):
 @permission_classes([IsAuthenticated])
 def submit_request(request):
 
-    serializer = RequestSerializer(data=request.data)
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
 
-    if serializer.is_valid():
+    procedure_id = request.data.get("procedure")
+    document_id = request.data.get("document")
 
-        serializer.save()
-
+    if not procedure_id or not document_id:
         return Response(
-            serializer.data,
-            status=201
+            {"error": "Procedure and document are required."},
+            status=400
         )
 
-    return Response(
-        serializer.errors,
-        status=400
+    try:
+        procedure = Procedures.objects.get(pk=procedure_id)
+        document = Documents.objects.get(pk=document_id)
+    except (Procedures.DoesNotExist, Documents.DoesNotExist):
+        return Response(
+            {"error": "Invalid procedure or document."},
+            status=400
+        )
+
+    # Create request
+    new_request = Requests.objects.create(
+        user=profile,
+        procedure=procedure,
+        created_at=timezone.now(),
     )
 
+    # Find the latest tracking number for this document
+    last_request = (
+        RequestDocuments.objects
+        .filter(document=document)
+        .order_by("-tracking_number")
+        .first()
+    )
+
+    if last_request and last_request.tracking_number:
+        next_tracking_number = last_request.tracking_number + 1
+    else:
+        next_tracking_number = 1
+
+    # Format the reference code
+    reference_code = f"{document.document_id:04d}-{next_tracking_number:08d}"
+
+    # Create request document
+    request_document = RequestDocuments.objects.create(
+        request=new_request,
+        document=document,
+        tracking_number=next_tracking_number,
+        reference_code=reference_code,
+        status="Pending",
+        updated_at=timezone.now(),
+    )
+
+    return Response(
+    {
+        "request_id": new_request.request_id,
+        "reference_code": reference_code,
+        "tracking_number": next_tracking_number,
+        "status": request_document.status,
+    },
+    status=201,
+)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -765,6 +835,10 @@ def get_process_screen(request, procedure_id):
                 many=True
             ).data,
     })
+
+# =========================
+# DOCUMENTS
+# =========================
 
 @api_view(["GET"])
 def get_procedure_documents(request, procedure_id):
