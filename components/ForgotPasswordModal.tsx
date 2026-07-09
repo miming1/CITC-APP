@@ -22,8 +22,6 @@ interface Props {
 
 type Step = "email" | "otp" | "newPassword" | "done";
 
-// react-native-web draws its own focus outline on top of our custom borders —
-// this strips it so inputs don't get a stray black ring when clicked.
 const noWebOutline =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : {};
 
@@ -309,8 +307,6 @@ const s = StyleSheet.create({
     padding: 28,
     paddingTop: 20,
     width: "100%",
-    // This is the fix: without a cap the card stretched edge-to-edge on
-    // desktop/web. 400 matches the OTP verification card's size.
     maxWidth: 400,
     alignItems: "center",
     elevation: 10,
@@ -372,8 +368,6 @@ const s = StyleSheet.create({
     marginTop: 8,
   },
   // Compact CTA for the later steps (OTP verify / reset / back-to-login) —
-  // sized to its content instead of stretching full width like the first
-  // "Send OTP" button.
   verifyBtn: {
     alignSelf: "center",
     backgroundColor: "#0a1036",
