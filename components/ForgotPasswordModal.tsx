@@ -22,6 +22,11 @@ interface Props {
 
 type Step = "email" | "otp" | "newPassword" | "done";
 
+// react-native-web draws its own focus outline on top of our custom borders —
+// this strips it so inputs don't get a stray black ring when clicked.
+const noWebOutline =
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : {};
+
 export default function ForgotPasswordModal({ visible, onClose }: Props) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -150,7 +155,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                 <View style={s.inputWrap}>
                   <Ionicons name="mail-outline" size={18} color="#0a1036" style={s.inputIcon} />
                   <TextInput
-                    style={s.input}
+                    style={[s.input, noWebOutline]}
                     placeholder="example@gmail.com"
                     placeholderTextColor="#CCBACE"
                     value={email}
@@ -185,7 +190,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                 <View style={s.inputWrap}>
                   <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
                   <TextInput
-                    style={s.input}
+                    style={[s.input, noWebOutline]}
                     placeholder="Enter 6-digit OTP"
                     placeholderTextColor="#CCBACE"
                     value={otp}
@@ -196,7 +201,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                 </View>
                 {error ? <Text style={s.errorText}>{error}</Text> : null}
                 <TouchableOpacity
-                  style={[s.btn, (!otp.trim() || loading) && s.btnDisabled]}
+                  style={[s.verifyBtn, (!otp.trim() || loading) && s.btnDisabled]}
                   onPress={handleVerifyOTP}
                   disabled={!otp.trim() || loading}
                 >
@@ -221,7 +226,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                 <View style={s.inputWrap}>
                   <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
                   <TextInput
-                    style={[s.input, { flex: 1 }]}
+                    style={[s.input, { flex: 1 }, noWebOutline]}
                     placeholder="New Password"
                     placeholderTextColor="#CCBACE"
                     value={newPassword}
@@ -236,7 +241,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                 <View style={[s.inputWrap, { marginTop: 8 }]}>
                   <Ionicons name="lock-closed-outline" size={18} color="#CCBACE" style={s.inputIcon} />
                   <TextInput
-                    style={[s.input, { flex: 1 }]}
+                    style={[s.input, { flex: 1 }, noWebOutline]}
                     placeholder="Confirm Password"
                     placeholderTextColor="#CCBACE"
                     value={confirmPassword}
@@ -250,7 +255,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
 
                 {error ? <Text style={s.errorText}>{error}</Text> : null}
                 <TouchableOpacity
-                  style={[s.btn, loading && s.btnDisabled]}
+                  style={[s.verifyBtn, loading && s.btnDisabled]}
                   onPress={handleResetPassword}
                   disabled={loading}
                 >
@@ -271,7 +276,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
                   Your password has been successfully changed.{"\n"}
                   You can now log in with your new password.
                 </Text>
-                <TouchableOpacity style={s.btn} onPress={handleClose}>
+                <TouchableOpacity style={s.verifyBtn} onPress={handleClose}>
                   <Text style={s.btnText}>Back to Login</Text>
                 </TouchableOpacity>
               </>
@@ -293,7 +298,7 @@ export default function ForgotPasswordModal({ visible, onClose }: Props) {
 const s = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(13,19,84,0.55)",
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -304,6 +309,9 @@ const s = StyleSheet.create({
     padding: 28,
     paddingTop: 20,
     width: "100%",
+    // This is the fix: without a cap the card stretched edge-to-edge on
+    // desktop/web. 400 matches the OTP verification card's size.
+    maxWidth: 400,
     alignItems: "center",
     elevation: 10,
     shadowColor: "#000",
@@ -361,6 +369,21 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 52,
+    marginTop: 8,
+  },
+  // Compact CTA for the later steps (OTP verify / reset / back-to-login) —
+  // sized to its content instead of stretching full width like the first
+  // "Send OTP" button.
+  verifyBtn: {
+    alignSelf: "center",
+    backgroundColor: "#0a1036",
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 36,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 48,
+    minWidth: 170,
     marginTop: 8,
   },
   btnDisabled: { opacity: 0.55 },

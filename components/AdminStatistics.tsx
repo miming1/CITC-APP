@@ -1,8 +1,8 @@
 import {
-    StyleSheet,
-    Text,
-    useColorScheme,
-    View,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
 } from "react-native";
 
 import { Colors } from "../constants/theme";
@@ -18,17 +18,23 @@ export default function AdminStatistics({
   faqs,
   requests,
 }: Props) {
+
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
+
 
   const cards = [
     {
       label: "Procedures",
       value: procedures,
+      icon: "description",
+      accent: colors.tint,
     },
     {
       label: "FAQs",
       value: faqs,
+      icon: "help-outline",
+      accent: colors.tint2,
     },
   ];
 
@@ -36,11 +42,15 @@ export default function AdminStatistics({
     cards.push({
       label: "Requests",
       value: requests,
+      icon: "assignment",
+      accent: colors.tint,
     });
   }
 
+
   return (
     <View style={styles.container}>
+
       <Text
         style={[
           styles.heading,
@@ -52,14 +62,21 @@ export default function AdminStatistics({
         Overview
       </Text>
 
+
       <View style={styles.grid}>
+
         {cards.map((item) => (
+
           <View
             key={item.label}
             style={[
               styles.card,
               {
-                backgroundColor: colors.background,
+                backgroundColor:
+                  colorScheme === "dark"
+                    ? "#111827"
+                    : colors.background,
+
                 borderColor: colors.border,
               },
             ]}
@@ -68,7 +85,7 @@ export default function AdminStatistics({
               style={[
                 styles.value,
                 {
-                  color: Colors.light.tint,
+                  color: item.accent,
                 },
               ]}
             >
@@ -93,10 +110,12 @@ export default function AdminStatistics({
 }
 
 const styles = StyleSheet.create({
+
   container: {
-    marginTop: 28,
+    marginTop: 30,
     paddingHorizontal: 16,
   },
+
 
   heading: {
     fontSize: 20,
@@ -104,38 +123,65 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
   },
 
+
   card: {
     flex: 1,
+
     minWidth: 110,
+
     borderRadius: 16,
     borderWidth: 1,
+
     paddingVertical: 18,
+
     alignItems: "center",
 
     elevation: 2,
+
     shadowColor: "#000",
     shadowOpacity: 0.08,
+
     shadowOffset: {
       width: 0,
       height: 2,
     },
+
     shadowRadius: 4,
   },
 
-  value: {
-    fontSize: 28,
-    fontWeight: "700",
+
+  iconContainer: {
+    width: 46,
+    height: 46,
+
+    borderRadius: 23,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    marginBottom: 10,
   },
 
+
+  value: {
+    fontSize: 30,
+    fontWeight: "800",
+  },
+
+
   label: {
-    marginTop: 8,
+    marginTop: 6,
+
     fontSize: 13,
+
     fontWeight: "600",
   },
+
 });

@@ -1,16 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
 import {
-  FlatList,
-  Platform,
-  Pressable,
   StyleSheet,
-  Text,
   TextInput,
+  TouchableOpacity,
+  useColorScheme,
   View,
-} from 'react-native';
+} from "react-native";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { Colors } from "../constants/theme";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -20,148 +18,141 @@ interface SearchBarProps {
   onSelectSuggestion?: (item: string) => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function SearchBar({
-  placeholder = 'Search processes, offices...',
+  placeholder = "Search...",
   onSearch,
   onChangeText,
   suggestions = [],
   onSelectSuggestion,
 }: SearchBarProps) {
-  const [query, setQuery] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
+  const [query, setQuery] = useState("");
 
-  const filteredSuggestions =
-    query.trim().length > 0
-      ? suggestions.filter((item) =>
-          item.toLowerCase().includes(query.trim().toLowerCase())
-        )
-      : [];
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
 
-  const showDropdown = isFocused && filteredSuggestions.length > 0;
+  const isDark = colorScheme === "dark";
 
   const handleChange = (text: string) => {
     setQuery(text);
     onChangeText?.(text);
   };
 
-  const handleSelect = (item: string) => {
-    setQuery(item);
-    setIsFocused(false);
-    onChangeText?.(item);
-    onSelectSuggestion?.(item);
-    onSearch?.(item);
+  const clearSearch = () => {
+    setQuery("");
+    onChangeText?.("");
+    onSearch?.("");
   };
 
   return (
-    <View style={styles.wrapper}>
-      <View style={styles.container}>
-        <View style={styles.iconWrapper}>
-          <Ionicons name="search" size={18} color="#3A2EA2" />
-        </View>
-        <TextInput
-          style={styles.input}
-          placeholder={placeholder}
-          placeholderTextColor="#8883A5"
-          value={query}
-          onChangeText={handleChange}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-          onSubmitEditing={() => onSearch?.(query)}
-          returnKeyType="search"
-          autoCorrect={false}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark
+            ? "#1F2937"
+            : "#F8FAFC",
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      {/* Search Icon */}
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: isDark
+              ? "#172554"
+              : "#DBEAFE",
+          },
+        ]}
+      >
+        <Ionicons
+          name="search"
+          size={20}
+          color={colors.tint}
         />
       </View>
 
-      {showDropdown && (
-        <View style={styles.dropdown}>
-          <FlatList
-            data={filteredSuggestions}
-            keyExtractor={(item, index) => `${item}-${index}`}
-            keyboardShouldPersistTaps="handled"
-            renderItem={({ item }) => (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.suggestionRow,
-                  pressed && styles.suggestionRowPressed,
-                ]}
-                onPress={() => handleSelect(item)}
-              >
-                <Ionicons name="search" size={14} color="#8883A5" style={styles.suggestionIcon} />
-                <Text style={styles.suggestionText}>{item}</Text>
-              </Pressable>
-            )}
+      {/* Input */}
+      <TextInput
+        style={[
+          styles.input,
+          {
+            color: colors.text,
+          },
+        ]}
+        placeholder={placeholder}
+        placeholderTextColor={colors.icon}
+        value={query}
+        onChangeText={handleChange}
+        onSubmitEditing={() => onSearch?.(query)}
+        returnKeyType="search"
+        autoCorrect={false}
+      />
+
+      {/* Clear Button */}
+      {query.length > 0 && (
+        <TouchableOpacity
+          onPress={clearSearch}
+          activeOpacity={0.7}
+          style={styles.clearButton}
+        >
+          <Ionicons
+            name="close-circle"
+            size={22}
+            color={colors.icon}
           />
-        </View>
+        </TouchableOpacity>
       )}
     </View>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-
-  // ── Wrapper ────────────────────────────────────────────────────────────────
-  wrapper: {
-    marginHorizontal: 16,
-    marginTop: 30,
-    zIndex: 10,
-  },
-
-  // ── Container ──────────────────────────────────────────────────────────────
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: '#DFE1FF',
+    flexDirection: "row",
+    alignItems: "center",
+
+    borderWidth: 1,
+    borderRadius: 18,
+
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+
+    marginTop: 20,
+    marginBottom: 8,
+    marginHorizontal: 16,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    elevation: 2,
   },
 
-  iconWrapper: {
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+  iconContainer: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+
+    justifyContent: "center",
+    alignItems: "center",
+
+    marginRight: 12,
   },
+
   input: {
     flex: 1,
     fontSize: 15,
+    fontWeight: "500",
     paddingVertical: 0,
-    color: '#3A2EA2',
-    // Removes the default browser focus ring/box on web
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as any) : {}),
   },
 
-  // ── Dropdown ───────────────────────────────────────────────────────────────
-  dropdown: {
-    marginTop: 6,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 4,
-    maxHeight: 220,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  clearButton: {
+    marginLeft: 8,
   },
-  suggestionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  suggestionRowPressed: {
-    backgroundColor: '#F2F1FF',
-  },
-  suggestionIcon: {
-    marginRight: 8,
-  },
-  suggestionText: {
-    fontSize: 14,
-    color: '#3A2EA2',
-  },
-
 });

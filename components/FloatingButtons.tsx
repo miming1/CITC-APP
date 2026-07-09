@@ -34,30 +34,7 @@ export default function FloatingButtons({
 
   if (isAdmin) {
     if (isFAQTab) {
-      return (
-        <View style={styles.container}>
-          <View style={styles.wrapper}>
-            <View style={styles.tooltip}>
-              <Tooltip text="Add FAQ" />
-            </View>
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                { backgroundColor: theme.tint2 },
-              ]}
-              onPress={onFAQPress}
-              activeOpacity={0.85}
-            >
-              <MaterialIcons
-                name="add"
-                size={26}
-                color={theme.background}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
+      return null
     }
 
     return null;

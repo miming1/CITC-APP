@@ -1,4 +1,14 @@
-import { StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { MaterialIcons } from "@expo/vector-icons";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
+
+import { Colors } from "../constants/theme";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -11,103 +21,244 @@ interface PopularProcessesProps {
   processes: Process[];
   title?: string;
   onPressProcess?: (process: Process) => void;
-  // Optional — when provided, a "See all >" link renders next to the title.
-  // Existing screens that don't pass this prop are unaffected.
   onSeeAll?: () => void;
 }
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PopularProcesses({
   processes,
-  title = 'Popular Processes',
+  title = "Popular Processes",
   onPressProcess,
   onSeeAll,
 }: PopularProcessesProps) {
-  const colorScheme = useColorScheme() ?? 'light';
-  const isDark = colorScheme === 'dark';
-  const textColor = isDark ? '#E8E0FF' : '#1E1340';
+
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
+
+
+  // Dashboard preview only
+  const visibleProcesses = processes.slice(0, 3);
+
 
   return (
     <View style={styles.container}>
-      <View style={styles.titleRow}>
-        <Text style={[styles.title, { color: textColor }]}>{title}</Text>
 
-        {onSeeAll && (
-          <TouchableOpacity onPress={onSeeAll}>
-            <Text style={[styles.seeAll, { color: isDark ? '#B8A9FF' : '#4B39EF' }]}>
-              See all &gt;
+
+      {/* HEADER */}
+
+      <View style={styles.header}>
+
+        <Text
+          style={[
+            styles.title,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          {title}
+        </Text>
+
+
+        {processes.length > 3 && onSeeAll && (
+
+          <TouchableOpacity
+            onPress={onSeeAll}
+            activeOpacity={0.7}
+          >
+
+            <Text
+              style={[
+                styles.seeAll,
+                {
+                  color: colors.tint,
+                },
+              ]}
+            >
+              See All
             </Text>
+
           </TouchableOpacity>
+
         )}
+
       </View>
 
-      <View style={styles.grid}>
-        {processes.map((item) => (
+
+
+      <View style={styles.list}>
+
+        {visibleProcesses.map((item) => (
+
           <TouchableOpacity
             key={item.id}
-            style={[styles.pill, { backgroundColor: isDark ? '#2A2040' : '#EBEBEB' }]}
-            onPress={() => onPressProcess?.(item)}
-            activeOpacity={0.75}
+            activeOpacity={0.85}
+            onPress={() =>
+              onPressProcess?.(item)
+            }
+            style={[
+              styles.card,
+              {
+                backgroundColor:
+                  colors.background,
+                borderColor:
+                  colors.border,
+              },
+            ]}
           >
-            <Text
-              style={[styles.pillText, { color: textColor }]}
-              numberOfLines={1}
-            >
-              {item.title}
-            </Text>
+
+
+            {/* ACCENT */}
+
+            <View
+              style={[
+                styles.accentBar,
+                {
+                  backgroundColor:
+                    colors.tint,
+                },
+              ]}
+            />
+
+
+
+            {/* CONTENT */}
+
+            <View style={styles.content}>
+
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.processTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                {item.title}
+              </Text>
+
+
+              <Text
+                style={[
+                  styles.subtitle,
+                  {
+                    color: colors.icon,
+                  },
+                ]}
+              >
+                View procedure details
+              </Text>
+
+            </View>
+
+
+
+            <MaterialIcons
+              name="chevron-right"
+              size={28}
+              color={colors.tint}
+            />
+
+
           </TouchableOpacity>
+
         ))}
+
       </View>
+
+
     </View>
   );
 }
+
+
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
 
-  // ── Section wrapper ────────────────────────────────────────────────────────
   container: {
-    marginTop: 24,
+    marginTop: 28,
     paddingHorizontal: 16,
   },
 
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
-    marginTop: 20,
   },
+
 
   title: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
+
 
   seeAll: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "700",
   },
 
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+
+  list: {
+    gap: 12,
   },
 
-  pill: {
-    maxWidth: 1000,
-    paddingHorizontal: 20,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    borderRadius: 16,
+    borderWidth: 1,
+
+    padding: 16,
+
+    overflow: "hidden",
+
+    elevation: 2,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    shadowRadius: 4,
   },
-  pillText: {
+
+
+  accentBar: {
+    width: 5,
+    height: "100%",
+    borderRadius: 10,
+
+    marginRight: 14,
+  },
+
+
+  content: {
+    flex: 1,
+    paddingRight: 10,
+  },
+
+
+  processTitle: {
     fontSize: 15,
-    fontWeight: '500',
-    marginVertical: 10,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+
+
+  subtitle: {
+    fontSize: 13,
   },
 
 });

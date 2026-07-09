@@ -3,22 +3,22 @@ import { useRouter } from 'expo-router';
 import {
   ScrollView,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   useColorScheme,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  useWindowDimensions,
+  View
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useEffect, useState } from 'react';
 
-import { Colors } from '../constants/theme';
+import { API_BASE_URL } from "../constants/api";
+import { Colors } from "../constants/theme";
 
-import FAQCard from '../components/FAQCard';
-import FloatingButtons from '../components/FloatingButtons';
-import Header from '../components/Header';
-import PopularProcesses from '../components/PopularProcesses';
-import SearchBar from '../components/SearchBar';
+import UserQuestionCategories from "@/components/UserQuestionCategories";
+import FloatingButtons from "../components/FloatingButtons";
+import Header from "../components/Header";
+import PopularProcesses from "../components/PopularProcesses";
+import SearchBar from "../components/SearchBar";
 
 import { API_BASE_URL } from '../constants/api';
 
@@ -79,7 +79,17 @@ export default function UserDashboard() {
       const res = await fetch(`${API_BASE_URL}/procedures/`, { cache: 'no-store' });
       const data = await res.json();
 
-      const mapped = data.map((item: any) => ({
+    console.log("PROCEDURES:", res.status, data);
+
+    if (!res.ok) return;
+
+    if (!Array.isArray(data)) {
+      setProcesses([]); 
+      return;
+    }
+
+    setProcesses(
+      data.map((item: any) => ({
         id: String(item.procedure_id),
         title: item.procedure_name ?? item.title,
       }));
@@ -102,18 +112,30 @@ export default function UserDashboard() {
       const res = await fetch(`${API_BASE_URL}/faqs/`, { cache: 'no-store' });
       const data = await res.json();
 
-      const mapped: FAQItem[] = data.map((item: any) => ({
-        id: String(item.faq_id ?? item.id),
-        question: item.question,
-        answer: item.answer,
-      }));
+    console.log("FAQ:", res.status, data);
 
-      // Show only a handful on the dashboard; full list lives on /faq
-      setTopFaqs(mapped.slice(0, 3));
-    } catch (err) {
-      console.log('Failed to fetch FAQs:', err);
+    if (!res.ok) {
+      setFaqCategories([]);
+      return;
     }
-  };
+
+    if (!Array.isArray(data)) {
+      setFaqCategories([]); 
+      return;
+    }
+
+    setFaqCategories(
+      data.map((item: any) => ({
+        id: String(item.category_id),
+        category_name: item.category_name,
+        procedure_id: String(item.procedure),
+      }))
+    );
+  } catch (err) {
+    console.log("fetchFaqCategories error:", err);
+    setFaqCategories([]); 
+  }
+};
 
   useEffect(() => {
     const loadAll = async () => {
@@ -146,13 +168,13 @@ export default function UserDashboard() {
   // UI
   // =========================
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: pageBg }]}>
-      <Header title="Welcome!" showBack={false} />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
+      <Header title="Welcome!" showBack={false} roleId={1} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
       >
         <View style={styles.pageContainer}>
           {/* SEARCH */}
@@ -168,119 +190,39 @@ export default function UserDashboard() {
             />
           </View>
 
-          {/* TWO-COLUMN WEB LAYOUT */}
-          <View style={styles.columns}>
-            {/* MAIN COLUMN */}
-            <View style={styles.mainColumn}>
-              {/* QUICK ACCESS */}
-              <View style={[panelStyle, styles.section]}>
-                <Text style={[styles.sectionTitle, { color: textPri }]}>
-                  Quick Access
-                </Text>
-                <Text style={[styles.sectionSubtitle, { color: textMuted }]}>
-                  Tap a shortcut to start your request
-                </Text>
+          {/* POPULAR */}
+          <PopularProcesses
+            processes={processes}
+            onPressProcess={(process) => {
+              router.push({
+                pathname: "/process",
+                params: {
+                  id: process.id,
+                  roleId: 1,
+                },
+              });
+            }}
+            onSeeAll={() => {
+              router.push("/process-list");
+            }}
+          />
 
-                {quickAccessItems.length > 0 ? (
-                  <View style={styles.quickAccessGrid}>
-                    {quickAccessItems.map((process) => (
-                      <TouchableOpacity
-                        key={process.id}
-                        style={[
-                          styles.quickAccessCard,
-                          { backgroundColor: isDark ? '#1B1730' : '#FAFAFF', borderColor: colors.border },
-                        ]}
-                        onPress={() => goToProcess(process)}
-                        activeOpacity={0.75}
-                      >
-                        <View
-                          style={[
-                            styles.quickAccessIconWrap,
-                            { backgroundColor: isDark ? '#2A2440' : '#EDEBFB' },
-                          ]}
-                        >
-                          <Ionicons
-                            name={getProcessIcon(process.title)}
-                            size={26}
-                            color={accent}
-                          />
-                        </View>
-                        <Text
-                          style={[styles.quickAccessLabel, { color: textPri }]}
-                          numberOfLines={2}
-                        >
-                          {process.title}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                ) : (
-                  <EmptyState
-                    loading={loading}
-                    icon="apps-outline"
-                    textMuted={textMuted}
-                    loadingLabel="Loading shortcuts..."
-                    emptyLabel="No processes available yet."
-                  />
-                )}
-              </View>
-
-              {/* POPULAR PROCESSES */}
-              <View style={[panelStyle, styles.section]}>
-                {processes.length > 0 ? (
-                  <PopularProcesses
-                    processes={processes}
-                    onPressProcess={goToProcess}
-                    onSeeAll={() => router.push('/process')}
-                  />
-                ) : (
-                  <>
-                    <View style={styles.sectionHeaderRow}>
-                      <Text style={[styles.sectionTitle, { color: textPri }]}>
-                        Popular Processes
-                      </Text>
-                      <TouchableOpacity onPress={() => router.push('/process')}>
-                        <Text style={[styles.seeAll, { color: accent }]}>See all &gt;</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <EmptyState
-                      loading={loading}
-                      icon="file-tray-outline"
-                      textMuted={textMuted}
-                      loadingLabel="Loading processes..."
-                      emptyLabel="No popular processes yet."
-                    />
-                  </>
-                )}
-              </View>
-            </View>
-
-            {/* SIDEBAR COLUMN: FAQS */}
-            <View style={styles.sidebarColumn}>
-              <View style={panelStyle}>
-                <View style={styles.sectionHeaderRow}>
-                  <Text style={[styles.sectionTitle, { color: textPri }]}>FAQs</Text>
-                  <TouchableOpacity onPress={() => router.push('/faq')}>
-                    <Text style={[styles.seeAll, { color: accent }]}>See all &gt;</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {topFaqs.length > 0 ? (
-                  topFaqs.map((faq) => (
-                    <FAQCard key={faq.id} question={faq.question} answer={faq.answer} />
-                  ))
-                ) : (
-                  <EmptyState
-                    loading={loading}
-                    icon="help-circle-outline"
-                    textMuted={textMuted}
-                    loadingLabel="Loading FAQs..."
-                    emptyLabel="No FAQs yet."
-                  />
-                )}
-              </View>
-            </View>
-          </View>
+          {/* QUESTION CATEGORIES */}
+          <UserQuestionCategories
+            categories={faqCategories}
+            onPressCategory={(category) =>
+              router.push({
+                pathname: "/faq",
+                params: {
+                  categoryId: category.id,
+                  procedureId: category.procedure_id,
+                },
+              })
+            }
+            onSeeAll={() => {
+              // router.push("/categorylistscreen");
+            }}
+          />
         </View>
       </ScrollView>
 
@@ -327,7 +269,27 @@ function EmptyState({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
+
+  container: {
+    width: "100%",
+    marginTop: 20,
+  },
+
+  desktopContainer: {
+    width: "95%",
+    maxWidth: 1600,
+    alignSelf: "center",
+  },
+
+  categoryCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+
 
   scrollView: {
     flex: 1,
@@ -375,73 +337,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 2,
-  },
-
-  section: {
-    marginBottom: 24,
-  },
-
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-
-  sectionSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-    marginBottom: 16,
-  },
-
-  seeAll: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  quickAccessGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 14,
-  },
-
-  quickAccessCard: {
-    width: 128,
-    paddingVertical: 18,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-
-  quickAccessIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-
-  quickAccessLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 28,
-  },
-
-  emptyStateText: {
-    fontSize: 13,
-    fontWeight: '500',
   },
 });

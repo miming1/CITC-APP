@@ -1,19 +1,23 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ScrollView, useColorScheme } from "react-native";
+import {
+  ScrollView,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { API_BASE_URL } from "../constants/api";
 import { Colors } from "../constants/theme";
 
+import AdminAuthModal from "../components/AdminAuthModal";
 import DeleteModal from "../components/DeleteModal";
-import FAQModal from "../components/FAQModal";
 import FAQTab from "../components/faqTab";
 import FloatingButtons from "../components/FloatingButtons";
 import Header from "../components/Header";
 import ProcessTab from "../components/processTab";
 import TabSwitcher from "../components/TabSwitcher";
-import TermsModal from "../components/TermsModal";
 
 import { getToken } from "@/lib/auth";
 
@@ -37,12 +41,11 @@ export default function ProcessScreen() {
   const [requirements, setRequirements] = useState<any[]>([]);
   const [faqCategories, setFaqCategories] = useState<any[]>([]);
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
-
+  
   const [isEditingProcedure, setIsEditingProcedure] = useState(false);
-
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showAdminAuthModal, setShowAdminAuthModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showFAQModal, setShowFAQModal] = useState(false);
 
   const [deleteType, setDeleteType] = useState<"procedure" | "faq" | null>(null);
   const [selectedFAQ, setSelectedFAQ] = useState<any>(null);
@@ -134,16 +137,23 @@ export default function ProcessScreen() {
   // SAVE PROCESS
   // =========================
   const handleAuthSuccess = async () => {
-    try {
-      await fetch(`${API_BASE_URL}/process/${procedureId}/save/`, {
+  try {
+    const token = await getToken();
+
+    const response = await fetch(
+      `${API_BASE_URL}/process/${procedureId}/save/`,
+      {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
         },
         body: JSON.stringify({
           procedure_name: procedure.procedure_name,
           description: procedure.description,
+
           steps,
+
           requirements: requirements.map((req: any) => ({
             requirement_id: req.requirement_id,
             requirement_name:
@@ -153,18 +163,45 @@ export default function ProcessScreen() {
               "",
           })),
         }),
-      });
+      }
+    );
 
-      setDeletedSteps([]);
-      setDeletedRequirements([]);
-      setIsEditingProcedure(false);
 
-      await fetchAll();
-      alert("Updated successfully");
-    } catch (err: any) {
-      alert(err.message);
+    if (!response.ok) {
+      throw new Error("Save failed");
     }
-  };
+
+
+    // reset deleted items
+    setDeletedSteps([]);
+    setDeletedRequirements([]);
+
+
+    // leave edit mode
+    setIsEditingProcedure(false);
+
+
+    // close authentication modal
+    setShowAdminAuthModal(false);
+
+
+    // refresh data
+    await fetchAll();
+
+
+    // show temporary confirmation
+    setSuccessMessage("Changes saved successfully");
+
+
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+
+
+  } catch (error) {
+    console.log("SAVE ERROR:", error);
+  }
+};
 
   // =========================
   // DELETE PROCEDURE
@@ -194,7 +231,33 @@ export default function ProcessScreen() {
   // =========================
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header title="Process" />
+      <Header title="Process" roleId={roleId as string} />
+
+      {successMessage && (
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginTop: 10,
+            padding: 12,
+            borderRadius: 10,
+            backgroundColor: colorScheme === "dark"
+              ? "#14532D"
+              : "#DCFCE7",
+          }}
+        >
+          <Text
+            style={{
+              color: colorScheme === "dark"
+                ? "#BBF7D0"
+                : "#166534",
+              fontWeight: "600",
+              textAlign: "center",
+            }}
+          >
+            {successMessage}
+          </Text>
+        </View>
+      )}
 
       <TabSwitcher activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -213,11 +276,11 @@ export default function ProcessScreen() {
             checkedSteps={checkedSteps}
             setCheckedSteps={setCheckedSteps}
             onEdit={() => setIsEditingProcedure(true)}
-            onCancel={() => {
+            onCancel={async () => {
+              await fetchAll();
               setIsEditingProcedure(false);
-              fetchAll();
             }}
-            onSave={() => setShowAuthModal(true)}
+            onSave={() => setShowAdminAuthModal(true)}
             onDelete={() => {
               setDeleteType("procedure");
               setShowDeleteModal(true);
@@ -229,27 +292,72 @@ export default function ProcessScreen() {
           />
         ) : (
           <FAQTab
-            faqs={faqCategories.flatMap((c: any) => c.faqs ?? [])}
-            setFaqs={setFaqCategories}
+            faqs={
+              faqCategories.flatMap(
+                (c: any) => c.faqs ?? []
+              )
+            }
+
+            setFaqs={(updatedFaqs) => {
+
+              setFaqCategories((prev) =>
+                prev.map((category) => ({
+                  ...category,
+
+                  faqs:
+                    category.faqs?.map((faq: any) => {
+
+                      const updated =
+                        updatedFaqs.find(
+                          (item:any) =>
+                            item.faq_id === faq.faq_id
+                        );
+
+                      return updated ?? faq;
+
+                    }) ?? [],
+
+                }))
+              );
+
+            }}
+
             procedure={procedure}
+
             isAdmin={isAdmin}
+
             colors={colors}
+
             onSaveFAQInline={async (faq) => {
-              await fetch(`${API_BASE_URL}/faqs/${faq.faq_id}/`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  question: faq.question,
-                  answer: faq.answer,
-                }),
-              });
+
+              await fetch(
+                `${API_BASE_URL}/faqs/${faq.faq_id}/`,
+                {
+                  method: "PATCH",
+
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+
+                  body: JSON.stringify({
+                    question: faq.question,
+                    answer: faq.answer,
+                  }),
+                }
+              );
 
               await fetchAll();
+
             }}
+
             onRequestDelete={(faq) => {
+
               setSelectedFAQ(faq);
+
               setDeleteType("faq");
+
               setShowDeleteModal(true);
+
             }}
           />
         )}
@@ -260,13 +368,11 @@ export default function ProcessScreen() {
         isAdmin={isAdmin}
         onTrackPress={() =>
           router.push({
-            pathname: "/scan",
+            pathname: "/track",
             params: { id: procedureId },
           })
         }
-        onFAQPress={() => {
-          if (isAdmin) setShowFAQModal(true);
-        }}
+        onFAQPress={() => {}}
       />
 
       <DeleteModal
@@ -283,28 +389,11 @@ export default function ProcessScreen() {
         }}
       />
 
-      <TermsModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
-
       {isAdmin && (
-        <FAQModal
-          visible={showFAQModal}
-          onClose={() => setShowFAQModal(false)}
-          procedureId={procedureId}
-          isAdmin={isAdmin}
-          onSave={async (procedureId, data) => {
-            await fetch(`${API_BASE_URL}/faqs/create/`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                procedure: procedureId,
-                question: data.question,
-                answer: data.answer,
-              }),
-            });
-
-            setShowFAQModal(false);
-            await fetchAll();
-          }}
+        <AdminAuthModal
+          visible={showAdminAuthModal}
+          onClose={() => setShowAdminAuthModal(false)}
+          onSuccess={handleAuthSuccess}
         />
       )}
     </SafeAreaView>

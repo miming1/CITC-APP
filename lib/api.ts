@@ -52,6 +52,32 @@ export async function fetchFAQs(categoryId?: string) {
   }
 }
 
+// ── FAQ Categories ─────────────────────────────────────────────
+export async function fetchFAQCategories() {
+  try {
+    const token = await getToken();
+
+    const res = await fetch(`${API_BASE_URL}/faq-categories/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to fetch FAQ categories");
+    }
+
+    return data;
+  } catch (err) {
+    console.log("fetchFAQCategories error:", err);
+    return [];
+  }
+}
+
 // ── My Requests (needs auth token) ───────────────────────────
 export async function fetchMyRequests() {
   const token = await getToken();
