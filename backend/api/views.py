@@ -1026,3 +1026,28 @@ def create_procedure(request):
     )
 
     return Response({"message": "Process created successfully", "procedure_id": procedure.procedure_id}, status=201)
+
+from .models import Notifications
+from .serializers import NotificationSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        user_profile = request.user.profile
+
+        notifications = Notifications.objects.filter(
+            user=user_profile
+        ).order_by("-created_at")
+
+        serializer = NotificationSerializer(
+            notifications,
+            many=True
+        )
+
+        return Response(serializer.data)

@@ -46,6 +46,7 @@ export default function RootLayout() {
          <Stack.Screen name="SearchResults" />
          <Stack.Screen name="active-req" />
          <Stack.Screen name="SubmissionHistory" />
+         <Stack.Screen name="Notifications" />
 
         </Stack>
         <StatusBar style="auto" />

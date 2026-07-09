@@ -13,7 +13,9 @@ import {
   View,
 } from "react-native";
 
+import { ENDPOINTS } from "@/constants/api";
 import { Colors } from "@/constants/theme";
+import { getToken } from "@/lib/auth";
 
 interface HeaderProps {
   title: string;
@@ -22,8 +24,20 @@ interface HeaderProps {
   adminMode?: string;
 }
 
+type MenuItem = {
+  label: string;
+  route: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  studentOnly?: boolean;
+};
 
-const MENU_ITEMS = [
+const MENU_ITEMS: MenuItem[] = [
+  {
+    label: "Notifications",
+    route: "/Notifications",
+    icon: "notifications-outline",
+    studentOnly: true,
+  },
   {
     label: "Processes",
     route: "/process-list",
@@ -49,8 +63,7 @@ const MENU_ITEMS = [
     route: "/editProfile",
     icon: "person-circle-outline",
   },
-] as const;
-
+];
 
 export default function Header({
   title,
@@ -58,9 +71,7 @@ export default function Header({
   roleId,
   adminMode,
 }: HeaderProps) {
-
   const router = useRouter();
-
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
 
@@ -69,7 +80,7 @@ export default function Header({
     adminMode === "true";
 
   const [menuOpen, setMenuOpen] = useState(false);
-
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(-20)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -78,98 +89,113 @@ export default function Header({
   const middleLine = useRef(new Animated.Value(1)).current;
   const bottomLine = useRef(new Animated.Value(0)).current;
 
-
-
   useEffect(() => {
+    if (isAdmin) return;
 
-    if (menuOpen) {
+    async function checkNotifications() {
+      try {
+        const token = await getToken();
 
-      Animated.parallel([
+        const response = await fetch(
+          ENDPOINTS.notifications,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          }
+        );
 
-        Animated.timing(fadeAnim,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
-        }),
+        if (!response.ok) return;
 
-        Animated.timing(slideAnim,{
-          toValue:0,
-          duration:220,
-          easing:Easing.out(Easing.ease),
-          useNativeDriver:true,
-        }),
+        const data = await response.json();
 
-        Animated.timing(topLine,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
-        }),
+        const unread = data.some(
+          (item: any) => !item.is_read
+        );
 
-        Animated.timing(bottomLine,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
-        }),
+        setHasUnreadNotifications(unread);
 
-        Animated.timing(middleLine,{
-          toValue:0,
-          duration:180,
-          useNativeDriver:true,
-        }),
-
-      ]).start();
-
-
-    } else {
-
-
-      Animated.parallel([
-
-        Animated.timing(fadeAnim,{
-          toValue:0,
-          duration:180,
-          useNativeDriver:true,
-        }),
-
-        Animated.timing(slideAnim,{
-          toValue:-20,
-          duration:180,
-          useNativeDriver:true,
-        }),
-
-        Animated.timing(topLine,{
-          toValue:0,
-          duration:220,
-          useNativeDriver:true,
-        }),
-
-        Animated.timing(bottomLine,{
-          toValue:0,
-          duration:220,
-          useNativeDriver:true,
-        }),
-
-        Animated.timing(middleLine,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
-        }),
-
-      ]).start();
-
+      } catch (error) {
+        console.log(
+          "Notification fetch error:",
+          error
+        );
+      }
     }
 
-  },[menuOpen]);
+    checkNotifications();
 
+  }, [isAdmin]);
 
-
+  useEffect(() => {
+    if (menuOpen) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 220,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(topLine, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bottomLine, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(middleLine, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: -20,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(topLine, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bottomLine, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(middleLine, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [menuOpen]);
 
   const handleNavigation = (route: string) => {
     setMenuOpen(false);
 
     const params = {
       roleId: isAdmin ? "2" : "1",
-      ...(adminMode ? { admin_mode: adminMode } : {}),
+      ...(adminMode
+        ? { admin_mode: adminMode }
+        : {}),
     };
 
     router.push({
@@ -183,61 +209,38 @@ export default function Header({
   };
 
   const styles = createStyles(theme);
-
-
-
-  return (
+    return (
     <>
-
-
       <View style={styles.container}>
-
-
         {showBack ? (
-
           <TouchableOpacity
             onPress={handleBack}
             style={styles.backButton}
             activeOpacity={0.8}
           >
-
             <Ionicons
               name="arrow-back"
               size={22}
               color="#FFFFFF"
             />
-
           </TouchableOpacity>
-
-
         ) : (
-
           <View style={styles.backButton}/>
-
         )}
-
-
-
         <Text
           style={styles.title}
           numberOfLines={1}
         >
           {title}
         </Text>
-
-
-
-
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={()=>setMenuOpen(true)}
+          onPress={() => setMenuOpen(true)}
           style={[
             styles.menuButton,
             menuOpen && styles.menuButtonActive
           ]}
         >
-
-
           <Animated.View
             style={[
               styles.menuLine,
@@ -259,8 +262,6 @@ export default function Header({
               }
             ]}
           />
-
-
           <Animated.View
             style={[
               styles.menuLine,
@@ -269,9 +270,6 @@ export default function Header({
               }
             ]}
           />
-
-
-
           <Animated.View
             style={[
               styles.menuLine,
@@ -293,31 +291,18 @@ export default function Header({
               }
             ]}
           />
-
-
         </TouchableOpacity>
-
-
       </View>
-
-
-
-
-
       <Modal
         transparent
         visible={menuOpen}
         animationType="none"
-        onRequestClose={()=>setMenuOpen(false)}
+        onRequestClose={() => setMenuOpen(false)}
       >
-
-
         <Pressable
           style={styles.overlay}
-          onPress={()=>setMenuOpen(false)}
+          onPress={() => setMenuOpen(false)}
         >
-
-
           <Animated.View
             style={[
               styles.dropdown,
@@ -331,100 +316,65 @@ export default function Header({
               }
             ]}
           >
-
-
-
-            {MENU_ITEMS.map((item)=>(
-
+            {MENU_ITEMS
+            .filter(item =>
+              !item.studentOnly || !isAdmin
+            )
+            .map((item) => (
               <TouchableOpacity
                 key={item.label}
                 style={styles.menuItem}
                 activeOpacity={0.7}
-                onPress={()=>handleNavigation(item.route)}
+                onPress={() => handleNavigation(item.route)}
               >
-
-
                 <View style={styles.menuIconContainer}>
-
                   <Ionicons
                     name={item.icon}
                     size={20}
                     color={theme.tint}
                   />
-
+                  {item.route === "/notifications" &&
+                    hasUnreadNotifications && (
+                      <View style={styles.notificationDot}/>
+                    )}
                 </View>
-
-
                 <Text style={styles.menuText}>
                   {item.label}
                 </Text>
-
-
                 <Ionicons
                   name="chevron-forward"
                   size={18}
                   color={theme.icon}
                 />
-
-
-
               </TouchableOpacity>
-
             ))}
-
-
-
             <View style={styles.separator}/>
-
-
-
             <TouchableOpacity
               style={styles.logoutButton}
               activeOpacity={0.8}
-              onPress={()=>{
-
+              onPress={() => {
                 setMenuOpen(false);
                 router.replace("/");
-
               }}
             >
-
-
               <Ionicons
                 name="log-out-outline"
                 size={20}
                 color="#FFFFFF"
               />
-
-
               <Text style={styles.logoutText}>
                 Logout
               </Text>
-
-
             </TouchableOpacity>
-
-
-
           </Animated.View>
-
-
         </Pressable>
-
-
       </Modal>
-
-
-
     </>
   );
 }
 
-
-
-const createStyles = (theme: typeof Colors.light)=>
+const createStyles = (theme: typeof Colors.light) =>
 StyleSheet.create({
-
   container:{
     height:60,
     backgroundColor:theme.tint,
@@ -441,8 +391,6 @@ StyleSheet.create({
     shadowRadius:6,
     elevation:6,
   },
-
-
   backButton:{
     width:42,
     height:42,
@@ -450,8 +398,6 @@ StyleSheet.create({
     justifyContent:"center",
     alignItems:"center",
   },
-
-
   title:{
     flex:1,
     textAlign:"center",
@@ -460,8 +406,6 @@ StyleSheet.create({
     fontWeight:"700",
     marginHorizontal:12,
   },
-
-
   menuButton:{
     width:42,
     height:42,
@@ -469,13 +413,9 @@ StyleSheet.create({
     justifyContent:"center",
     alignItems:"center",
   },
-
-
   menuButtonActive:{
     backgroundColor:theme.tint2,
   },
-
-
   menuLine:{
     position:"absolute",
     width:20,
@@ -483,15 +423,11 @@ StyleSheet.create({
     borderRadius:999,
     backgroundColor:"#FFFFFF",
   },
-
-
   overlay:{
     flex:1,
     backgroundColor:"rgba(0,0,0,0.20)",
     alignItems:"flex-end",
   },
-
-
   dropdown:{
     marginTop:66,
     marginRight:12,
@@ -503,23 +439,28 @@ StyleSheet.create({
     overflow:"hidden",
     elevation:12,
   },
-
-
   menuItem:{
     flexDirection:"row",
     alignItems:"center",
     paddingHorizontal:18,
     paddingVertical:15,
   },
-
-
   menuIconContainer:{
     width:34,
     alignItems:"center",
     justifyContent:"center",
   },
-
-
+  notificationDot:{
+    position:"absolute",
+    right:2,
+    top:0,
+    width:9,
+    height:9,
+    borderRadius:5,
+    backgroundColor:"#EF4444",
+    borderWidth:1,
+    borderColor:theme.background,
+  },
   menuText:{
     flex:1,
     marginLeft:8,
@@ -527,15 +468,11 @@ StyleSheet.create({
     fontWeight:"600",
     color:theme.text,
   },
-
-
   separator:{
     height:1,
     backgroundColor:theme.border,
     marginHorizontal:14,
   },
-
-
   logoutButton:{
     flexDirection:"row",
     alignItems:"center",
@@ -545,13 +482,10 @@ StyleSheet.create({
     borderRadius:14,
     backgroundColor:theme.tint,
   },
-
-
   logoutText:{
     marginLeft:8,
     color:"#FFFFFF",
     fontWeight:"700",
     fontSize:15,
   },
-
 });

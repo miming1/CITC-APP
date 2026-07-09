@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views, views_otp
+from .views import NotificationListView
 urlpatterns = [
     # =========================
     # AUTH
@@ -43,6 +44,7 @@ urlpatterns = [
     # PROFILE 
     # =========================
     path('auth/update-profile/', views.update_profile),
+    path("notifications/",NotificationListView.as_view(),name="notifications"),
 
     # =========================
     # VERIFY PASSWORD 
