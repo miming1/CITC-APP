@@ -51,15 +51,20 @@ function getProcessIcon(title: string): keyof typeof Ionicons.glyphMap {
   return 'document-text-outline';
 }
 
-export default function UserDashboardWeb() {
+export default function UserDashboard() {
   const router = useRouter();
 
   const colorScheme = useColorScheme() ?? 'light';
   const isDark = colorScheme === 'dark';
   const colors = Colors[colorScheme as 'light' | 'dark'];
 
-  const bg = colors.background;
+  // Page backdrop is a shade off-white/off-black so the white/dark
+  // panel cards actually read as raised surfaces instead of blending
+  // into the background.
+  const pageBg = isDark ? '#0F0B1A' : '#F4F4FA';
+  const cardBg = colors.background;
   const textPri = isDark ? '#ECEDEE' : '#1E1340';
+  const textMuted = isDark ? '#9A93B0' : '#8A8A9A';
   const accent = '#4B39EF';
 
   const [processes, setProcesses] = useState<Process[]>([]);
@@ -130,11 +135,18 @@ export default function UserDashboardWeb() {
       params: { id: process.id, roleId: 1 },
     });
 
+  // Shared "panel card" look, applied inline so it can pick up
+  // theme-aware colors (background/border) at render time.
+  const panelStyle = [
+    styles.panelCard,
+    { backgroundColor: cardBg, borderColor: colors.border },
+  ];
+
   // =========================
   // UI
   // =========================
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: pageBg }]}>
       <Header title="Welcome!" showBack={false} />
 
       <ScrollView
@@ -161,65 +173,91 @@ export default function UserDashboardWeb() {
             {/* MAIN COLUMN */}
             <View style={styles.mainColumn}>
               {/* QUICK ACCESS */}
-              <View style={styles.section}>
+              <View style={[panelStyle, styles.section]}>
                 <Text style={[styles.sectionTitle, { color: textPri }]}>
                   Quick Access
                 </Text>
-                <Text style={styles.sectionSubtitle}>
+                <Text style={[styles.sectionSubtitle, { color: textMuted }]}>
                   Tap a shortcut to start your request
                 </Text>
 
-                <View style={styles.quickAccessGrid}>
-                  {quickAccessItems.map((process) => (
-                    <TouchableOpacity
-                      key={process.id}
-                      style={[
-                        styles.quickAccessCard,
-                        { backgroundColor: colors.background, borderColor: colors.border },
-                      ]}
-                      onPress={() => goToProcess(process)}
-                    >
-                      <View
+                {quickAccessItems.length > 0 ? (
+                  <View style={styles.quickAccessGrid}>
+                    {quickAccessItems.map((process) => (
+                      <TouchableOpacity
+                        key={process.id}
                         style={[
-                          styles.quickAccessIconWrap,
-                          { backgroundColor: isDark ? '#2A2440' : '#EDEBFB' },
+                          styles.quickAccessCard,
+                          { backgroundColor: isDark ? '#1B1730' : '#FAFAFF', borderColor: colors.border },
                         ]}
+                        onPress={() => goToProcess(process)}
+                        activeOpacity={0.75}
                       >
-                        <Ionicons
-                          name={getProcessIcon(process.title)}
-                          size={26}
-                          color={accent}
-                        />
-                      </View>
-                      <Text
-                        style={[styles.quickAccessLabel, { color: textPri }]}
-                        numberOfLines={2}
-                      >
-                        {process.title}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                        <View
+                          style={[
+                            styles.quickAccessIconWrap,
+                            { backgroundColor: isDark ? '#2A2440' : '#EDEBFB' },
+                          ]}
+                        >
+                          <Ionicons
+                            name={getProcessIcon(process.title)}
+                            size={26}
+                            color={accent}
+                          />
+                        </View>
+                        <Text
+                          style={[styles.quickAccessLabel, { color: textPri }]}
+                          numberOfLines={2}
+                        >
+                          {process.title}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : (
+                  <EmptyState
+                    loading={loading}
+                    icon="apps-outline"
+                    textMuted={textMuted}
+                    loadingLabel="Loading shortcuts..."
+                    emptyLabel="No processes available yet."
+                  />
+                )}
               </View>
 
               {/* POPULAR PROCESSES */}
-              <View style={styles.section}>
-                <PopularProcesses
-                  processes={processes}
-                  onPressProcess={goToProcess}
-                  onSeeAll={() => router.push('/process')}
-                />
+              <View style={[panelStyle, styles.section]}>
+                {processes.length > 0 ? (
+                  <PopularProcesses
+                    processes={processes}
+                    onPressProcess={goToProcess}
+                    onSeeAll={() => router.push('/process')}
+                  />
+                ) : (
+                  <>
+                    <View style={styles.sectionHeaderRow}>
+                      <Text style={[styles.sectionTitle, { color: textPri }]}>
+                        Popular Processes
+                      </Text>
+                      <TouchableOpacity onPress={() => router.push('/process')}>
+                        <Text style={[styles.seeAll, { color: accent }]}>See all &gt;</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <EmptyState
+                      loading={loading}
+                      icon="file-tray-outline"
+                      textMuted={textMuted}
+                      loadingLabel="Loading processes..."
+                      emptyLabel="No popular processes yet."
+                    />
+                  </>
+                )}
               </View>
             </View>
 
             {/* SIDEBAR COLUMN: FAQS */}
             <View style={styles.sidebarColumn}>
-              <View
-                style={[
-                  styles.faqPanel,
-                  { backgroundColor: colors.background, borderColor: colors.border },
-                ]}
-              >
+              <View style={panelStyle}>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionTitle, { color: textPri }]}>FAQs</Text>
                   <TouchableOpacity onPress={() => router.push('/faq')}>
@@ -227,12 +265,18 @@ export default function UserDashboardWeb() {
                   </TouchableOpacity>
                 </View>
 
-                {topFaqs.map((faq) => (
-                  <FAQCard key={faq.id} question={faq.question} answer={faq.answer} />
-                ))}
-
-                {!loading && topFaqs.length === 0 && (
-                  <Text style={styles.faqEmpty}>No FAQs yet.</Text>
+                {topFaqs.length > 0 ? (
+                  topFaqs.map((faq) => (
+                    <FAQCard key={faq.id} question={faq.question} answer={faq.answer} />
+                  ))
+                ) : (
+                  <EmptyState
+                    loading={loading}
+                    icon="help-circle-outline"
+                    textMuted={textMuted}
+                    loadingLabel="Loading FAQs..."
+                    emptyLabel="No FAQs yet."
+                  />
                 )}
               </View>
             </View>
@@ -246,6 +290,33 @@ export default function UserDashboardWeb() {
         onFAQPress={() => router.push('/faq')}
       />
     </SafeAreaView>
+  );
+}
+
+// -----------------------------------------------------------
+// Small local empty/loading state — used instead of a bare line
+// of gray text so panels don't look broken while data is missing.
+// -----------------------------------------------------------
+function EmptyState({
+  loading,
+  icon,
+  textMuted,
+  loadingLabel,
+  emptyLabel,
+}: {
+  loading: boolean;
+  icon: keyof typeof Ionicons.glyphMap;
+  textMuted: string;
+  loadingLabel: string;
+  emptyLabel: string;
+}) {
+  return (
+    <View style={styles.emptyState}>
+      <Ionicons name={icon} size={28} color={textMuted} style={{ marginBottom: 8 }} />
+      <Text style={[styles.emptyStateText, { color: textMuted }]}>
+        {loading ? loadingLabel : emptyLabel}
+      </Text>
+    </View>
   );
 }
 
@@ -271,32 +342,43 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     alignSelf: 'center',
     paddingHorizontal: 32,
-    paddingTop: 24,
+    paddingTop: 28,
   },
 
   searchWrap: {
     maxWidth: 640,
-    marginBottom: 8,
+    marginBottom: 24,
   },
 
   columns: {
     flexDirection: 'row',
-    marginTop: 16,
-    gap: 32,
+    alignItems: 'flex-start',
+    gap: 24,
   },
 
   mainColumn: {
-    flex: 2,
+    flex: 1,
     minWidth: 0,
   },
 
   sidebarColumn: {
-    flex: 1,
-    minWidth: 280,
+    width: 340,
+  },
+
+  // Shared raised-card look for every dashboard widget
+  panelCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#1E1340',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
 
   section: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
 
   sectionHeaderRow: {
@@ -307,13 +389,13 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
   },
 
   sectionSubtitle: {
     fontSize: 13,
-    color: '#8A8A8A',
+    marginTop: 2,
     marginBottom: 16,
   },
 
@@ -325,11 +407,11 @@ const styles = StyleSheet.create({
   quickAccessGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 14,
   },
 
   quickAccessCard: {
-    width: 120,
+    width: 128,
     paddingVertical: 18,
     paddingHorizontal: 10,
     borderRadius: 14,
@@ -352,15 +434,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  faqPanel: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 28,
   },
 
-  faqEmpty: {
+  emptyStateText: {
     fontSize: 13,
-    color: '#8A8A8A',
-    paddingTop: 12,
+    fontWeight: '500',
   },
 });
