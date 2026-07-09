@@ -192,7 +192,12 @@ export default function UserDashboard() {
               });
             }}
             onSeeAll={() => {
-              router.push("/process-list");
+              router.push({
+                pathname: "/process-list",
+                params: {
+                  roleId: "1",
+                },
+              });
             }}
           />
 
@@ -205,11 +210,17 @@ export default function UserDashboard() {
                 params: {
                   categoryId: category.id,
                   procedureId: category.procedure_id,
+                  roleId: "1",
                 },
               })
             }
             onSeeAll={() => {
-              // router.push("/categorylistscreen");
+              router.push({
+                pathname: "/faq",
+                params: {
+                  roleId: "1",
+                },
+              });
             }}
           />
         </View>
@@ -217,8 +228,6 @@ export default function UserDashboard() {
 
       <FloatingButtons
         activeTab="faq"
-        onTrackPress={() => router.push("/track-details")}
-        onFAQPress={() => router.push("/faq")}
       />
     </SafeAreaView>
   );

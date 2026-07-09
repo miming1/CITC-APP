@@ -60,6 +60,8 @@ export default function AdminDashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
 
+  const [deleteMessage,setDeleteMessage] = useState("");
+
   // =========================
   // FETCH HELPERS
   // =========================
@@ -169,6 +171,7 @@ export default function AdminDashboard() {
       <Header
         title="Office Dashboard"
         showBack={false}
+        roleId="2"
       />
 
       <ScrollView
@@ -211,22 +214,23 @@ export default function AdminDashboard() {
           {/* PROCEDURES */}
           <AssignedProcedures
             procedures={procedures}
-            onSeeAll={() =>
-              router.push({
-                pathname: "/process-list",
-                params: { admin_mode: "true" },
-              })
-            }
-            onPressProcedure={(procedure: Procedure) =>
+            onPressProcedure={(procedure) => {
               router.push({
                 pathname: "/process",
-                params: {
-                  procedure_id: procedure.procedure_id,
-                  roleId: 2,
-                  admin_mode: "true",
+                params:{
+                  id: procedure.procedure_id,
+                  roleId:"2",
                 },
-              })
-            }
+              });
+            }}
+            onSeeAll={()=>{
+              router.push({
+                pathname:"/process-list",
+                params:{
+                  roleId:"2",
+                },
+              });
+            }}
           />
 
 
@@ -238,12 +242,18 @@ export default function AdminDashboard() {
               router.push({
                 pathname: "/faq",
                 params: {
-                  categoryId: category.category_id,
+                  categoryId: String(category.category_id),
+                  roleId: "2",
                 },
               });
             }}
             onSeeAll={() => {
-              //router.push({ pathname: "/faq-categories" });
+              router.push({
+                pathname: "/faq",
+                params: {
+                  roleId: "2",
+                },
+              });
             }}
           />
 

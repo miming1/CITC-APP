@@ -81,7 +81,7 @@ export default function AdminQuestionCategories({
         </Text>
 
 
-        {categories.length > 3 && onSeeAll && (
+        {categories.length > 0 && onSeeAll && (
           <TouchableOpacity
             onPress={onSeeAll}
             activeOpacity={0.7}
@@ -90,7 +90,7 @@ export default function AdminQuestionCategories({
               style={[
                 styles.seeAll,
                 {
-                  color: colors.tint,
+                  color: colors.tint2,
                 },
               ]}
             >

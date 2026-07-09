@@ -1,11 +1,11 @@
 import { MaterialIcons } from "@expo/vector-icons";
 
 import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 
 import { Colors } from "../constants/theme";
@@ -71,7 +71,7 @@ export default function UserQuestionCategories({
         </Text>
 
 
-        {categories.length > 3 && onSeeAll && (
+        {categories.length > 0 && onSeeAll && (
 
           <TouchableOpacity
             onPress={onSeeAll}

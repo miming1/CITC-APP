@@ -97,9 +97,25 @@ class Users(models.Model):
 
 class Requests(models.Model):
     request_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True)
-    procedure = models.ForeignKey(Procedures, models.DO_NOTHING, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
+
+    user = models.ForeignKey(
+        Users,
+        models.SET_NULL,
+        blank=True,
+        null=True
+    )
+
+    procedure = models.ForeignKey(
+        Procedures,
+        models.SET_NULL,
+        blank=True,
+        null=True
+    )
+
+    created_at = models.DateTimeField(
+        blank=True,
+        null=True
+    )
 
     class Meta:
         managed = True
@@ -107,9 +123,21 @@ class Requests(models.Model):
 
 
 class FaqCategories(models.Model):
-    category_id = models.AutoField(primary_key=True)
-    category_name = models.CharField(max_length=100)
-    procedure = models.ForeignKey(Procedures, models.DO_NOTHING, blank=True, null=True)
+
+    category_id = models.AutoField(
+        primary_key=True
+    )
+
+    category_name = models.CharField(
+        max_length=100
+    )
+
+    procedure = models.ForeignKey(
+        Procedures,
+        models.CASCADE,
+        blank=True,
+        null=True
+    )
 
     class Meta:
         managed = True
@@ -120,7 +148,7 @@ class Faqs(models.Model):
     faq_id = models.AutoField(primary_key=True)
     question = models.TextField()
     answer = models.TextField()
-    category = models.ForeignKey(FaqCategories, models.DO_NOTHING, blank=True, null=True)
+    category = models.ForeignKey(FaqCategories,models.CASCADE,blank=True,null=True)
     created_at = models.DateTimeField(blank=True, null=True)
     updated_at = models.DateTimeField(blank=True, null=True)
 
@@ -182,9 +210,24 @@ class OtpTokens(models.Model):
 
 class ProcedureDocuments(models.Model):
     pk = models.CompositePrimaryKey('procedure_id', 'document_id')
-    procedure = models.ForeignKey(Procedures, models.DO_NOTHING)
-    document = models.ForeignKey(Documents, models.DO_NOTHING)
-    office = models.ForeignKey(Offices, models.DO_NOTHING, blank=True, null=True)
+
+    procedure = models.ForeignKey(
+        Procedures,
+        models.CASCADE,
+        related_name="procedure_documents"
+    )
+
+    document = models.ForeignKey(
+        Documents,
+        models.DO_NOTHING
+    )
+
+    office = models.ForeignKey(
+        Offices,
+        models.DO_NOTHING,
+        blank=True,
+        null=True
+    )
 
     class Meta:
         managed = True
@@ -193,8 +236,17 @@ class ProcedureDocuments(models.Model):
 
 class ProcedureRequirements(models.Model):
     pk = models.CompositePrimaryKey('procedure_id', 'requirement_id')
-    procedure = models.ForeignKey(Procedures, models.DO_NOTHING)
-    requirement = models.ForeignKey(Requirements, models.DO_NOTHING)
+
+    procedure = models.ForeignKey(
+        Procedures,
+        models.CASCADE,
+        related_name="procedure_requirements"
+    )
+
+    requirement = models.ForeignKey(
+        Requirements,
+        models.DO_NOTHING
+    )
 
     class Meta:
         managed = True
@@ -203,27 +255,94 @@ class ProcedureRequirements(models.Model):
 
 class ProcedureSteps(models.Model):
     step_id = models.AutoField(primary_key=True)
-    procedure = models.ForeignKey(Procedures, models.DO_NOTHING, blank=True, null=True)
+
+    procedure = models.ForeignKey(
+        Procedures,
+        models.CASCADE,
+        related_name="procedure_steps",
+        blank=True,
+        null=True
+    )
+
     step_number = models.IntegerField()
     step_description = models.TextField()
-    person_in_charge = models.CharField(max_length=100, blank=True, null=True)
-    office_location = models.CharField(max_length=150, blank=True, null=True)
-    reference_link = models.TextField(blank=True, null=True)
+    person_in_charge = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    office_location = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True
+    )
+
+    reference_link = models.TextField(
+        blank=True,
+        null=True
+    )
+
 
     class Meta:
         managed = True
         db_table = 'procedure_steps'
-        unique_together = (('procedure', 'step_number'),)
+        unique_together = (
+            ('procedure', 'step_number'),
+        )
 
 
 class RequestDocuments(models.Model):
     req_doc_id = models.AutoField(primary_key=True)
-    request = models.ForeignKey(Requests, models.DO_NOTHING, blank=True, null=True)
-    document = models.ForeignKey(Documents, models.DO_NOTHING, blank=True, null=True)
-    status = models.TextField(blank=True, null=True)
-    updated_by = models.ForeignKey(Users, models.DO_NOTHING, db_column='updated_by', blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
-    remarks = models.TextField(blank=True, null=True)
+
+    request = models.ForeignKey(
+        Requests,
+        models.DO_NOTHING,
+        blank=True,
+        null=True
+    )
+
+    document = models.ForeignKey(
+        Documents,
+        models.DO_NOTHING,
+        blank=True,
+        null=True
+    )
+
+    tracking_number = models.IntegerField(
+        blank=True,
+        null=True
+    )
+
+    reference_code = models.CharField(
+        max_length=20,
+        unique=True,
+        blank=True,
+        null=True
+    )
+
+    status = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    updated_by = models.ForeignKey(
+        Users,
+        models.DO_NOTHING,
+        db_column='updated_by',
+        blank=True,
+        null=True
+    )
+
+    updated_at = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+
+    remarks = models.TextField(
+        blank=True,
+        null=True
+    )
 
     class Meta:
         managed = True
