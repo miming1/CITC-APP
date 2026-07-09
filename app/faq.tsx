@@ -1,16 +1,24 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, useColorScheme, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import AdminAuthModal from "../components/AdminAuthModal";
+import AdminQuestionCategories from "../components/AdminQuestionCategories";
 import FAQCard from "../components/FAQCard";
 import FAQModal from "../components/FAQModal";
 import FloatingButtons from "../components/FloatingButtons";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
+import UserQuestionCategories from "../components/UserQuestionCategories";
 import { ENDPOINTS } from "../constants/api";
 import { fetchFAQCategories, fetchFAQs } from "../lib/api";
 import { getToken } from "../lib/auth";
+
+type FAQ = {
+  question: string;
+  answer?: string;
+};
 
 export default function FAQScreen() {
   const colorScheme = useColorScheme() ?? "light";
@@ -21,8 +29,19 @@ export default function FAQScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
-  const { categoryId, roleId } = useLocalSearchParams<{ categoryId?: string; roleId?: string }>();
-  const isAdmin = Number(roleId) === 2;
+  const {
+    categoryId,
+    roleId,
+    admin_mode,
+  } = useLocalSearchParams<{
+    categoryId?: string;
+    roleId?: string;
+    admin_mode?: string;
+  }>();
+
+  const isAdmin =
+    Number(roleId) === 2 ||
+    admin_mode === "true";
 
   const [search, setSearch] = useState("");
   const [faqs, setFaqs] = useState<any[]>([]);
@@ -30,7 +49,8 @@ export default function FAQScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showFAQModal, setShowFAQModal] = useState(false);
-
+  const [showAuthModal,setShowAuthModal] = useState(false);
+  const [pendingFAQ,setPendingFAQ] = useState<FAQ | null>(null);
   const router = useRouter();
 
   const loadFAQs = async () => {
@@ -88,9 +108,18 @@ export default function FAQScreen() {
     await loadFAQs();
   };
 
+  const requestFAQAuth = (data: FAQ) => {
+    setPendingFAQ(data);
+    setShowAuthModal(true);
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
-      <Header title="FAQs" roleId={roleId as string} />
+      <Header
+        title="FAQs"
+        roleId={roleId as string}
+        adminMode={admin_mode as string}
+      />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={true}>
         <View style={[styles.container, isDesktop && styles.desktopContainer]}>
           <SearchBar placeholder="Search..." onChangeText={setSearch} />
@@ -104,20 +133,39 @@ export default function FAQScreen() {
 
           {!loading && error && <Text style={styles.hint}>{error}</Text>}
 
-          {!loading && !error && !categoryId && (
-            <View style={styles.cardList}>
-              {categories.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={styles.categoryCard}
-                  onPress={() =>
-                    router.push({ pathname: "/faq", params: { categoryId: category.id, roleId } })
-                  }
-                >
-                  <Text style={[styles.categoryTitle, { color: textPri }]}>{category.category_name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          {!loading && !error && !categoryId && ( isAdmin ? (
+              <AdminQuestionCategories
+                procedures={[]}
+                categories={categories.map((item) => ({
+                  category_id: Number(item.id),
+                  category_name: item.category_name,
+                  procedure: Number(item.procedure_id),
+                }))}
+                onPressCategory={(category) => {
+                  router.push({
+                    pathname: "/faq",
+                    params: {
+                      categoryId: String(category.category_id),
+                      roleId: "2",
+                      admin_mode: "true",
+                    },
+                  });
+                }}
+              />
+            ) : (
+              <UserQuestionCategories
+                categories={categories}
+                onPressCategory={(category) => {
+                  router.push({
+                    pathname: "/faq",
+                    params: {
+                      categoryId: category.id,
+                      roleId: "1",
+                    },
+                  });
+                }}
+              />
+            )
           )}
 
           {!loading && !error && categoryId && (
@@ -133,27 +181,53 @@ export default function FAQScreen() {
 
       {/*
         Rules:
-        - Student  -> always show chat bubble (handled inside FloatingButtons when isAdmin=false)
-        - Admin, category list (no categoryId) -> nothing at all
-        - Admin, inside a category -> Add button only
+        - Student -> Chat bubble only
+        - Admin, category list -> Nothing
+        - Admin, inside a category -> Add FAQ
       */}
-      {(!isAdmin || categoryId) && (
-        <FloatingButtons
-          activeTab="faq"
-          isAdmin={isAdmin}
-          onTrackPress={() => {}}
-          onFAQPress={() => setShowFAQModal(true)}
-        />
+      {isAdmin ? (
+        categoryId ? (
+          <FloatingButtons
+            isAdmin
+            adminIcon="add"
+            adminTooltip="Add FAQ"
+            onAdminPress={() => setShowFAQModal(true)}
+          />
+        ) : null
+      ) : (
+        <FloatingButtons activeTab="faq" />
       )}
+      <FAQModal
+        visible={showFAQModal}
+        onClose={() => setShowFAQModal(false)}
+        procedureId={Number(categoryId)}
+        onSave={handleCreateFAQ}
+        onRequestAuth={requestFAQAuth}
+      />
 
-      {isAdmin && categoryId && (
-        <FAQModal
-          visible={showFAQModal}
-          onClose={() => setShowFAQModal(false)}
-          procedureId={0}
-          onSave={handleCreateFAQ}
-        />
-      )}
+      <AdminAuthModal
+        visible={showAuthModal}
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingFAQ(null);
+        }}
+        onSuccess={async () => {
+
+          if (!pendingFAQ)
+            return;
+
+
+          await handleCreateFAQ(
+            Number(categoryId),
+            pendingFAQ
+          );
+
+
+          setShowAuthModal(false);
+          setPendingFAQ(null);
+
+        }}
+      />
     </SafeAreaView>
   );
 }

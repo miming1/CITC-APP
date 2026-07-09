@@ -365,6 +365,9 @@ export default function LoginScreen() {
                       onFocus={() => setFocusedField("loginPassword")}
                       onBlur={() => setFocusedField(null)}
                       secureTextEntry={!showLoginPassword}
+                      returnKeyType="done"
+                      onSubmitEditing={handleLogin}
+
                     />
                     <TouchableOpacity
                       onPress={() => setShowLoginPassword(!showLoginPassword)}
@@ -481,6 +484,8 @@ export default function LoginScreen() {
                       onFocus={() => setFocusedField("signupConfirmPassword")}
                       onBlur={() => setFocusedField(null)}
                       secureTextEntry={!showConfirmPassword}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSignup}
                     />
                     <TouchableOpacity
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}

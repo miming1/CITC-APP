@@ -62,7 +62,7 @@ export default function PopularProcesses({
         </Text>
 
 
-        {processes.length > 3 && onSeeAll && (
+        {processes.length > 0 && onSeeAll && (
 
           <TouchableOpacity
             onPress={onSeeAll}

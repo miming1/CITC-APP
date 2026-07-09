@@ -46,7 +46,7 @@ export default function ProcessScreen() {
   const [successMessage, setSuccessMessage] = useState("");
   const [showAdminAuthModal, setShowAdminAuthModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
+  const [showAdminDeleteAuthModal, setShowAdminDeleteAuthModal] = useState(false);
   const [deleteType, setDeleteType] = useState<"procedure" | "faq" | null>(null);
   const [selectedFAQ, setSelectedFAQ] = useState<any>(null);
 
@@ -207,23 +207,67 @@ export default function ProcessScreen() {
   // DELETE PROCEDURE
   // =========================
   const handleDeleteProcedure = async () => {
-    await fetch(`${API_BASE_URL}/procedures/${procedureId}/delete/`, {
-      method: "DELETE",
+
+    const token = await getToken();
+
+
+    const response = await fetch(
+      `${API_BASE_URL}/procedures/${procedureId}/delete/`,
+      {
+        method:"DELETE",
+        headers:{
+          Authorization:`Token ${token}`,
+        },
+      }
+    );
+
+
+    if(!response.ok){
+      throw new Error("Delete failed");
+    }
+
+
+    localStorage.removeItem(
+      `${CHECKLIST_PREFIX}${procedureId}`
+    );
+
+
+    router.replace({
+      pathname: "/process-list",
+      params: {
+        roleId: "2",
+        message: "Procedure deleted successfully.",
+      },
     });
 
-    localStorage.removeItem(`${CHECKLIST_PREFIX}${procedureId}`);
-    router.back();
   };
 
   // =========================
   // DELETE FAQ
   // =========================
-  const handleDeleteFAQ = async (id: number) => {
-    await fetch(`${API_BASE_URL}/faqs/${id}/delete/`, {
-      method: "DELETE",
-    });
+  const handleDeleteFAQ = async (id:number)=>{
+
+    const token = await getToken();
+
+
+    const response = await fetch(
+      `${API_BASE_URL}/faqs/${id}/delete/`,
+      {
+        method:"DELETE",
+        headers:{
+          Authorization:`Token ${token}`,
+        },
+      }
+    );
+
+
+    if(!response.ok){
+      throw new Error("FAQ delete failed");
+    }
+
 
     await fetchAll();
+
   };
 
   // =========================
@@ -363,37 +407,71 @@ export default function ProcessScreen() {
         )}
       </ScrollView>
 
-      <FloatingButtons
-        activeTab={activeTab}
-        isAdmin={isAdmin}
-        onTrackPress={() =>
-          router.push({
-            pathname: "/track",
-            params: { id: procedureId },
-          })
-        }
-        onFAQPress={() => {}}
-      />
+      {!isAdmin && (
+        <FloatingButtons
+          activeTab={activeTab}
+          onTrackPress={() =>
+            router.push({
+              pathname: "/track",
+              params: { id: procedureId },
+            })
+          }
+        />
+      )}
 
       <DeleteModal
         visible={showDeleteModal}
         onCancel={() => setShowDeleteModal(false)}
-        onConfirm={async () => {
-          if (deleteType === "procedure") await handleDeleteProcedure();
-          if (deleteType === "faq" && selectedFAQ)
-            await handleDeleteFAQ(selectedFAQ.faq_id);
-
+        onConfirm={() => {
           setShowDeleteModal(false);
-          setSelectedFAQ(null);
-          setDeleteType(null);
+          setShowAdminDeleteAuthModal(true);
         }}
       />
 
       {isAdmin && (
         <AdminAuthModal
-          visible={showAdminAuthModal}
-          onClose={() => setShowAdminAuthModal(false)}
-          onSuccess={handleAuthSuccess}
+          visible={showAdminDeleteAuthModal}
+          onClose={() => setShowAdminDeleteAuthModal(false)}
+          onSuccess={async () => {
+
+            try {
+
+              if (deleteType === "procedure") {
+                await handleDeleteProcedure();
+              }
+
+
+              if (deleteType === "faq" && selectedFAQ) {
+                await handleDeleteFAQ(selectedFAQ.faq_id);
+              }
+
+
+              setShowAdminDeleteAuthModal(false);
+
+              setSelectedFAQ(null);
+              setDeleteType(null);
+
+
+              setSuccessMessage(
+                "Deleted successfully"
+              );
+
+
+              setTimeout(() => {
+                setSuccessMessage("");
+              },3000);
+
+
+            } catch(error){
+
+              console.log(
+                "DELETE ERROR:",
+                error
+              );
+
+            }
+
+          }}
         />
       )}
     </SafeAreaView>

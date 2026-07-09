@@ -16,7 +16,6 @@ interface Props {
   secure?: boolean;
   keyboardType?: "default" | "email-address" | "numeric";
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
-
   autoComplete?:
     | "off"
     | "username"
@@ -25,6 +24,9 @@ interface Props {
     | "current-password"
     | "new-password";
   textContentType?: "username" | "password" | "newPassword" | "emailAddress" | "none";
+  // NEW: lets a parent submit the form when the user presses Enter/Return
+  onSubmitEditing?: () => void;
+  returnKeyType?: "done" | "go" | "next" | "search" | "send";
 }
 
 export default function AuthInput({
@@ -37,6 +39,8 @@ export default function AuthInput({
   autoCapitalize = "none",
   autoComplete = "off",
   textContentType = "none",
+  onSubmitEditing,
+  returnKeyType,
 }: Props) {
   const [show, setShow] = useState(false);
 
@@ -55,6 +59,8 @@ export default function AuthInput({
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
           textContentType={textContentType}
+          onSubmitEditing={onSubmitEditing}
+          returnKeyType={returnKeyType}
         />
         {secure && (
           <TouchableOpacity

@@ -1,7 +1,10 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,10 +15,12 @@ import {
 
 import { Colors, Fonts } from "@/constants/theme";
 
+
 type FAQ = {
   question: string;
   answer?: string;
 };
+
 
 type FAQModalProps = {
   visible: boolean;
@@ -23,7 +28,11 @@ type FAQModalProps = {
   onSave: (procedureId: number, data: FAQ) => void;
   initialData?: FAQ | null;
   procedureId: number;
+
+  onRequestAuth?: (data: FAQ) => void;
 };
+
+
 
 export default function FAQModal({
   visible,
@@ -31,353 +40,499 @@ export default function FAQModal({
   onSave,
   initialData,
   procedureId,
+  onRequestAuth
 }: FAQModalProps) {
 
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
 
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
 
 
-  useEffect(() => {
-    if (initialData) {
+  const [question,setQuestion] = useState("");
+  const [answer,setAnswer] = useState("");
+
+
+
+  useEffect(()=>{
+
+    if(initialData){
+
       setQuestion(initialData.question ?? "");
       setAnswer(initialData.answer ?? "");
-    } else {
+
+    }
+    else{
+
       setQuestion("");
       setAnswer("");
-    }
-  }, [initialData]);
 
+    }
+
+  },[initialData,visible]);
 
   const handleSave = () => {
+  if (!question.trim())
+    return;
 
-    if (!question.trim()) {
-      return;
-    }
-
-    onSave(procedureId, {
-      question,
-      answer,
-    });
-
-    setQuestion("");
-    setAnswer("");
+  const faqData = {
+    question: question.trim(),
+    answer: answer.trim(),
   };
 
+  if (onRequestAuth) {
+    onRequestAuth(faqData);
+    return;
+  }
+
+  onSave(
+    procedureId,
+    faqData
+  );
+
+  setQuestion("");
+  setAnswer("");
+
+};
 
   return (
+
     <Modal
+
       visible={visible}
+
       transparent
+
       animationType="fade"
+
       onRequestClose={onClose}
+
     >
 
-      <View style={styles.overlay}>
+
+      <KeyboardAvoidingView
+
+        style={styles.overlay}
+
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
+
+      >
+
 
         <View
+
           style={[
-            styles.modalContainer,
+            styles.container,
             {
-              backgroundColor: colors.background,
-              borderColor: colors.border,
-            },
+              backgroundColor:colors.background,
+              borderColor:colors.border,
+            }
           ]}
+
         >
+
+
+
+          {/* HEADER */}
 
           <View style={styles.header}>
 
+
             <View
+
               style={[
-                styles.iconContainer,
+                styles.iconBox,
                 {
                   backgroundColor:
-                    colorScheme === "dark"
-                      ? "#3A2C12"
-                      : "#FEF3C7",
-                },
+                    colorScheme==="dark"
+                    ? "#3A2C12"
+                    : "#FEF3C7"
+                }
               ]}
+
             >
+
               <MaterialIcons
+
                 name="help-outline"
+
                 size={28}
+
                 color={colors.tint2}
+
               />
+
+
             </View>
+
+
 
 
             <View style={styles.headerText}>
 
+
               <Text
+
                 style={[
                   styles.title,
                   {
-                    color: colors.text,
-                    fontFamily: Fonts.rounded,
-                  },
+                    color:colors.text,
+                    fontFamily:Fonts.rounded,
+                  }
                 ]}
+
               >
+
                 {initialData
                   ? "Edit FAQ"
-                  : "Create FAQ"}
+                  : "Add FAQ"
+                }
+
               </Text>
 
 
+
               <Text
+
                 style={[
                   styles.subtitle,
                   {
-                    color: colors.icon,
-                  },
+                    color:colors.icon
+                  }
                 ]}
+
               >
-                Manage frequently asked questions for this procedure.
+
+                Add frequently asked questions for this category.
+
               </Text>
+
 
             </View>
 
-          </View>
 
 
-
-          <View style={styles.section}>
-
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: colors.text,
-                },
-              ]}
-            >
-              Question
-            </Text>
-
-
-            <TextInput
-              value={question}
-              onChangeText={setQuestion}
-              placeholder="Enter question..."
-              placeholderTextColor={colors.icon}
-              multiline
-              style={[
-                styles.textArea,
-                {
-                  color: colors.text,
-                  borderColor: colors.border,
-                  backgroundColor:
-                    colorScheme === "dark"
-                      ? "rgba(255,255,255,0.05)"
-                      : "#F8FAFC",
-                },
-              ]}
-            />
-
-          </View>
-
-
-
-          <View style={styles.section}>
-
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: colors.text,
-                },
-              ]}
-            >
-              Answer
-            </Text>
-
-
-            <TextInput
-              value={answer}
-              onChangeText={setAnswer}
-              placeholder="Enter answer..."
-              placeholderTextColor={colors.icon}
-              multiline
-              style={[
-                styles.textArea,
-                {
-                  color: colors.text,
-                  borderColor: colors.border,
-                  backgroundColor:
-                    colorScheme === "dark"
-                      ? "rgba(255,255,255,0.05)"
-                      : "#F8FAFC",
-                },
-              ]}
-            />
-
-          </View>
-
-
-
-          <View style={styles.buttons}>
 
             <TouchableOpacity
-              style={[
-                styles.cancelButton,
-                {
-                  borderColor: colors.border,
-                },
-              ]}
+
               onPress={onClose}
+
             >
-              <Text
-                style={[
-                  styles.cancelText,
-                  {
-                    color: colors.text,
-                  },
-                ]}
-              >
-                Cancel
-              </Text>
+
+              <MaterialIcons
+
+                name="close"
+
+                size={24}
+
+                color={colors.icon}
+
+              />
+
             </TouchableOpacity>
+
+
+
+          </View>
+
+
+
+
+
+          <ScrollView
+
+            showsVerticalScrollIndicator={false}
+
+          >
+
+
+
+
+          <Text
+
+            style={[
+              styles.label,
+              {
+                color:colors.text
+              }
+            ]}
+
+          >
+
+            Question
+
+          </Text>
+
+
+
+          <TextInput
+
+            value={question}
+
+            onChangeText={setQuestion}
+
+            placeholder="Enter question..."
+
+            placeholderTextColor={colors.icon}
+
+            multiline
+
+            style={[
+              styles.input,
+              {
+                color:colors.text,
+
+                borderColor:colors.border,
+
+                backgroundColor:
+                  colorScheme==="dark"
+                  ? "rgba(255,255,255,0.05)"
+                  : "#F8FAFC"
+              }
+            ]}
+
+          />
+
+
+
+
+
+          <Text
+
+            style={[
+              styles.label,
+              {
+                color:colors.text
+              }
+            ]}
+
+          >
+
+            Answer
+
+          </Text>
+
+
+
+
+          <TextInput
+
+            value={answer}
+
+            onChangeText={setAnswer}
+
+            placeholder="Enter answer..."
+
+            placeholderTextColor={colors.icon}
+
+            multiline
+
+            style={[
+              styles.input,
+              {
+                color:colors.text,
+
+                borderColor:colors.border,
+
+                backgroundColor:
+                  colorScheme==="dark"
+                  ? "rgba(255,255,255,0.05)"
+                  : "#F8FAFC"
+              }
+            ]}
+
+          />
+
+
+
+
+          </ScrollView>
+
+
+
+
+
+          <View style={styles.actions}>
+
+
+            <TouchableOpacity
+
+              style={[
+                styles.cancel,
+                {
+                  borderColor:colors.border
+                }
+              ]}
+
+              onPress={onClose}
+
+            >
+
+              <Text
+
+                style={{
+                  color:colors.text,
+                  fontWeight:"600"
+                }}
+
+              >
+
+                Cancel
+
+              </Text>
+
+
+            </TouchableOpacity>
+
+
 
 
 
             <TouchableOpacity
+
               style={[
-                styles.saveButton,
+                styles.save,
                 {
-                  backgroundColor: colors.tint,
-                },
+                  backgroundColor:colors.tint
+                }
               ]}
+
               onPress={handleSave}
+
             >
+
               <Text style={styles.saveText}>
+
                 Save FAQ
+
               </Text>
+
             </TouchableOpacity>
 
+
+
           </View>
+
+
+
 
         </View>
 
-      </View>
+
+      </KeyboardAvoidingView>
+
 
     </Modal>
+
   );
+
 }
+
+
 
 
 const styles = StyleSheet.create({
 
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
+  overlay:{
+    flex:1,
+    backgroundColor:"rgba(0,0,0,0.45)",
+    justifyContent:"center",
+    alignItems:"center",
+    padding:24,
   },
 
 
-  modalContainer: {
-    width: "100%",
-    maxWidth: 480,
-    alignSelf: "center",
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 24,
+  container:{
+    width:"100%",
+    maxWidth:500,
+    borderRadius:24,
+    borderWidth:1,
+    padding:24,
+    elevation:12,
   },
 
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
+  header:{
+    flexDirection:"row",
+    alignItems:"center",
+    marginBottom:22,
   },
 
 
-  iconContainer: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
+  iconBox:{
+    width:54,
+    height:54,
+    borderRadius:16,
+    justifyContent:"center",
+    alignItems:"center",
+    marginRight:14,
   },
 
 
-  headerText: {
-    flex: 1,
+  headerText:{
+    flex:1,
   },
 
 
-  title: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 4,
+  title:{
+    fontSize:22,
+    fontWeight:"700",
   },
 
 
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+  subtitle:{
+    fontSize:13,
+    marginTop:3,
   },
 
 
-  section: {
-    marginBottom: 18,
+  label:{
+    fontSize:15,
+    fontWeight:"700",
+    marginBottom:8,
+    marginTop:12,
   },
 
 
-  label: {
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 8,
+  input:{
+    borderWidth:1,
+    borderRadius:16,
+    padding:14,
+    minHeight:100,
+    fontSize:15,
+    textAlignVertical:"top",
   },
 
 
-  textArea: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 110,
-    textAlignVertical: "top",
-    fontSize: 15,
+  actions:{
+    flexDirection:"row",
+    justifyContent:"flex-end",
+    gap:12,
+    marginTop:20,
   },
 
 
-  buttons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 6,
+  cancel:{
+    borderWidth:1,
+    borderRadius:14,
+    paddingHorizontal:18,
+    paddingVertical:12,
   },
 
 
-  cancelButton: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+  save:{
+    borderRadius:14,
+    paddingHorizontal:20,
+    paddingVertical:12,
   },
 
 
-  saveButton: {
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
-
-
-  cancelText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-
-
-  saveText: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
+  saveText:{
+    color:"#fff",
+    fontWeight:"700",
   },
 
 });

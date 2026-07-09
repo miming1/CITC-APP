@@ -10,18 +10,25 @@ import { Colors } from "../constants/theme";
 import Tooltip from "./ToolTip";
 
 type FloatingButtonsProps = {
-  activeTab: "procedure" | "faq";
+  activeTab?: "procedure" | "faq";
   isAdmin?: boolean;
 
-  onTrackPress: () => void;
-  onFAQPress: () => void;
+  // Student actions
+  onTrackPress?: () => void;
+
+  // Admin action
+  adminIcon?: keyof typeof MaterialIcons.glyphMap;
+  adminTooltip?: string;
+  onAdminPress?: () => void;
 };
 
 export default function FloatingButtons({
   activeTab,
   isAdmin = false,
   onTrackPress,
-  onFAQPress,
+  adminIcon,
+  adminTooltip,
+  onAdminPress,
 }: FloatingButtonsProps) {
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
@@ -30,14 +37,35 @@ export default function FloatingButtons({
 
   // =========================================================
   // ADMIN MODE
+  // If admin props are supplied, show ONE floating button.
   // =========================================================
+  if (isAdmin && adminIcon && onAdminPress) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.wrapper}>
+          {adminTooltip ? (
+            <View style={styles.tooltip}>
+              <Tooltip text={adminTooltip} />
+            </View>
+          ) : null}
 
-  if (isAdmin) {
-    if (isFAQTab) {
-      return null
-    }
-
-    return null;
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: theme.tint },
+            ]}
+            onPress={onAdminPress}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons
+              name={adminIcon}
+              size={28}
+              color={theme.background}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   }
 
   // =========================================================
@@ -45,7 +73,6 @@ export default function FloatingButtons({
   // =========================================================
 
   const handleChatbotPress = () => {
-    // TODO: Navigate to AI Assistant screen
     console.log("Chatbot pressed (not implemented yet)");
   };
 
@@ -80,7 +107,7 @@ export default function FloatingButtons({
   // PROCEDURE TAB → Chat + Track
   return (
     <View style={styles.container}>
-      {/* CHATBOT BUTTON */}
+      {/* CHATBOT */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
           <Tooltip text="Chat with AI Assistant" />
@@ -102,7 +129,7 @@ export default function FloatingButtons({
         </TouchableOpacity>
       </View>
 
-      {/* TRACK DOCUMENT BUTTON */}
+      {/* TRACK DOCUMENT */}
       <View style={styles.wrapper}>
         <View style={styles.tooltip}>
           <Tooltip text="Track Document" />
@@ -126,10 +153,6 @@ export default function FloatingButtons({
     </View>
   );
 }
-
-// =========================================================
-// STYLES
-// =========================================================
 
 const styles = StyleSheet.create({
   container: {
@@ -156,7 +179,9 @@ const styles = StyleSheet.create({
     borderRadius: 29,
     justifyContent: "center",
     alignItems: "center",
+
     elevation: 6,
+
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

@@ -8,6 +8,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import AddProcessModal from "../components/AddProcessModal";
+import AssignedProcedures from "../components/AssignedProcedures";
+import FloatingButtons from "../components/FloatingButtons";
 import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 import { Colors } from "../constants/theme";
@@ -16,7 +18,7 @@ import { fetchProcedures } from "../lib/api";
 interface Procedure {
   procedure_id: number;
   procedure_name: string;
-  description: string;
+  description?: string;
 }
 
 interface Office {
@@ -49,8 +51,14 @@ export default function ProcessListScreen() {
   const textSec = isDark ? "#9BA1A6" : "#6B6485";
   const border = colors.icon;
 
-  const { roleId } = useLocalSearchParams();
-  const isAdmin = Number(roleId) === 2;
+  const {
+    roleId,
+    admin_mode,
+    message: routeMessage,
+  } = useLocalSearchParams();
+
+  const isAdmin =
+    Number(roleId) === 2 || admin_mode === "true";
 
   const [search, setSearch] = useState("");
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
@@ -58,6 +66,7 @@ export default function ProcessListScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddProcessModal, setShowAddProcessModal] = useState(false);
+  const [message, setMessage] = useState("");
 
   const loadProcedures = async () => {
     try {
@@ -89,9 +98,58 @@ export default function ProcessListScreen() {
     });
   }
 
+  const showMessage = (text: string) => {
+    setMessage(text);
+
+    setTimeout(() => {
+      setMessage("");
+    }, 2500);
+  };
+
+  useEffect(() => {
+    if (routeMessage) {
+      showMessage(String(routeMessage));
+    }
+  }, [routeMessage]);
+
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: bg }]}>
-      <Header title="Processes" roleId={roleId as string} />
+      <Header
+        title="Procedures"
+        roleId={roleId as string}
+        adminMode={admin_mode as string}
+      />
+      {message !== "" && (
+        <View
+          style={[
+            s.toast,
+            {
+              backgroundColor: isDark
+                ? "#1F2937"
+                : "#DCFCE7",
+            },
+          ]}
+        >
+          <MaterialIcons
+            name="check-circle"
+            size={20}
+            color="#16A34A"
+          />
+
+          <Text
+            style={[
+              s.toastText,
+              {
+                color: isDark
+                  ? "#FFFFFF"
+                  : "#166534",
+              },
+            ]}
+          >
+            {message}
+          </Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={true}>
         <View style={[s.container, isDesktop && s.desktopContainer]}>
@@ -115,26 +173,14 @@ export default function ProcessListScreen() {
             </View>
           )}
 
-          {!loading && !error && filtered.map((item) => (
-            <TouchableOpacity
-              key={item.procedure_id}
-              style={[s.card, { backgroundColor: bg, borderColor: border }]}
-              onPress={() => goToProcess(item)}
-            >
-              <View style={s.cardLeft}>
-                <View style={s.cardIcon}>
-                  <MaterialIcons name="description" size={18} color="#fff" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.cardTitle, { color: textPri }]}>{item.procedure_name}</Text>
-                  <Text style={[s.cardDesc, { color: textSec }]} numberOfLines={1}>
-                    {item.description}
-                  </Text>
-                </View>
-              </View>
-              <MaterialIcons name="chevron-right" size={20} color={textSec} />
-            </TouchableOpacity>
-          ))}
+          {!loading && !error && (
+            <AssignedProcedures
+              procedures={filtered}
+              limit={filtered.length}
+              showSeeAll={false}
+              onPressProcedure={goToProcess}
+            />
+          )}
 
           {!loading && !error && filtered.length === 0 && (
             <Text style={[s.empty, { color: textSec }]}>No procedures found.</Text>
@@ -162,14 +208,15 @@ export default function ProcessListScreen() {
         </View>
       </ScrollView>
 
-      {isAdmin && (
-        <TouchableOpacity
-          style={[s.fab, { backgroundColor: colors.tint }]}
-          onPress={() => setShowAddProcessModal(true)}
-          activeOpacity={0.85}
-        >
-          <MaterialIcons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
+      {isAdmin ? (
+        <FloatingButtons
+          isAdmin
+          adminIcon="add"
+          adminTooltip="Add Process"
+          onAdminPress={() => setShowAddProcessModal(true)}
+        />
+      ) : (
+        <FloatingButtons activeTab="faq" />
       )}
 
       {/* ── Office Info Modal ── */}
@@ -215,7 +262,10 @@ export default function ProcessListScreen() {
         <AddProcessModal
           visible={showAddProcessModal}
           onClose={() => setShowAddProcessModal(false)}
-          onCreated={loadProcedures}
+          onCreated={() => {
+            loadProcedures();
+            showMessage("Procedure added successfully.");
+          }}
         />
       )}
     </SafeAreaView>
@@ -226,7 +276,7 @@ const s = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { paddingHorizontal: 16, paddingBottom: 160 },
 
-  container: { width: "100%" },
+  container: { width: "100%", marginTop: 20 },
   desktopContainer: { width: "95%", maxWidth: 1600, alignSelf: "center" },
 
   sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12, marginTop: 4 },
@@ -251,4 +301,26 @@ const s = StyleSheet.create({
   modalValue: { flex: 1, fontSize: 14, lineHeight: 20 },
   modalBullet: { fontSize: 14, lineHeight: 22 },
   fab: { position: "absolute", right: 24, bottom: 40, width: 58, height: 58, borderRadius: 29, alignItems: "center", justifyContent: "center", elevation: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.25, shadowRadius: 5 },
+  toast: {
+  marginHorizontal: 16,
+  marginTop: 10,
+  padding: 14,
+  borderRadius: 12,
+  flexDirection: "row",
+  alignItems: "center",
+  gap: 8,
+  elevation: 4,
+  shadowColor: "#000",
+  shadowOpacity: 0.15,
+  shadowRadius: 5,
+  shadowOffset: {
+    width: 0,
+    height: 3,
+  },
+},
+
+toastText: {
+  fontSize: 14,
+  fontWeight: "600",
+},
 });

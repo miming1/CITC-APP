@@ -31,19 +31,21 @@ export interface Procedure {
 interface Props {
   procedures: Procedure[];
   onPressProcedure: (procedure: Procedure) => void;
-  onSeeAll: () => void;
+  onSeeAll?: () => void;
+
+  showHeader?: boolean;
+  showSeeAll?: boolean;
   limit?: number;
 }
-
-
 // =========================
 // COMPONENT
 // =========================
-
 export default function AssignedProcedures({
   procedures,
   onPressProcedure,
   onSeeAll,
+  showHeader = true,
+  showSeeAll = true,
   limit = 3,
 }: Props) {
 
@@ -62,6 +64,7 @@ export default function AssignedProcedures({
 
 
       {/* HEADER */}
+      {showHeader && (
       <View style={styles.headerRow}>
 
         <Text
@@ -76,7 +79,9 @@ export default function AssignedProcedures({
         </Text>
 
 
-        {procedures.length > limit && (
+        {showSeeAll &&
+        procedures.length > 0 &&
+        onSeeAll && (
           <TouchableOpacity
             onPress={onSeeAll}
             activeOpacity={0.7}
@@ -95,6 +100,7 @@ export default function AssignedProcedures({
         )}
 
       </View>
+      )}
 
 
 
