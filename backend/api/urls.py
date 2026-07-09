@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views, views_otp
+from .views import NotificationListView
 urlpatterns = [
     # =========================
     # AUTH
@@ -16,6 +17,7 @@ urlpatterns = [
     path('procedures/<int:pk>/', views.update_procedure),
     path('procedures/<int:pk>/delete/', views.delete_procedure),
     path('process/<int:procedure_id>/save/', views.save_full_process),
+    path('process/create/', views.create_full_process),
 
     # =========================
     # PROCESS SCREEN (service layer)
@@ -43,6 +45,7 @@ urlpatterns = [
     # PROFILE 
     # =========================
     path('auth/update-profile/', views.update_profile),
+    path("notifications/",NotificationListView.as_view(),name="notifications"),
 
     # =========================
     # VERIFY PASSWORD 

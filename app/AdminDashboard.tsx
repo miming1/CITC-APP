@@ -11,13 +11,12 @@ import {
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Header from "../components/Header";
-import SearchBar from "../components/SearchBar";
-
 import AdminQuestionCategories from "../components/AdminQuestionCategories";
 import AdminQuickActions from "../components/AdminQuickActions";
 import AdminStatistics from "../components/AdminStatistics";
 import AssignedProcedures from "../components/AssignedProcedures";
+import Header from "../components/Header";
+import SearchBar from "../components/SearchBar";
 
 import ManualCodeModal from "../components/ManualCodeModal";
 import QRCodeModal from "../components/QRCodeModal";
@@ -60,6 +59,8 @@ export default function AdminDashboard() {
 
   const [showQRModal, setShowQRModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
+
+  const [deleteMessage,setDeleteMessage] = useState("");
 
   // =========================
   // FETCH HELPERS
@@ -159,27 +160,48 @@ export default function AdminDashboard() {
   // =========================
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <View style={styles.pageContainer}>
-        <Header title="Office Dashboard" showBack={false} />
+    <SafeAreaView
+      style={[
+        styles.safe,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
+      <Header
+        title="Office Dashboard"
+        showBack={false}
+        roleId="2"
+      />
 
-        <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={true}
+      >
+        <View style={styles.pageContainer}>
+
           {/* SEARCH */}
           <SearchBar
             placeholder="Search..."
             onSearch={(query) =>
               router.push({
                 pathname: "/SearchResults",
-                params: { query, admin: "true" },
+                params: {
+                  query,
+                  admin: "true",
+                },
               })
             }
           />
+
 
           {/* QUICK ACTIONS */}
           <AdminQuickActions
             onScanQR={() => setShowQRModal(true)}
             onManualEntry={() => setShowManualModal(true)}
           />
+
 
           {/* STATISTICS */}
           <AdminStatistics
@@ -188,20 +210,29 @@ export default function AdminDashboard() {
             faqs={faqCount}
           />
 
+
           {/* PROCEDURES */}
           <AssignedProcedures
             procedures={procedures}
-            onPressProcedure={(procedure: Procedure) =>
+            onPressProcedure={(procedure) => {
               router.push({
                 pathname: "/process",
-                params: {
-                  procedure_id: procedure.procedure_id,
-                  roleId: 2,
-                  admin_mode: "true",
+                params:{
+                  id: procedure.procedure_id,
+                  roleId:"2",
                 },
-              })
-            }
+              });
+            }}
+            onSeeAll={()=>{
+              router.push({
+                pathname:"/process-list",
+                params:{
+                  roleId:"2",
+                },
+              });
+            }}
           />
+
 
           {/* FAQ CATEGORIES */}
           <AdminQuestionCategories
@@ -211,56 +242,41 @@ export default function AdminDashboard() {
               router.push({
                 pathname: "/faq",
                 params: {
-                  categoryId: category.category_id, 
+                  categoryId: String(category.category_id),
+                  roleId: "2",
+                },
+              });
+            }}
+            onSeeAll={() => {
+              router.push({
+                pathname: "/faq",
+                params: {
+                  roleId: "2",
                 },
               });
             }}
           />
 
-          {/* PREVIEW SECTION */}
-          <View style={styles.previewSection}>
-            <Text style={styles.previewTitle}>FAQ Preview by Procedure</Text>
+        </View>
+      </ScrollView>
 
-            {procedures.map((procedure) => {
-              const categories = getCategoriesByProcedure(
-                procedure.procedure_id
-              );
 
-              return (
-                <View key={procedure.procedure_id} style={styles.previewBlock}>
-                  <Text style={styles.procTitle}>
-                    {procedure.procedure_name}
-                  </Text>
+      {/* MODALS */}
 
-                  {categories.length === 0 ? (
-                    <Text style={styles.emptyText}>No posted FAQs yet</Text>
-                  ) : (
-                    categories.map((cat) => (
-                      <Text
-                        key={cat.category_id}
-                        style={styles.categoryItem}
-                      >
-                        • {cat.category_name}
-                      </Text>
-                    ))
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        </ScrollView>
+      <QRCodeModal
+        visible={showQRModal}
+        onClose={() => setShowQRModal(false)}
+      />
 
-        {/* MODALS */}
-        <QRCodeModal
-          visible={showQRModal}
-          onClose={() => setShowQRModal(false)}
-        />
+      <ManualCodeModal
+        visible={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        onSubmit={(code) => {
+          setShowManualModal(false);
+          console.log("Manual code submitted:", code);
+        }}
+      />
 
-        <ManualCodeModal
-          visible={showManualModal}
-          onClose={() => setShowManualModal(false)}
-        />
-      </View>
     </SafeAreaView>
   );
 }
@@ -270,41 +286,66 @@ export default function AdminDashboard() {
 // =========================
 
 const styles = StyleSheet.create({
+
   safe: {
     flex: 1,
   },
+
+
+  // Controls the dashboard indentation
+  // without moving the scrollbar
   pageContainer: {
+    marginTop: 20,
     width: "95%",
     maxWidth: 1600,
     alignSelf: "center",
+  },
+
+
+  scrollView: {
     flex: 1,
   },
+
+
   scroll: {
     paddingBottom: 120,
   },
+
+
   previewSection: {
     marginTop: 30,
   },
+
+
   previewTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
   },
+
+
   previewBlock: {
     marginBottom: 16,
   },
+
+
   procTitle: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 6,
   },
+
+
   categoryItem: {
     marginLeft: 12,
     fontSize: 14,
   },
+
+
   emptyText: {
     marginLeft: 12,
     fontSize: 13,
     opacity: 0.6,
   },
+
 });

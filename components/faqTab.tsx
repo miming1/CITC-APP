@@ -34,6 +34,8 @@ export default function FAQTab({
 }: Props) {
   const [editingFAQId, setEditingFAQId] = useState<number | null>(null);
 
+  const [editingFAQ, setEditingFAQ] = useState<any>(null);
+
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
 
@@ -43,6 +45,7 @@ export default function FAQTab({
 
   const handleCancel = () => {
     setEditingFAQId(null);
+    setEditingFAQ(null);
   };
 
   return (
@@ -107,7 +110,12 @@ export default function FAQTab({
               {/* ACTIONS */}
               {isAdmin && !isEditing && (
                 <View style={styles.actionRow}>
-                  <TouchableOpacity onPress={() => handleEdit(faq.faq_id)}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditingFAQId(faq.faq_id);
+                      setEditingFAQ({ ...faq });
+                    }}
+                  >
                     <Text style={{ color: colors.tint }}>Edit</Text>
                   </TouchableOpacity>
 
@@ -121,11 +129,12 @@ export default function FAQTab({
               {isEditing ? (
                 <View style={styles.editCard}>
                   <TextInput
-                    value={faq.question}
+                    value={editingFAQ?.question ?? ""}
                     onChangeText={(text) => {
-                      const updated = [...faqs];
-                      updated[index].question = text;
-                      setFaqs(updated);
+                      setEditingFAQ({
+                        ...editingFAQ,
+                        question: text,
+                      });
                     }}
                     multiline
                     placeholder="Question"
@@ -140,11 +149,12 @@ export default function FAQTab({
                   />
 
                   <TextInput
-                    value={faq.answer}
+                    value={editingFAQ?.answer ?? ""}
                     onChangeText={(text) => {
-                      const updated = [...faqs];
-                      updated[index].answer = text;
-                      setFaqs(updated);
+                      setEditingFAQ({
+                        ...editingFAQ,
+                        answer: text,
+                      });
                     }}
                     multiline
                     placeholder="Answer"
@@ -169,8 +179,10 @@ export default function FAQTab({
                     <TouchableOpacity
                       style={styles.saveBtn}
                       onPress={() => {
-                        onSaveFAQInline(faq);
+                        onSaveFAQInline(editingFAQ);
+
                         setEditingFAQId(null);
+                        setEditingFAQ(null);
                       }}
                     >
                       <Text style={{ color: "white" }}>Save</Text>
@@ -181,7 +193,6 @@ export default function FAQTab({
                 <FAQCard
                   question={faq.question}
                   answer={faq.answer}
-                  isAdmin={false}
                 />
               )}
             </View>

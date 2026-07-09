@@ -1,7 +1,10 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
-  Alert,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,255 +15,524 @@ import {
 
 import { Colors, Fonts } from "@/constants/theme";
 
+
 type FAQ = {
   question: string;
   answer?: string;
 };
 
+
 type FAQModalProps = {
   visible: boolean;
   onClose: () => void;
-
   onSave: (procedureId: number, data: FAQ) => void;
-
   initialData?: FAQ | null;
-  isAdmin?: boolean;
   procedureId: number;
+
+  onRequestAuth?: (data: FAQ) => void;
 };
+
+
 
 export default function FAQModal({
   visible,
   onClose,
   onSave,
   initialData,
-  isAdmin = false,
   procedureId,
+  onRequestAuth
 }: FAQModalProps) {
-  const [question, setQuestion] = useState<string>("");
-  const [answer, setAnswer] = useState<string>("");
+
 
   const colorScheme = useColorScheme() ?? "light";
-  const theme = Colors[colorScheme];
+  const colors = Colors[colorScheme];
 
-  useEffect(() => {
-    if (initialData) {
-      setQuestion(initialData.question || "");
-      setAnswer(initialData.answer || "");
-    } else {
+
+  const [question,setQuestion] = useState("");
+  const [answer,setAnswer] = useState("");
+
+
+
+  useEffect(()=>{
+
+    if(initialData){
+
+      setQuestion(initialData.question ?? "");
+      setAnswer(initialData.answer ?? "");
+
+    }
+    else{
+
       setQuestion("");
       setAnswer("");
+
     }
-  }, [initialData]);
+
+  },[initialData,visible]);
 
   const handleSave = () => {
-    if (!question.trim()) {
-      Alert.alert("Missing Question", "Please enter a question.");
-      return;
-    }
+  if (!question.trim())
+    return;
 
-    onSave(procedureId, {
-      question,
-      answer: isAdmin ? answer : "",
-    });
-
-    setQuestion("");
-    setAnswer("");
+  const faqData = {
+    question: question.trim(),
+    answer: answer.trim(),
   };
 
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View style={styles.overlay}>
-        <View
-          style={[
-            styles.modalContainer,
-            {
-              backgroundColor: theme.background,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          {/* TITLE */}
-          <Text
-            style={[
-              styles.title,
-              {
-                color: theme.text,
-                fontFamily: Fonts.rounded,
-              },
-            ]}
-          >
-            {isAdmin ? "Manage FAQ" : "Send a Question"}
-          </Text>
+  if (onRequestAuth) {
+    onRequestAuth(faqData);
+    return;
+  }
 
-          <Text
-            style={[
-              styles.subtitle,
-              {
-                color: theme.icon,
-                fontFamily: Fonts.sans,
-              },
-            ]}
-          >
-            {isAdmin
-              ? "Create or update frequently asked questions."
-              : "Submit your concern or inquiry."}
-          </Text>
-
-          {/* QUESTION */}
-          <View style={styles.section}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Question
-            </Text>
-
-            <TextInput
-              value={question}
-              onChangeText={setQuestion}
-              placeholder="Type your question..."
-              placeholderTextColor={theme.icon}
-              multiline
-              style={[
-                styles.textArea,
-                {
-                  borderColor: theme.border,
-                  color: theme.text,
-                  backgroundColor:
-                    colorScheme === "dark"
-                      ? "rgba(255,255,255,0.05)"
-                      : "#F8F8F8",
-                },
-              ]}
-            />
-          </View>
-
-          {/* ANSWER */}
-          {isAdmin && (
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: theme.text }]}>
-                Answer
-              </Text>
-
-              <TextInput
-                value={answer}
-                onChangeText={setAnswer}
-                placeholder="Type the answer..."
-                placeholderTextColor={theme.icon}
-                multiline
-                style={[
-                  styles.textArea,
-                  {
-                    borderColor: theme.border,
-                    color: theme.text,
-                    backgroundColor:
-                      colorScheme === "dark"
-                        ? "rgba(255,255,255,0.05)"
-                        : "#F8F8F8",
-                  },
-                ]}
-              />
-            </View>
-          )}
-
-          {/* BUTTONS */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[
-                styles.cancelButton,
-                { borderColor: theme.border },
-              ]}
-              onPress={onClose}
-            >
-              <Text style={[styles.cancelText, { color: theme.text }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                { backgroundColor: theme.tint },
-              ]}
-              onPress={handleSave}
-            >
-              <Text style={styles.saveText}>
-                {isAdmin ? "Save FAQ" : "Submit"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
+  onSave(
+    procedureId,
+    faqData
   );
+
+  setQuestion("");
+  setAnswer("");
+
+};
+
+  return (
+
+    <Modal
+
+      visible={visible}
+
+      transparent
+
+      animationType="fade"
+
+      onRequestClose={onClose}
+
+    >
+
+
+      <KeyboardAvoidingView
+
+        style={styles.overlay}
+
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
+
+      >
+
+
+        <View
+
+          style={[
+            styles.container,
+            {
+              backgroundColor:colors.background,
+              borderColor:colors.border,
+            }
+          ]}
+
+        >
+
+
+
+          {/* HEADER */}
+
+          <View style={styles.header}>
+
+
+            <View
+
+              style={[
+                styles.iconBox,
+                {
+                  backgroundColor:
+                    colorScheme==="dark"
+                    ? "#3A2C12"
+                    : "#FEF3C7"
+                }
+              ]}
+
+            >
+
+              <MaterialIcons
+
+                name="help-outline"
+
+                size={28}
+
+                color={colors.tint2}
+
+              />
+
+
+            </View>
+
+
+
+
+            <View style={styles.headerText}>
+
+
+              <Text
+
+                style={[
+                  styles.title,
+                  {
+                    color:colors.text,
+                    fontFamily:Fonts.rounded,
+                  }
+                ]}
+
+              >
+
+                {initialData
+                  ? "Edit FAQ"
+                  : "Add FAQ"
+                }
+
+              </Text>
+
+
+
+              <Text
+
+                style={[
+                  styles.subtitle,
+                  {
+                    color:colors.icon
+                  }
+                ]}
+
+              >
+
+                Add frequently asked questions for this category.
+
+              </Text>
+
+
+            </View>
+
+
+
+
+            <TouchableOpacity
+
+              onPress={onClose}
+
+            >
+
+              <MaterialIcons
+
+                name="close"
+
+                size={24}
+
+                color={colors.icon}
+
+              />
+
+            </TouchableOpacity>
+
+
+
+          </View>
+
+
+
+
+
+          <ScrollView
+
+            showsVerticalScrollIndicator={false}
+
+          >
+
+
+
+
+          <Text
+
+            style={[
+              styles.label,
+              {
+                color:colors.text
+              }
+            ]}
+
+          >
+
+            Question
+
+          </Text>
+
+
+
+          <TextInput
+
+            value={question}
+
+            onChangeText={setQuestion}
+
+            placeholder="Enter question..."
+
+            placeholderTextColor={colors.icon}
+
+            multiline
+
+            style={[
+              styles.input,
+              {
+                color:colors.text,
+
+                borderColor:colors.border,
+
+                backgroundColor:
+                  colorScheme==="dark"
+                  ? "rgba(255,255,255,0.05)"
+                  : "#F8FAFC"
+              }
+            ]}
+
+          />
+
+
+
+
+
+          <Text
+
+            style={[
+              styles.label,
+              {
+                color:colors.text
+              }
+            ]}
+
+          >
+
+            Answer
+
+          </Text>
+
+
+
+
+          <TextInput
+
+            value={answer}
+
+            onChangeText={setAnswer}
+
+            placeholder="Enter answer..."
+
+            placeholderTextColor={colors.icon}
+
+            multiline
+
+            style={[
+              styles.input,
+              {
+                color:colors.text,
+
+                borderColor:colors.border,
+
+                backgroundColor:
+                  colorScheme==="dark"
+                  ? "rgba(255,255,255,0.05)"
+                  : "#F8FAFC"
+              }
+            ]}
+
+          />
+
+
+
+
+          </ScrollView>
+
+
+
+
+
+          <View style={styles.actions}>
+
+
+            <TouchableOpacity
+
+              style={[
+                styles.cancel,
+                {
+                  borderColor:colors.border
+                }
+              ]}
+
+              onPress={onClose}
+
+            >
+
+              <Text
+
+                style={{
+                  color:colors.text,
+                  fontWeight:"600"
+                }}
+
+              >
+
+                Cancel
+
+              </Text>
+
+
+            </TouchableOpacity>
+
+
+
+
+
+            <TouchableOpacity
+
+              style={[
+                styles.save,
+                {
+                  backgroundColor:colors.tint
+                }
+              ]}
+
+              onPress={handleSave}
+
+            >
+
+              <Text style={styles.saveText}>
+
+                Save FAQ
+
+              </Text>
+
+            </TouchableOpacity>
+
+
+
+          </View>
+
+
+
+
+        </View>
+
+
+      </KeyboardAvoidingView>
+
+
+    </Modal>
+
+  );
+
 }
 
+
+
+
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
+
+  overlay:{
+    flex:1,
+    backgroundColor:"rgba(0,0,0,0.45)",
+    justifyContent:"center",
+    alignItems:"center",
+    padding:24,
   },
-  modalContainer: {
-    width: "100%",
-    borderRadius: 24,
-    borderWidth: 1,
-    padding: 24,
+
+
+  container:{
+    width:"100%",
+    maxWidth:500,
+    borderRadius:24,
+    borderWidth:1,
+    padding:24,
+    elevation:12,
   },
-  title: {
-    fontSize: 22,
-    marginBottom: 6,
+
+
+  header:{
+    flexDirection:"row",
+    alignItems:"center",
+    marginBottom:22,
   },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 24,
+
+
+  iconBox:{
+    width:54,
+    height:54,
+    borderRadius:16,
+    justifyContent:"center",
+    alignItems:"center",
+    marginRight:14,
   },
-  section: {
-    marginBottom: 18,
+
+
+  headerText:{
+    flex:1,
   },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 8,
+
+
+  title:{
+    fontSize:22,
+    fontWeight:"700",
   },
-  textArea: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 120,
-    textAlignVertical: "top",
-    fontSize: 15,
+
+
+  subtitle:{
+    fontSize:13,
+    marginTop:3,
   },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 6,
+
+
+  label:{
+    fontSize:15,
+    fontWeight:"700",
+    marginBottom:8,
+    marginTop:12,
   },
-  cancelButton: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+
+
+  input:{
+    borderWidth:1,
+    borderRadius:16,
+    padding:14,
+    minHeight:100,
+    fontSize:15,
+    textAlignVertical:"top",
   },
-  saveButton: {
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+
+
+  actions:{
+    flexDirection:"row",
+    justifyContent:"flex-end",
+    gap:12,
+    marginTop:20,
   },
-  cancelText: {
-    fontSize: 15,
-    fontWeight: "600",
+
+
+  cancel:{
+    borderWidth:1,
+    borderRadius:14,
+    paddingHorizontal:18,
+    paddingVertical:12,
   },
-  saveText: {
-    color: "#111",
-    fontSize: 15,
-    fontWeight: "600",
+
+
+  save:{
+    borderRadius:14,
+    paddingHorizontal:20,
+    paddingVertical:12,
   },
+
+
+  saveText:{
+    color:"#fff",
+    fontWeight:"700",
+  },
+
 });

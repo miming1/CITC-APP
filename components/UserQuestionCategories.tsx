@@ -1,6 +1,4 @@
-import {
-  MaterialIcons,
-} from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import {
   StyleSheet,
@@ -17,10 +15,10 @@ import { Colors } from "../constants/theme";
 // TYPES
 // =========================
 
-export interface Procedure {
-  procedure_id: number;
-  procedure_name: string;
-  description?: string;
+export interface FAQCategory {
+  id: string;
+  category_name: string;
+  procedure_id: string;
 }
 
 
@@ -29,34 +27,28 @@ export interface Procedure {
 // =========================
 
 interface Props {
-  procedures: Procedure[];
-  onPressProcedure: (procedure: Procedure) => void;
+  categories: FAQCategory[];
+  onPressCategory: (category: FAQCategory) => void;
   onSeeAll?: () => void;
-
-  showHeader?: boolean;
-  showSeeAll?: boolean;
-  limit?: number;
 }
+
+
 // =========================
 // COMPONENT
 // =========================
-export default function AssignedProcedures({
-  procedures,
-  onPressProcedure,
+
+export default function UserQuestionCategories({
+  categories,
+  onPressCategory,
   onSeeAll,
-  showHeader = true,
-  showSeeAll = true,
-  limit = 3,
 }: Props) {
 
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
 
 
-  const displayedProcedures = procedures.slice(
-    0,
-    limit
-  );
+  const visibleCategories = categories.slice(0, 3);
+
 
 
   return (
@@ -64,8 +56,8 @@ export default function AssignedProcedures({
 
 
       {/* HEADER */}
-      {showHeader && (
-      <View style={styles.headerRow}>
+
+      <View style={styles.header}>
 
         <Text
           style={[
@@ -75,44 +67,49 @@ export default function AssignedProcedures({
             },
           ]}
         >
-          Assigned Procedures
+          Question Categories
         </Text>
 
 
-        {showSeeAll &&
-        procedures.length > 0 &&
-        onSeeAll && (
+        {categories.length > 0 && onSeeAll && (
+
           <TouchableOpacity
             onPress={onSeeAll}
             activeOpacity={0.7}
           >
+
             <Text
               style={[
                 styles.seeAll,
                 {
-                  color: colors.tint,
+                  color: colors.tint2,
                 },
               ]}
             >
               See All
             </Text>
+
           </TouchableOpacity>
+
         )}
 
       </View>
-      )}
 
 
 
       {/* EMPTY STATE */}
-      {procedures.length === 0 ? (
+
+      {categories.length === 0 ? (
 
         <View
           style={[
             styles.emptyCard,
             {
-              backgroundColor: colors.background,
-              borderColor: colors.border,
+              backgroundColor:
+                colors.background,
+
+              borderColor:
+                colors.border,
             },
           ]}
         >
@@ -125,7 +122,7 @@ export default function AssignedProcedures({
               },
             ]}
           >
-            No procedures assigned to your office.
+            No FAQ categories available yet.
           </Text>
 
         </View>
@@ -133,76 +130,75 @@ export default function AssignedProcedures({
 
       ) : (
 
-
-        displayedProcedures.map((procedure) => (
+        visibleCategories.map((category) => (
 
           <TouchableOpacity
-            key={procedure.procedure_id}
+            key={category.id}
             activeOpacity={0.85}
-
+            onPress={() =>
+              onPressCategory(category)
+            }
             style={[
               styles.card,
               {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
+                backgroundColor:
+                  colors.background,
+
+                borderColor:
+                  colors.border,
               },
             ]}
-
-            onPress={() =>
-              onPressProcedure(procedure)
-            }
           >
 
 
-            {/* COLOR ACCENT */}
+            {/* YELLOW ACCENT */}
+
             <View
               style={[
                 styles.accentBar,
                 {
-                  backgroundColor: colors.tint,
+                  backgroundColor:
+                    "#EBA937",
                 },
               ]}
             />
 
 
 
-            {/* CONTENT */}
             <View style={styles.content}>
 
               <Text
                 style={[
-                  styles.title,
+                  styles.categoryTitle,
                   {
                     color: colors.text,
                   },
                 ]}
+                numberOfLines={1}
               >
-                {procedure.procedure_name}
+                {category.category_name}
               </Text>
 
 
               <Text
                 style={[
-                  styles.description,
+                  styles.subtitle,
                   {
                     color: colors.icon,
                   },
                 ]}
-                numberOfLines={2}
               >
-                {procedure.description ??
-                  "No description available."}
+                View FAQs in this category
               </Text>
 
             </View>
 
 
 
-            {/* ARROW */}
             <MaterialIcons
               name="chevron-right"
               size={30}
-              color={colors.tint}
+              color="#EBA937"
             />
 
 
@@ -228,13 +224,14 @@ const styles = StyleSheet.create({
   container: {
     marginTop: 30,
     paddingHorizontal: 16,
+    marginBottom: 40,
   },
 
 
-  headerRow: {
+  header: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
 
     marginBottom: 16,
   },
@@ -259,8 +256,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
 
-    padding: 18,
-    marginBottom: 14,
+    padding: 16,
+    marginBottom: 12,
 
     overflow: "hidden",
 
@@ -294,26 +291,24 @@ const styles = StyleSheet.create({
   },
 
 
-  title: {
-    fontSize: 16,
+  categoryTitle: {
+    fontSize: 15,
     fontWeight: "700",
 
-    marginBottom: 6,
+    marginBottom: 4,
   },
 
 
-  description: {
+  subtitle: {
     fontSize: 13,
-    lineHeight: 20,
   },
 
 
   emptyCard: {
     borderWidth: 1,
-
     borderRadius: 14,
 
-    padding: 24,
+    padding: 22,
 
     alignItems: "center",
   },
@@ -321,7 +316,6 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 14,
-
     textAlign: "center",
   },
 

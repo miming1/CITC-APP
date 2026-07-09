@@ -1,28 +1,35 @@
 import {
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  MaterialIcons,
+} from "@expo/vector-icons";
+
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 
 import { Colors } from "../constants/theme";
 
+
 // =========================
-// TYPES (MATCH BACKEND)
+// TYPES
 // =========================
 
 export interface FAQCategory {
   category_id: number;
   category_name: string;
-  procedure: number | null; // from backend: "procedure"
+  procedure: number | null;
   faq_count?: number;
 }
+
 
 export interface Procedure {
   procedure_id: number;
   procedure_name: string;
 }
+
 
 // =========================
 // PROPS
@@ -32,7 +39,9 @@ interface Props {
   procedures: Procedure[];
   categories: FAQCategory[];
   onPressCategory: (category: FAQCategory) => void;
+  onSeeAll?: () => void;
 }
+
 
 // =========================
 // COMPONENT
@@ -42,25 +51,62 @@ export default function AdminQuestionCategories({
   procedures,
   categories,
   onPressCategory,
+  onSeeAll,
 }: Props) {
+
   const colorScheme = useColorScheme() ?? "light";
   const colors = Colors[colorScheme];
 
+
+  // Limit dashboard preview
+  const visibleCategories = categories.slice(0, 3);
+
+
   return (
     <View style={styles.container}>
-      <Text
-        style={[
-          styles.heading,
-          { color: colors.text },
-        ]}
-      >
-        Question Categories
-      </Text>
 
-      {/* =========================
-          EMPTY GLOBAL STATE
-          ========================= */}
+
+      {/* HEADER */}
+      <View style={styles.header}>
+
+        <Text
+          style={[
+            styles.heading,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          Question Categories
+        </Text>
+
+
+        {categories.length > 0 && onSeeAll && (
+          <TouchableOpacity
+            onPress={onSeeAll}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.seeAll,
+                {
+                  color: colors.tint2,
+                },
+              ]}
+            >
+              See All
+            </Text>
+          </TouchableOpacity>
+        )}
+
+      </View>
+
+
+
+      {/* EMPTY STATE */}
+
       {categories.length === 0 ? (
+
         <View
           style={[
             styles.emptyCard,
@@ -70,100 +116,153 @@ export default function AdminQuestionCategories({
             },
           ]}
         >
-          <Text style={[styles.emptyText, { color: colors.icon }]}>
+          <Text
+            style={[
+              styles.emptyText,
+              {
+                color: colors.icon,
+              },
+            ]}
+          >
             No FAQ categories available yet.
           </Text>
+
         </View>
+
+
       ) : (
-        <>
-          {/* =========================
-              GROUP BY PROCEDURE
-              ========================= */}
-          {procedures.map((procedure) => {
-            const filtered = categories.filter(
-              (cat) => cat.procedure === procedure.procedure_id
-            );
 
-            return (
-              <View key={procedure.procedure_id}>
+        visibleCategories.map((category) => (
 
-                {/* EMPTY STATE PER PROCEDURE */}
-                {filtered.length === 0 ? (
-                  <View style={styles.emptyInline}>
-                    <Text
-                      style={[
-                        styles.emptyText,
-                        { color: colors.icon },
-                      ]}
-                    >
-                      No FAQs posted yet for this procedure.
-                    </Text>
-                  </View>
-                ) : (
-                  filtered.map((category) => (
-                    <TouchableOpacity
-                      key={category.category_id}
-                      activeOpacity={0.85}
-                      style={[
-                        styles.card,
-                        {
-                          backgroundColor: colors.background,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                      onPress={() => onPressCategory(category)}
-                    >
-                      <Text
-                        style={[
-                          styles.title,
-                          { color: colors.text },
-                        ]}
-                      >
-                        {category.category_name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </View>
-            );
-          })}
-        </>
+          <TouchableOpacity
+            key={category.category_id}
+            activeOpacity={0.85}
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() =>
+              onPressCategory(category)
+            }
+          >
+
+
+            {/* YELLOW ACCENT */}
+
+            <View
+              style={[
+                styles.accentBar,
+                {
+                  backgroundColor: "#EBA937",
+                },
+              ]}
+            />
+
+
+
+            {/* CONTENT */}
+
+            <View style={styles.content}>
+
+              <Text
+                style={[
+                  styles.title,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                {category.category_name}
+              </Text>
+
+
+              <Text
+                style={[
+                  styles.subtitle,
+                  {
+                    color: colors.icon,
+                  },
+                ]}
+              >
+                View FAQs in this category
+              </Text>
+
+
+            </View>
+
+
+
+            {/* ARROW */}
+
+            <MaterialIcons
+              name="chevron-right"
+              size={30}
+              color="#EBA937"
+            />
+
+
+          </TouchableOpacity>
+
+        ))
+
       )}
+
     </View>
   );
 }
+
+
 
 // =========================
 // STYLES
 // =========================
 
 const styles = StyleSheet.create({
+
   container: {
     marginTop: 30,
     paddingHorizontal: 16,
     marginBottom: 140,
   },
 
-  heading: {
-    fontSize: 20,
-    fontWeight: "700",
+
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
 
-  procedureTitle: {
-    fontSize: 16,
+
+  heading: {
+    fontSize: 20,
     fontWeight: "700",
-    marginTop: 18,
-    marginBottom: 10,
   },
 
+
+  seeAll: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+
   card: {
-    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
+
+    padding: 18,
     marginBottom: 12,
 
+    overflow: "hidden",
+
     elevation: 2,
+
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowOffset: {
@@ -173,10 +272,33 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
 
+
+  accentBar: {
+    width: 5,
+    height: "100%",
+    borderRadius: 10,
+    marginRight: 14,
+  },
+
+
+  content: {
+    flex: 1,
+    paddingRight: 10,
+  },
+
+
   title: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
+    marginBottom: 4,
   },
+
+
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+
 
   emptyCard: {
     borderWidth: 1,
@@ -185,13 +307,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  emptyInline: {
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-  },
 
   emptyText: {
     fontSize: 14,
     textAlign: "center",
   },
+
 });

@@ -4,11 +4,9 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TouchableOpacity,
   useColorScheme,
   useWindowDimensions,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -17,6 +15,7 @@ import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../constants/api";
 import { Colors } from "../constants/theme";
 
+import UserQuestionCategories from "@/components/UserQuestionCategories";
 import FloatingButtons from "../components/FloatingButtons";
 import Header from "../components/Header";
 import PopularProcesses from "../components/PopularProcesses";
@@ -78,7 +77,7 @@ export default function UserDashboard() {
     if (!res.ok) return;
 
     if (!Array.isArray(data)) {
-      setProcesses([]); // 👈 IMPORTANT SAFE FALLBACK
+      setProcesses([]); 
       return;
     }
 
@@ -119,12 +118,12 @@ export default function UserDashboard() {
     console.log("FAQ:", res.status, data);
 
     if (!res.ok) {
-      setFaqCategories([]); // 👈 IMPORTANT
+      setFaqCategories([]);
       return;
     }
 
     if (!Array.isArray(data)) {
-      setFaqCategories([]); // 👈 THIS FIXES YOUR CRASH
+      setFaqCategories([]); 
       return;
     }
 
@@ -137,7 +136,7 @@ export default function UserDashboard() {
     );
   } catch (err) {
     console.log("fetchFaqCategories error:", err);
-    setFaqCategories([]); // 👈 CRASH PREVENTION
+    setFaqCategories([]); 
   }
 };
 
@@ -161,12 +160,12 @@ export default function UserDashboard() {
   // =========================
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
-      <Header title="Welcome!" showBack={false} />
+      <Header title="Welcome!" showBack={false} roleId={1} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
       >
         <View style={[styles.container, isDesktop && styles.desktopContainer]}>
           {/* SEARCH */}
@@ -183,58 +182,52 @@ export default function UserDashboard() {
           {/* POPULAR */}
           <PopularProcesses
             processes={processes}
-            onPressProcess={(process: Process) =>
+            onPressProcess={(process) => {
               router.push({
                 pathname: "/process",
                 params: {
                   id: process.id,
                   roleId: 1,
                 },
-              })
-            }
+              });
+            }}
+            onSeeAll={() => {
+              router.push({
+                pathname: "/process-list",
+                params: {
+                  roleId: "1",
+                },
+              });
+            }}
           />
 
           {/* QUESTION CATEGORIES */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: textPri }]}>
-              Question Categories
-            </Text>
-
-            {faqCategories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() =>
-                  router.push({
-                    pathname: "/faq",
-                    params: {
-                      categoryId: category.id,
-                      procedureId: category.procedure_id,
-                    },
-                  })
-                }
-              >
-                <Text
-                  style={[styles.categoryTitle, { color: textPri }]}
-                >
-                  {category.category_name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <UserQuestionCategories
+            categories={faqCategories}
+            onPressCategory={(category) =>
+              router.push({
+                pathname: "/faq",
+                params: {
+                  categoryId: category.id,
+                  procedureId: category.procedure_id,
+                  roleId: "1",
+                },
+              })
+            }
+            onSeeAll={() => {
+              router.push({
+                pathname: "/faq",
+                params: {
+                  roleId: "1",
+                },
+              });
+            }}
+          />
         </View>
       </ScrollView>
 
       <FloatingButtons
         activeTab="faq"
-        onTrackPress={() => router.push("/track-details")}
-        onFAQPress={() => router.push("/faq")}
       />
     </SafeAreaView>
   );
@@ -251,6 +244,7 @@ const styles = StyleSheet.create({
 
   container: {
     width: "100%",
+    marginTop: 20,
   },
 
   desktopContainer: {
@@ -266,10 +260,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
-  categoryTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
 
   scrollView: {
     flex: 1,
@@ -277,17 +267,5 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     paddingBottom: 160,
-  },
-
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 16,
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 16,
-    marginTop: 20,
   },
 });

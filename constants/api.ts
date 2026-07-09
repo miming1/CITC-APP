@@ -5,12 +5,15 @@ export const ENDPOINTS = {
   login:      `${API_BASE_URL}/auth/login/`,
   me:         `${API_BASE_URL}/auth/me/`,
   procedures: `${API_BASE_URL}/procedures/`,
+  createProcess: `${API_BASE_URL}/process/create/`,
   faqCategories: `${API_BASE_URL}/faq-categories/`,
   faqs:       `${API_BASE_URL}/faqs/`,
   submitReq:  `${API_BASE_URL}/requests/`,
   trackReq:   `${API_BASE_URL}/requests/track/`,
   updateProfile: `${API_BASE_URL}/auth/update-profile/`,
   verifyPassword: `${API_BASE_URL}/verify-password/`,
+  notifications: `${API_BASE_URL}/notifications/`,
+  
 
   // ── OTP SECURE ENDPOINTS ───────────────────
   sendSignupOtp:   `${API_BASE_URL}/auth/send-signup-otp/`,
