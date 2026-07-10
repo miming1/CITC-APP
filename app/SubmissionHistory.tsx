@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Universal Components/Header';
+import { Colors } from '../constants/theme';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,15 +44,7 @@ const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 
 
 export default function SubmissionHistory() {
   const colorScheme = useColorScheme() ?? 'light';
-  const isDark      = colorScheme === 'dark';
-
-  // Theme shortcuts
-  const bg        = isDark ? '#151718' : '#F5F3FB';
-  const cardBg    = isDark ? '#1E1E2E' : '#fff';
-  const textPri   = isDark ? '#ECEDEE' : '#1E1340';
-  const textSec   = isDark ? '#9BA1A6' : '#6B6485';
-  const accent    = '#9B7FD4';
-  const accentDark = '#6B4FA8';
+  const theme       = Colors[colorScheme];
 
   const [search, setSearch]               = useState('');
   const [activeFilter, setActiveFilter]   = useState<FilterOption>('This Month');
@@ -118,59 +111,69 @@ export default function SubmissionHistory() {
     : activeFilter;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
 
       <Header title="Submission History" />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Search Bar — matches reusable SearchBar component ── */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchIconWrap}>
-            <Ionicons name="search" size={18} color={isDark ? '#93C5FD' : '#3A2EA2'} />
+        {/* ── Search Bar — shape matches reusable SearchBar component ── */}
+        <View style={[styles.searchRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <View style={[styles.searchIconWrap, { backgroundColor: theme.border }]}>
+            <Ionicons name="search" size={20} color={theme.tint} />
           </View>
           <TextInput
             style={[
               styles.searchInput,
+              { color: theme.text },
               Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
             ]}
             placeholder="Search by name, ref no, or date…"
-            placeholderTextColor="#8883A5"
+            placeholderTextColor={theme.icon}
             value={search}
             onChangeText={setSearch}
           />
+          {search.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearch('')}
+              activeOpacity={0.7}
+              style={styles.searchClearBtn}
+            >
+              <Ionicons name="close-circle" size={22} color={theme.icon} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ── Filter Row ── */}
         <View style={styles.filterRow}>
           <TouchableOpacity
-            style={[styles.filterBtn, { backgroundColor: isDark ? '#2A2040' : '#EDE8F7' }]}
+            style={[styles.filterBtn, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}
             onPress={() => setDropdownOpen((prev) => !prev)}
           >
-            <Text style={[styles.filterBtnText, { color: accentDark }]}>Filter by Date</Text>
-            <Text style={[styles.filterBtnText, { color: accentDark }]}>{dropdownOpen ? '∧' : '∨'}</Text>
+            <Text style={[styles.filterBtnText, { color: theme.tint }]}>Filter by Date</Text>
+            <Text style={[styles.filterBtnText, { color: theme.tint }]}>{dropdownOpen ? '∧' : '∨'}</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Active Filter Label ── */}
-        <Text style={[styles.filterLabel, { color: textSec }]}>
-          Filtered by: <Text style={[styles.filterLabelBold, { color: accentDark }]}>{filterLabel}</Text>
+        <Text style={[styles.filterLabel, { color: theme.icon }]}>
+          Filtered by: <Text style={[styles.filterLabelBold, { color: theme.tint2 }]}>{filterLabel}</Text>
         </Text>
 
         {/* ── Table Header ── */}
         <View style={styles.tableHeader}>
-          <Text style={[styles.tableHeaderText, { flex: 2, color: textSec }]}>Form Name</Text>
-          <Text style={[styles.tableHeaderText, { flex: 2, color: textSec }]}>Ref No.</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1.5, color: textSec }]}>Date</Text>
-          <Text style={[styles.tableHeaderText, styles.statusHeaderText, { flex: 1.5, color: textSec }]}>Status</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Form Name</Text>
+          <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Ref No.</Text>
+          <Text style={[styles.tableHeaderText, { flex: 1.5, color: theme.icon }]}>Date</Text>
+          <Text style={[styles.tableHeaderText, styles.statusHeaderText, { flex: 1.5, color: theme.icon }]}>Status</Text>
         </View>
 
         {/* ── Table Rows ── */}
         {filtered.map((item) => (
-          <View key={item.id} style={[styles.tableRow, { backgroundColor: cardBg }]}>
-            <Text style={[styles.tableCell, { flex: 2, color: textPri }]}>{item.formName}</Text>
-            <Text style={[styles.tableCell, { flex: 2, color: textPri }]}>{item.refNo}</Text>
-            <Text style={[styles.tableCell, { flex: 1.5, color: textPri }]}>{item.date}</Text>
+          <View key={item.id} style={[styles.tableRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
+            <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.formName}</Text>
+            <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.refNo}</Text>
+            <Text style={[styles.tableCell, { flex: 1.5, color: theme.text }]}>{item.date}</Text>
             <View style={styles.statusCell}>
               <View style={[
                 styles.statusBadge,
@@ -190,7 +193,7 @@ export default function SubmissionHistory() {
         ))}
 
         {filtered.length === 0 && (
-          <Text style={[styles.empty, { color: textSec }]}>No submissions found.</Text>
+          <Text style={[styles.empty, { color: theme.icon }]}>No submissions found.</Text>
         )}
 
       </ScrollView>
@@ -198,7 +201,7 @@ export default function SubmissionHistory() {
       {/* ── Dropdown Overlay ── */}
       {dropdownOpen && (
         <Pressable style={styles.dropdownOverlay} onPress={() => setDropdownOpen(false)}>
-          <View style={[styles.dropdown, { backgroundColor: cardBg, borderColor: isDark ? '#2A2040' : '#E2DBF0' }]}>
+          <View style={[styles.dropdown, { backgroundColor: theme.background, borderColor: theme.border }]}>
             {FILTER_OPTIONS.map((opt) => (
               <TouchableOpacity
                 key={opt}
@@ -207,8 +210,8 @@ export default function SubmissionHistory() {
               >
                 <Text style={[
                   styles.dropdownText,
-                  { color: textSec },
-                  activeFilter === opt && { color: accentDark, fontWeight: '700' },
+                  { color: theme.icon },
+                  activeFilter === opt && { color: theme.tint2, fontWeight: '700' },
                 ]}>
                   {opt}
                 </Text>
@@ -230,34 +233,34 @@ export default function SubmissionHistory() {
             (or anywhere on the card) no longer dismisses the modal. */}
         <Pressable style={styles.modalOverlay} onPress={() => setCustomDateModal(false)}>
           <Pressable
-            style={[styles.modalCard, { backgroundColor: isDark ? '#1E1E2E' : '#fff' }]}
+            style={[styles.modalCard, { backgroundColor: theme.background }]}
             onPress={(e) => e.stopPropagation()}
           >
-            <Text style={[styles.modalTitle, { color: accent }]}>Enter Custom Date</Text>
-            <View style={[styles.modalDivider, { backgroundColor: isDark ? '#2A2040' : '#E2DBF0' }]} />
+            <Text style={[styles.modalTitle, { color: theme.tint }]}>Enter Custom Date</Text>
+            <View style={[styles.modalDivider, { backgroundColor: theme.border }]} />
             <View style={styles.dateRow}>
               <TextInput
-                style={[styles.dateInput, { color: accent, borderBottomColor: accent }]}
-                placeholder="YYYY" placeholderTextColor="#B0A8C8"
+                style={[styles.dateInput, { flex: 1.3, color: theme.tint, borderBottomColor: theme.tint }]}
+                placeholder="YYYY" placeholderTextColor={theme.icon}
                 value={customYear} onChangeText={setCustomYear}
                 keyboardType="numeric" maxLength={4}
               />
-              <Text style={[styles.dateSep, { color: accent }]}>/</Text>
+              <Text style={[styles.dateSep, { color: theme.tint }]}>/</Text>
               <TextInput
-                style={[styles.dateInput, { color: accent, borderBottomColor: accent }]}
-                placeholder="MM" placeholderTextColor="#B0A8C8"
+                style={[styles.dateInput, { flex: 1, color: theme.tint, borderBottomColor: theme.tint }]}
+                placeholder="MM" placeholderTextColor={theme.icon}
                 value={customMonth} onChangeText={setCustomMonth}
                 keyboardType="numeric" maxLength={2}
               />
-              <Text style={[styles.dateSep, { color: accent }]}>/</Text>
+              <Text style={[styles.dateSep, { color: theme.tint }]}>/</Text>
               <TextInput
-                style={[styles.dateInput, { color: accent, borderBottomColor: accent }]}
-                placeholder="DD" placeholderTextColor="#B0A8C8"
+                style={[styles.dateInput, { flex: 1, color: theme.tint, borderBottomColor: theme.tint }]}
+                placeholder="DD" placeholderTextColor={theme.icon}
                 value={customDay} onChangeText={setCustomDay}
                 keyboardType="numeric" maxLength={2}
               />
             </View>
-            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: accent }]} onPress={applyCustomDate}>
+            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.tint }]} onPress={applyCustomDate}>
               <Text style={styles.modalBtnText}>Apply</Text>
             </TouchableOpacity>
           </Pressable>
@@ -265,8 +268,8 @@ export default function SubmissionHistory() {
       </Modal>
 
       {/* ── Back to Home Button ── */}
-      <View style={[styles.footer, { backgroundColor: bg }]}>
-        <TouchableOpacity style={[styles.backBtn, { backgroundColor: accent }]} onPress={() => router.replace('/UserDashboard')}>
+      <View style={[styles.footer, { backgroundColor: theme.background }]}>
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.tint }]} onPress={() => router.replace('/UserDashboard')}>
           <Text style={styles.backBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
@@ -287,18 +290,26 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
 
-  // ── Search Bar — matches reusable SearchBar component exactly ──────────────
+  // ── Search Bar — same shape as reusable SearchBar component ─────────────────
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
     marginBottom: 12,
-    backgroundColor: '#DFE1FF',
   },
-  searchIconWrap: { marginRight: 10, justifyContent: 'center', alignItems: 'center' },
-  searchInput:    { flex: 1, fontSize: 15, paddingVertical: 0, color: '#3A2EA2' },
+  searchIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  searchInput:    { flex: 1, fontSize: 15, fontWeight: '500', paddingVertical: 0 },
+  searchClearBtn: { marginLeft: 8 },
 
   // ── Filter ─────────────────────────────────────────────────────────────────
   filterRow:     { alignItems: 'flex-end', marginBottom: 4 },
@@ -333,13 +344,12 @@ const styles = StyleSheet.create({
   statusHeaderText: { textAlign: 'center' },
   tableRow: {
     flexDirection: 'row', alignItems: 'center',
-    borderRadius: 10, paddingVertical: 14, paddingHorizontal: 12, marginBottom: 10,
-    elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4,
+    borderRadius: 10, borderWidth: 1,
+    paddingVertical: 14, paddingHorizontal: 12, marginBottom: 10,
   },
   tableCell: { fontSize: 12 },
 
-  // ── Status Badge ───────────────────────────────────────────────────────────
+  // ── Status Badge — semantic colors, kept independent of the theme ──────────
   statusCell:          { flex: 1.5, alignItems: 'center', justifyContent: 'center' },
   statusBadge:         { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   statusCompleted:     { backgroundColor: '#d1fae5' },
@@ -355,9 +365,9 @@ const styles = StyleSheet.create({
   modalCard:    { borderRadius: 16, padding: 28, width: '80%', alignItems: 'center', elevation: 8 },
   modalTitle:   { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   modalDivider: { width: '100%', height: 1, marginBottom: 24 },
-  dateRow:      { flexDirection: 'row', alignItems: 'center', marginBottom: 28, gap: 6 },
-  dateInput:    { borderBottomWidth: 1.5, fontSize: 20, textAlign: 'center', paddingVertical: 4, minWidth: 48 },
-  dateSep:      { fontSize: 20, fontWeight: '300' },
+  dateRow:      { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 28, gap: 6 },
+  dateInput:    { flex: 1, borderBottomWidth: 1.5, fontSize: 20, textAlign: 'center', paddingVertical: 4 },
+  dateSep:      { fontSize: 20, fontWeight: '300', flexShrink: 0 },
   modalBtn:     { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 40 },
   modalBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
