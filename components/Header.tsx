@@ -19,9 +19,7 @@ interface HeaderProps {
   title: string;
   showBack?: boolean;
   roleId?: string | number;
-  adminMode?: string;
 }
-
 
 const MENU_ITEMS = [
   {
@@ -51,25 +49,16 @@ const MENU_ITEMS = [
   },
 ] as const;
 
-
 export default function Header({
   title,
   showBack = true,
-  roleId,
-  adminMode,
 }: HeaderProps) {
-
   const router = useRouter();
 
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
 
-  const isAdmin =
-    Number(roleId) === 2 ||
-    adminMode === "true";
-
   const [menuOpen, setMenuOpen] = useState(false);
-
 
   const slideAnim = useRef(new Animated.Value(-20)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -78,145 +67,95 @@ export default function Header({
   const middleLine = useRef(new Animated.Value(1)).current;
   const bottomLine = useRef(new Animated.Value(0)).current;
 
-
-
   useEffect(() => {
-
     if (menuOpen) {
-
       Animated.parallel([
-
-        Animated.timing(fadeAnim,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
         }),
 
-        Animated.timing(slideAnim,{
-          toValue:0,
-          duration:220,
-          easing:Easing.out(Easing.ease),
-          useNativeDriver:true,
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 220,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
         }),
 
-        Animated.timing(topLine,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
+        Animated.timing(topLine, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
         }),
 
-        Animated.timing(bottomLine,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
+        Animated.timing(bottomLine, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
         }),
 
-        Animated.timing(middleLine,{
-          toValue:0,
-          duration:180,
-          useNativeDriver:true,
+        Animated.timing(middleLine, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
         }),
-
       ]).start();
-
-
     } else {
-
-
       Animated.parallel([
-
-        Animated.timing(fadeAnim,{
-          toValue:0,
-          duration:180,
-          useNativeDriver:true,
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
         }),
 
-        Animated.timing(slideAnim,{
-          toValue:-20,
-          duration:180,
-          useNativeDriver:true,
+        Animated.timing(slideAnim, {
+          toValue: -20,
+          duration: 180,
+          useNativeDriver: true,
         }),
 
-        Animated.timing(topLine,{
-          toValue:0,
-          duration:220,
-          useNativeDriver:true,
+        Animated.timing(topLine, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
         }),
 
-        Animated.timing(bottomLine,{
-          toValue:0,
-          duration:220,
-          useNativeDriver:true,
+        Animated.timing(bottomLine, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
         }),
 
-        Animated.timing(middleLine,{
-          toValue:1,
-          duration:220,
-          useNativeDriver:true,
+        Animated.timing(middleLine, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
         }),
-
       ]).start();
-
     }
-
-  },[menuOpen]);
-
-
-
-
-  const handleNavigation = (route: string) => {
-    setMenuOpen(false);
-
-    const params = {
-      roleId: isAdmin ? "2" : "1",
-      ...(adminMode ? { admin_mode: adminMode } : {}),
-    };
-
-    router.push({
-      pathname: route as any,
-      params,
-    });
-  };
-
-  const handleBack = () => {
-    router.back();
-  };
+  }, [menuOpen]);
 
   const styles = createStyles(theme);
 
-
-
   return (
     <>
-
-
       <View style={styles.container}>
-
-
         {showBack ? (
-
           <TouchableOpacity
-            onPress={handleBack}
+            onPress={() => router.back()}
             style={styles.backButton}
             activeOpacity={0.8}
           >
-
             <Ionicons
               name="arrow-back"
               size={22}
               color="#FFFFFF"
             />
-
           </TouchableOpacity>
-
-
         ) : (
-
-          <View style={styles.backButton}/>
-
+          <View style={styles.backButton} />
         )}
-
-
 
         <Text
           style={styles.title}
@@ -225,333 +164,283 @@ export default function Header({
           {title}
         </Text>
 
-
-
-
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={()=>setMenuOpen(true)}
+          onPress={() => setMenuOpen(true)}
           style={[
             styles.menuButton,
-            menuOpen && styles.menuButtonActive
+            menuOpen && styles.menuButtonActive,
           ]}
         >
-
+          <Animated.View
+            style={[
+              styles.menuLine,
+              styles.menuLineTop,
+              {
+                transform: [
+                  { rotate: topLine.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "45deg"] }) },
+                  { translateY: topLine.interpolate({ inputRange: [0, 1], outputRange: [0, 7] }) },
+                ],
+              },
+            ]}
+          />
 
           <Animated.View
             style={[
               styles.menuLine,
-              {
-                transform:[
-                  {
-                    rotate:topLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:["0deg","45deg"]
-                    })
-                  },
-                  {
-                    translateY:topLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:[0,7]
-                    })
-                  }
-                ]
-              }
+              styles.menuLineMiddle,
+              { opacity: middleLine },
             ]}
           />
-
 
           <Animated.View
             style={[
               styles.menuLine,
+              styles.menuLineBottom,
               {
-                opacity:middleLine
-              }
+                transform: [
+                  { rotate: bottomLine.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-45deg"] }) },
+                  { translateY: bottomLine.interpolate({ inputRange: [0, 1], outputRange: [0, -7] }) },
+                ],
+              },
             ]}
           />
-
-
-
-          <Animated.View
-            style={[
-              styles.menuLine,
-              {
-                transform:[
-                  {
-                    rotate:bottomLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:["0deg","-45deg"]
-                    })
-                  },
-                  {
-                    translateY:bottomLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:[0,-7]
-                    })
-                  }
-                ]
-              }
-            ]}
-          />
-
-
         </TouchableOpacity>
-
-
       </View>
-
-
-
-
 
       <Modal
         transparent
         visible={menuOpen}
         animationType="none"
-        onRequestClose={()=>setMenuOpen(false)}
+        onRequestClose={() => setMenuOpen(false)}
       >
-
-
         <Pressable
           style={styles.overlay}
-          onPress={()=>setMenuOpen(false)}
+          onPress={() => setMenuOpen(false)}
         >
-
-
           <Animated.View
             style={[
               styles.dropdown,
               {
-                opacity:fadeAnim,
-                transform:[
+                opacity: fadeAnim,
+                transform: [
                   {
-                    translateY:slideAnim
-                  }
-                ]
-              }
+                    translateY: slideAnim,
+                  },
+                ],
+              },
             ]}
           >
-
-
-
-            {MENU_ITEMS.map((item)=>(
-
+                        {MENU_ITEMS.map((item) => (
               <TouchableOpacity
                 key={item.label}
-                style={styles.menuItem}
                 activeOpacity={0.7}
-                onPress={()=>handleNavigation(item.route)}
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  router.push(item.route as any);
+                }}
               >
-
-
                 <View style={styles.menuIconContainer}>
-
                   <Ionicons
                     name={item.icon}
                     size={20}
                     color={theme.tint}
                   />
-
                 </View>
-
 
                 <Text style={styles.menuText}>
                   {item.label}
                 </Text>
-
 
                 <Ionicons
                   name="chevron-forward"
                   size={18}
                   color={theme.icon}
                 />
-
-
-
               </TouchableOpacity>
-
             ))}
 
-
-
-            <View style={styles.separator}/>
-
-
+            <View style={styles.separator} />
 
             <TouchableOpacity
-              style={styles.logoutButton}
               activeOpacity={0.8}
-              onPress={()=>{
-
+              style={styles.logoutButton}
+              onPress={() => {
                 setMenuOpen(false);
                 router.replace("/");
-
               }}
             >
-
-
               <Ionicons
                 name="log-out-outline"
                 size={20}
                 color="#FFFFFF"
               />
 
-
               <Text style={styles.logoutText}>
                 Logout
               </Text>
-
-
             </TouchableOpacity>
-
-
-
           </Animated.View>
-
-
         </Pressable>
-
-
       </Modal>
-
-
-
     </>
   );
 }
 
+const createStyles = (theme: typeof Colors.light) =>
+  StyleSheet.create({
+    container: {
+      height: 60,
+      backgroundColor: theme.tint,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
 
-
-const createStyles = (theme: typeof Colors.light)=>
-StyleSheet.create({
-
-  container:{
-    height:60,
-    backgroundColor:theme.tint,
-    flexDirection:"row",
-    alignItems:"center",
-    justifyContent:"space-between",
-    paddingHorizontal:16,
-    shadowColor:"#000",
-    shadowOffset:{
-      width:0,
-      height:2,
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+      elevation: 6,
     },
-    shadowOpacity:0.12,
-    shadowRadius:6,
-    elevation:6,
-  },
 
+    backButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      justifyContent: "center",
+      alignItems: "center",
+    },
 
-  backButton:{
-    width:42,
-    height:42,
-    borderRadius:21,
-    justifyContent:"center",
-    alignItems:"center",
-  },
+    title: {
+      flex: 1,
+      textAlign: "center",
+      color: "#FFFFFF",
+      fontSize: 19,
+      fontWeight: "700",
+      marginHorizontal: 12,
+    },
 
+    menuButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "transparent",
+    },
 
-  title:{
-    flex:1,
-    textAlign:"center",
-    color:"#FFFFFF",
-    fontSize:19,
-    fontWeight:"700",
-    marginHorizontal:12,
-  },
+    menuButtonActive: {
+      backgroundColor: theme.tint2,
+    },
 
+    menuLine: {
+      position: "absolute",
+      height: 2.8,
+      borderRadius: 999,
+      backgroundColor: "#FFFFFF",
+    },
 
-  menuButton:{
-    width:42,
-    height:42,
-    borderRadius:21,
-    justifyContent:"center",
-    alignItems:"center",
-  },
+    menuLineTop: {
+      top: 12.6,
+      width: 20,
+    },
 
+    menuLineMiddle: {
+      top: 19.6,
+      width: 14,
+    },
 
-  menuButtonActive:{
-    backgroundColor:theme.tint2,
-  },
+    menuLineBottom: {
+      top: 26.6,
+      width: 20,
+    },
 
+    overlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.20)",
+      alignItems: "flex-end",
+    },
 
-  menuLine:{
-    position:"absolute",
-    width:20,
-    height:2.8,
-    borderRadius:999,
-    backgroundColor:"#FFFFFF",
-  },
+    dropdown: {
+      marginTop: 66,
+      marginRight: 12,
 
+      width: 285,
 
-  overlay:{
-    flex:1,
-    backgroundColor:"rgba(0,0,0,0.20)",
-    alignItems:"flex-end",
-  },
+      backgroundColor:
+        theme.background,
 
+      borderRadius: 18,
 
-  dropdown:{
-    marginTop:66,
-    marginRight:12,
-    width:285,
-    backgroundColor:theme.background,
-    borderRadius:18,
-    borderWidth:1,
-    borderColor:theme.border,
-    overflow:"hidden",
-    elevation:12,
-  },
+      borderWidth: 1,
+      borderColor: theme.border,
 
+      overflow: "hidden",
 
-  menuItem:{
-    flexDirection:"row",
-    alignItems:"center",
-    paddingHorizontal:18,
-    paddingVertical:15,
-  },
+      shadowColor: "#000",
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 18,
 
+      elevation: 12,
+    },
 
-  menuIconContainer:{
-    width:34,
-    alignItems:"center",
-    justifyContent:"center",
-  },
+    menuItem: {
+      flexDirection: "row",
+      alignItems: "center",
 
+      paddingHorizontal: 18,
+      paddingVertical: 15,
+    },
 
-  menuText:{
-    flex:1,
-    marginLeft:8,
-    fontSize:15,
-    fontWeight:"600",
-    color:theme.text,
-  },
+    menuIconContainer: {
+      width: 34,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
+    menuText: {
+      flex: 1,
+      marginLeft: 8,
 
-  separator:{
-    height:1,
-    backgroundColor:theme.border,
-    marginHorizontal:14,
-  },
+      fontSize: 15,
+      fontWeight: "600",
 
+      color: theme.text,
+    },
 
-  logoutButton:{
-    flexDirection:"row",
-    alignItems:"center",
-    justifyContent:"center",
-    margin:14,
-    paddingVertical:13,
-    borderRadius:14,
-    backgroundColor:theme.tint,
-  },
+    separator: {
+      height: 1,
+      backgroundColor: theme.border,
+      marginHorizontal: 14,
+    },
 
+    logoutButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
 
-  logoutText:{
-    marginLeft:8,
-    color:"#FFFFFF",
-    fontWeight:"700",
-    fontSize:15,
-  },
+      margin: 14,
 
-});
+      paddingVertical: 13,
+
+      borderRadius: 14,
+
+      backgroundColor: theme.tint,
+    },
+
+    logoutText: {
+      marginLeft: 8,
+      color: "#FFFFFF",
+      fontWeight: "700",
+      fontSize: 15,
+    },
+  });
