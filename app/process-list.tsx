@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator, Modal, ScrollView, StyleSheet,
+  ActivityIndicator, Image, Modal, ScrollView, StyleSheet,
   Text, TouchableOpacity, View, useColorScheme, useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,16 +26,53 @@ interface Office {
   name: string;
   address: string;
   processes: string[];
+  logo: any; 
 }
 
-// ─── Hardcoded offices  ────────────────
+// ─── Hardcoded offices ────────────────
 const OFFICES: Office[] = [
-  { id: "1", name: "Dean's Office", address: "1st Floor, Admin Building, USTP CDO", processes: ["Grade Appeal", "Leave of Absence"] },
-  { id: "2", name: "Faculty Office", address: "4th Floor, College Building, USTP CDO", processes: ["Medical Certificate Submission", "INC Form"] },
-  { id: "3", name: "TCM Office", address: "2nd Floor, TCM Building, USTP CDO", processes: ["Enrollment Assistance"] },
-  { id: "4", name: "Data Science Office", address: "2nd Floor, IT Building, USTP CDO", processes: ["Special Exam", "Petition for Completion"] },
-  { id: "5", name: "Computer Science Office", address: "3rd Floor, IT Building, USTP CDO", processes: ["Grade Appeal", "Special Exam"] },
-  { id: "6", name: "IT Office", address: "Ground Floor, IT Building, USTP CDO", processes: ["Enrollment Assistance", "INC Form"] },
+  {
+    id: "1",
+    name: "Dean's Office",
+    address: "1st Floor, Admin Building, USTP CDO",
+    processes: ["Grade Appeal", "Leave of Absence"],
+    logo: require("../assets/images/offices/citc.png"),
+  },
+  {
+    id: "2",
+    name: "Faculty Office",
+    address: "4th Floor, College Building, USTP CDO",
+    processes: ["Medical Certificate Submission", "INC Form"],
+    logo: require("../assets/images/offices/citc.png"),
+  },
+  {
+    id: "3",
+    name: "TCM Office",
+    address: "2nd Floor, TCM Building, USTP CDO",
+    processes: ["Enrollment Assistance"],
+    logo: require("../assets/images/offices/tcm.png"),
+  },
+  {
+    id: "4",
+    name: "Data Science Office",
+    address: "2nd Floor, IT Building, USTP CDO",
+    processes: ["Special Exam", "Petition for Completion"],
+    logo: require("../assets/images/offices/ds.png"),
+  },
+  {
+    id: "5",
+    name: "Computer Science Office",
+    address: "3rd Floor, IT Building, USTP CDO",
+    processes: ["Grade Appeal", "Special Exam"],
+    logo: require("../assets/images/offices/cs.png"),
+  },
+  {
+    id: "6",
+    name: "IT Office",
+    address: "4th Floor, IT Building, USTP CDO",
+    processes: ["Enrollment Assistance", "INC Form"],
+    logo: require("../assets/images/offices/it.png"),
+  },
 ];
 
 export default function ProcessListScreen() {
@@ -185,15 +222,24 @@ export default function ProcessListScreen() {
           <Text style={[s.sectionTitle, { color: textPri }]}>Offices</Text>
 
           <View style={s.grid}>
-            {OFFICES.map((office) => (
+
+                        {OFFICES.map((office) => (
               <View key={office.id} style={s.officeItem}>
                 <TouchableOpacity
                   style={s.officeTouchable}
                   activeOpacity={0.75}
                   onPress={() => setSelectedOffice(office)}
                 >
-                  <View style={[s.officeBox, { backgroundColor: bg, borderColor: border }]}>
-                    <MaterialIcons name="business" size={28} color={Colors.light.tint} />
+                  <View style={[s.officeBox, { backgroundColor: "#ffffff", borderColor: border }]}>
+                    {office.logo ? (
+                      <Image
+                        source={office.logo}
+                        style={s.officeLogo}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <MaterialIcons name="business" size={28} color={Colors.light.tint} />
+                    )}
                   </View>
                   <Text style={[s.officeName, { color: textPri }]} numberOfLines={2}>
                     {office.name}
@@ -226,7 +272,7 @@ export default function ProcessListScreen() {
         <View style={s.modalOverlay}>
 
           <View
-            style={[s.modalCard, { backgroundColor: isDark ? "#1E1E2E" : "#EDE8F7" }]}
+            style={[s.modalCard, { backgroundColor: isDark ? "#141a73" : "#ffffff" }]}
           >
             <TouchableOpacity style={s.closeBtn} onPress={() => setSelectedOffice(null)}>
               <Text style={[s.closeText, { color: textSec }]}>✕</Text>
@@ -275,7 +321,7 @@ const s = StyleSheet.create({
   container: { width: "100%", marginTop: 20 },
   desktopContainer: { width: "95%", maxWidth: 1600, alignSelf: "center" },
 
-  sectionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 5, marginTop: 20 },
+  sectionTitle: { fontSize: 20, fontWeight: "700", marginTop: 20 },
   centered: { alignItems: "center", paddingVertical: 32, gap: 10 },
   retryBtn: { marginTop: 10, borderWidth: 1, paddingHorizontal: 20, paddingVertical: 6, borderRadius: 20 },
   card: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 10 },
@@ -285,10 +331,11 @@ const s = StyleSheet.create({
   cardDesc: { fontSize: 11, marginTop: 2 },
   empty: { textAlign: "center", marginTop: 20 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 20, alignItems: "flex-start" },
-  officeItem: { width: "30%", alignItems: "center", alignSelf: "flex-start" },
+  officeItem: { width: "30%", alignItems: "center", alignSelf: "flex-start", marginTop: 20  },
   officeTouchable: { alignItems: "center", alignSelf: "center" },
-  officeBox: { width: 72, height: 72, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  officeName: { fontSize: 10, textAlign: "center", lineHeight: 13 },
+  officeBox: { width: 72, height: 72, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 6,},
+  officeLogo: {width: 50,height: 50,},
+  officeName: { fontSize: 12, textAlign: "center", lineHeight: 13, marginTop: 10  },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", alignItems: "center", padding: 24 },
   modalCard: { borderRadius: 24, padding: 24, width: "100%", maxWidth: 520, elevation: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 20 },
   closeBtn: { position: "absolute", top: 16, right: 20, zIndex: 1 },
