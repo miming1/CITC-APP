@@ -610,22 +610,22 @@ def create_faq(request):
     if 'answer' not in data or data['answer'] is None:
         data['answer'] = ""
 
+    now = timezone.now()
+    data['created_at'] = now
+    data['updated_at'] = now
+
     serializer = FAQSerializer(data=data)
 
     if serializer.is_valid():
+        try:
+            serializer.save()
+        except Exception as e:
+            print("CREATE FAQ ERROR:", repr(e))
+            return Response({"error": str(e)}, status=500)
 
-        serializer.save()
+        return Response(serializer.data, status=201)
 
-        return Response(
-            serializer.data,
-            status=201
-        )
-
-    return Response(
-        serializer.errors,
-        status=400
-    )
-
+    return Response(serializer.errors, status=400)
 
 @api_view(['PUT', 'PATCH'])
 def update_faq(request, pk):

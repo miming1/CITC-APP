@@ -67,7 +67,7 @@ export default function Tooltip({
           transform: [{ translateY }],
           backgroundColor:
             colorScheme === "dark"
-              ? "#1F2937"
+              ? "#2D3348"
               : "#FFFFFF",
           borderColor: colors.border,
         },
@@ -77,7 +77,7 @@ export default function Tooltip({
         style={[
           styles.accent,
           {
-            backgroundColor: colors.tint,
+            backgroundColor: colors.tint2,
           },
         ]}
       />

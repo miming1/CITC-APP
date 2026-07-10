@@ -157,7 +157,7 @@ export default function FloatingButtons({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    right: 24,
+    right: 40,
     bottom: 40,
     alignItems: "flex-end",
   },

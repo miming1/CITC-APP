@@ -2,7 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet,
+  ActivityIndicator, Modal, ScrollView, StyleSheet,
   Text, TouchableOpacity, View, useColorScheme, useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -30,9 +30,9 @@ interface Office {
 
 // ─── Hardcoded offices  ────────────────
 const OFFICES: Office[] = [
-  { id: "1", name: "Dean's Office", address: "2nd Floor, Admin Building, USTP CDO", processes: ["Grade Appeal", "Leave of Absence"] },
-  { id: "2", name: "Faculty Office", address: "3rd Floor, College Building, USTP CDO", processes: ["Medical Certificate Submission", "INC Form"] },
-  { id: "3", name: "TCM Office", address: "1st Floor, TCM Building, USTP CDO", processes: ["Enrollment Assistance"] },
+  { id: "1", name: "Dean's Office", address: "1st Floor, Admin Building, USTP CDO", processes: ["Grade Appeal", "Leave of Absence"] },
+  { id: "2", name: "Faculty Office", address: "4th Floor, College Building, USTP CDO", processes: ["Medical Certificate Submission", "INC Form"] },
+  { id: "3", name: "TCM Office", address: "2nd Floor, TCM Building, USTP CDO", processes: ["Enrollment Assistance"] },
   { id: "4", name: "Data Science Office", address: "2nd Floor, IT Building, USTP CDO", processes: ["Special Exam", "Petition for Completion"] },
   { id: "5", name: "Computer Science Office", address: "3rd Floor, IT Building, USTP CDO", processes: ["Grade Appeal", "Special Exam"] },
   { id: "6", name: "IT Office", address: "Ground Floor, IT Building, USTP CDO", processes: ["Enrollment Assistance", "INC Form"] },
@@ -182,27 +182,24 @@ export default function ProcessListScreen() {
             />
           )}
 
-          {!loading && !error && filtered.length === 0 && (
-            <Text style={[s.empty, { color: textSec }]}>No procedures found.</Text>
-          )}
-
           <Text style={[s.sectionTitle, { color: textPri }]}>Offices</Text>
 
           <View style={s.grid}>
             {OFFICES.map((office) => (
-              <TouchableOpacity
-                key={office.id}
-                style={s.officeItem}
-                activeOpacity={0.75}
-                onPress={() => setSelectedOffice(office)}
-              >
-                <View style={[s.officeBox, { backgroundColor: bg, borderColor: border }]}>
-                  <MaterialIcons name="business" size={28} color={Colors.light.tint} />
-                </View>
-                <Text style={[s.officeName, { color: textPri }]} numberOfLines={2}>
-                  {office.name}
-                </Text>
-              </TouchableOpacity>
+              <View key={office.id} style={s.officeItem}>
+                <TouchableOpacity
+                  style={s.officeTouchable}
+                  activeOpacity={0.75}
+                  onPress={() => setSelectedOffice(office)}
+                >
+                  <View style={[s.officeBox, { backgroundColor: bg, borderColor: border }]}>
+                    <MaterialIcons name="business" size={28} color={Colors.light.tint} />
+                  </View>
+                  <Text style={[s.officeName, { color: textPri }]} numberOfLines={2}>
+                    {office.name}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         </View>
@@ -226,11 +223,10 @@ export default function ProcessListScreen() {
         animationType="fade"
         onRequestClose={() => setSelectedOffice(null)}
       >
-        <Pressable style={s.modalOverlay} onPress={() => setSelectedOffice(null)}>
+        <View style={s.modalOverlay}>
 
-          <Pressable
+          <View
             style={[s.modalCard, { backgroundColor: isDark ? "#1E1E2E" : "#EDE8F7" }]}
-            onPress={(e) => e.stopPropagation()}
           >
             <TouchableOpacity style={s.closeBtn} onPress={() => setSelectedOffice(null)}>
               <Text style={[s.closeText, { color: textSec }]}>✕</Text>
@@ -254,8 +250,8 @@ export default function ProcessListScreen() {
                 ))}
               </View>
             </View>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
 
       {isAdmin && (
@@ -279,7 +275,7 @@ const s = StyleSheet.create({
   container: { width: "100%", marginTop: 20 },
   desktopContainer: { width: "95%", maxWidth: 1600, alignSelf: "center" },
 
-  sectionTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 5, marginTop: 20 },
   centered: { alignItems: "center", paddingVertical: 32, gap: 10 },
   retryBtn: { marginTop: 10, borderWidth: 1, paddingHorizontal: 20, paddingVertical: 6, borderRadius: 20 },
   card: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 10 },
@@ -288,8 +284,9 @@ const s = StyleSheet.create({
   cardTitle: { fontSize: 13, fontWeight: "600" },
   cardDesc: { fontSize: 11, marginTop: 2 },
   empty: { textAlign: "center", marginTop: 20 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 20 },
-  officeItem: { width: "30%", alignItems: "center" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 20, alignItems: "flex-start" },
+  officeItem: { width: "30%", alignItems: "center", alignSelf: "flex-start" },
+  officeTouchable: { alignItems: "center", alignSelf: "center" },
   officeBox: { width: 72, height: 72, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 6 },
   officeName: { fontSize: 10, textAlign: "center", lineHeight: 13 },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", alignItems: "center", padding: 24 },

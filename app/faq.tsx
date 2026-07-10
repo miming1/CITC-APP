@@ -12,6 +12,7 @@ import Header from "../components/Header";
 import SearchBar from "../components/SearchBar";
 import UserQuestionCategories from "../components/UserQuestionCategories";
 import { ENDPOINTS } from "../constants/api";
+import { Colors } from "../constants/theme";
 import { fetchFAQCategories, fetchFAQs } from "../lib/api";
 import { getToken } from "../lib/auth";
 
@@ -23,8 +24,11 @@ type FAQ = {
 export default function FAQScreen() {
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
-  const bg = isDark ? "#151718" : "#fff";
+  const colors = Colors[colorScheme as "light" | "dark"];
+
+  const bg = colors.background;
   const textPri = isDark ? "#ECEDEE" : "#1E1340";
+  const textSec = isDark ? "#9BA1A6" : "#6B6485";
 
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -93,20 +97,33 @@ export default function FAQScreen() {
     );
   }, [search, faqs]);
 
-  const handleCreateFAQ = async (_procId: number, data: { question: string; answer?: string }) => {
-    const token = await getToken();
-    await fetch(ENDPOINTS.faqs.replace(/\/$/, "") + "/create/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Token ${token}` },
-      body: JSON.stringify({
-        category: Number(categoryId),
-        question: data.question,
-        answer: data.answer ?? "",
-      }),
-    });
-    setShowFAQModal(false);
-    await loadFAQs();
-  };
+  const filteredCategories = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return categories;
+    return categories.filter((c) => c.category_name?.toLowerCase().includes(q));
+  }, [search, categories]);
+
+const handleCreateFAQ = async (_procId: number, data: { question: string; answer?: string }) => {
+  const token = await getToken();
+  const res = await fetch(ENDPOINTS.faqs.replace(/\/$/, "") + "/create/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Token ${token}` },
+    body: JSON.stringify({
+      category: Number(categoryId),
+      question: data.question,
+      answer: data.answer ?? "",
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.log("CREATE FAQ FAILED:", res.status, text);
+    throw new Error(`Failed to save FAQ (status ${res.status}). Check console for details.`);
+  }
+
+  setShowFAQModal(false);
+  await loadFAQs();
+};
 
   const requestFAQAuth = (data: FAQ) => {
     setPendingFAQ(data);
@@ -122,21 +139,26 @@ export default function FAQScreen() {
       />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={true}>
         <View style={[styles.container, isDesktop && styles.desktopContainer]}>
-          <SearchBar placeholder="Search..." onChangeText={setSearch} />
+          <SearchBar placeholder="Search frequently asked questions..." onChangeText={setSearch} />
           <Text style={[styles.sectionTitle, { color: textPri }]}>Frequently Asked Questions</Text>
 
           {loading && (
             <View style={styles.centered}>
-              <ActivityIndicator size="large" color="#9B7FD4" />
+              <ActivityIndicator size="large" color={Colors.light.tint} />
+              <Text style={{ color: textSec }}>Loading FAQs…</Text>
             </View>
           )}
 
-          {!loading && error && <Text style={styles.hint}>{error}</Text>}
+          {!loading && error && (
+            <View style={styles.centered}>
+              <Text style={{ color: textSec }}>{error}</Text>
+            </View>
+          )}
 
           {!loading && !error && !categoryId && ( isAdmin ? (
               <AdminQuestionCategories
                 procedures={[]}
-                categories={categories.map((item) => ({
+                categories={filteredCategories.map((item) => ({
                   category_id: Number(item.id),
                   category_name: item.category_name,
                   procedure: Number(item.procedure_id),
@@ -154,7 +176,7 @@ export default function FAQScreen() {
               />
             ) : (
               <UserQuestionCategories
-                categories={categories}
+                categories={filteredCategories}
                 onPressCategory={(category) => {
                   router.push({
                     pathname: "/faq",
@@ -173,7 +195,9 @@ export default function FAQScreen() {
               {filtered.map((item) => (
                 <FAQCard key={item.id} question={item.question} answer={item.answer} />
               ))}
-              {filtered.length === 0 && <Text style={styles.hint}>No FAQs found.</Text>}
+              {filtered.length === 0 && (
+                <Text style={[styles.empty, { color: textSec }]}>No FAQs found.</Text>
+              )}
             </View>
           )}
         </View>
@@ -234,15 +258,15 @@ export default function FAQScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { paddingBottom: 160 },
+  scroll: { paddingHorizontal: 16, paddingBottom: 160 },
 
-  container: { width: "100%" },
+  container: { width: "100%", marginTop: 20 },
   desktopContainer: { width: "95%", maxWidth: 1600, alignSelf: "center" },
 
-  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 12, marginTop: 4, paddingHorizontal: 16 },
-  cardList: { paddingHorizontal: 16 },
-  centered: { alignItems: "center", paddingVertical: 40 },
-  hint: { textAlign: "center", marginTop: 20, fontSize: 14, paddingHorizontal: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 5, marginTop: 20 },
+  cardList: { paddingHorizontal: 0, marginTop: 16 },
+  centered: { alignItems: "center", paddingVertical: 32, gap: 10 },
+  empty: { textAlign: "center", marginTop: 20, fontSize: 14 },
   categoryCard: { borderWidth: 1, borderColor: "#DDD", borderRadius: 10, padding: 16, marginBottom: 12 },
   categoryTitle: { fontSize: 16, fontWeight: "600" },
 });
