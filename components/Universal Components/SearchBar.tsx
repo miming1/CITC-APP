@@ -69,7 +69,7 @@ export default function SearchBar({
         <Ionicons
           name="search"
           size={20}
-          color={colors.tint}
+          color={isDark ? "#93C5FD" : colors.tint}
         />
       </View>
 
@@ -100,7 +100,7 @@ export default function SearchBar({
           <Ionicons
             name="close-circle"
             size={22}
-            color={colors.icon}
+            color={isDark ? "#93C5FD" : colors.icon}
           />
         </TouchableOpacity>
       )}
