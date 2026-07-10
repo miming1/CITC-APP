@@ -125,7 +125,7 @@ export default function AssignedProcedures({
               },
             ]}
           >
-            No procedures assigned to your office.
+            No procedures available yet.
           </Text>
 
         </View>
