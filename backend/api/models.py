@@ -18,8 +18,8 @@ class Procedures(models.Model):
     procedure_id = models.AutoField(primary_key=True)
     procedure_name = models.CharField(max_length=150)
     description = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = True
@@ -59,12 +59,12 @@ class OfficeProcedures(models.Model):
 
     office = models.ForeignKey(
         Offices,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE, blank=True,null=True
     )
 
     procedure = models.ForeignKey(
         Procedures,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE, blank=True,null=True
     )
 
     class Meta:
@@ -72,27 +72,46 @@ class OfficeProcedures(models.Model):
         unique_together = ("office", "procedure")
 
 class Users(models.Model):
-    user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False,)
+    user_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
     id_number = models.BigIntegerField(unique=True)
     email = models.TextField(unique=True, blank=True, null=True)
-    role = models.ForeignKey(Roles, models.DO_NOTHING, blank=True, null=True)
-    office = models.ForeignKey(Offices, models.DO_NOTHING, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
+
+    role = models.ForeignKey(
+        Roles,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+    )
+
+    office = models.ForeignKey(
+        Offices,
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
     auth_user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
         blank=True,
         null=True,
-        db_column='auth_user_id',
-        related_name='profile'
+        db_column="auth_user_id",
+        related_name="profile",
     )
+
     student_name = models.TextField(blank=True, null=True)
     year_level = models.SmallIntegerField(blank=True, null=True)
     program = models.TextField(blank=True, null=True)
 
     class Meta:
-        managed = True
-        db_table = 'users'
+        db_table = "users"
 
 
 class Requests(models.Model):
@@ -100,27 +119,29 @@ class Requests(models.Model):
 
     user = models.ForeignKey(
         Users,
-        models.SET_NULL,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True
     )
+
+    user_id_number_snapshot = models.BigIntegerField(blank=True,null=True)
 
     procedure = models.ForeignKey(
         Procedures,
-        models.SET_NULL,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True
     )
 
+    procedure_name_snapshot = models.TextField(blank=True,null=True)
+
     created_at = models.DateTimeField(
-        blank=True,
-        null=True
+        auto_now_add=True
     )
 
     class Meta:
         managed = True
         db_table = 'requests'
-
 
 class FaqCategories(models.Model):
 
@@ -149,8 +170,8 @@ class Faqs(models.Model):
     question = models.TextField()
     answer = models.TextField()
     category = models.ForeignKey(FaqCategories,models.CASCADE,blank=True,null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = True
@@ -159,21 +180,15 @@ class Faqs(models.Model):
 
 class Notifications(models.Model):
     notification_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True)
+    user = models.ForeignKey(Users,on_delete=models.CASCADE,blank=True,null=True)
     message = models.TextField()
     is_read = models.BooleanField(blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     request = models.ForeignKey(Requests, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
         managed = True
         db_table = 'notifications'
-
-
-from django.db import models
-from django.utils import timezone
-import datetime
-
 
 class OtpTokens(models.Model):
     PURPOSE_SIGNUP = "signup"
@@ -195,7 +210,6 @@ class OtpTokens(models.Model):
 
     pending_data = models.JSONField(blank=True, null=True)
 
-    # ✅ FIX: prevents NULL crash
     created_at = models.DateTimeField(auto_now_add=True)
 
     is_used = models.BooleanField(default=False)
@@ -209,49 +223,60 @@ class OtpTokens(models.Model):
 
 
 class ProcedureDocuments(models.Model):
-    pk = models.CompositePrimaryKey('procedure_id', 'document_id')
+    pk = models.CompositePrimaryKey(
+        'procedure_id',
+        'document_id'
+    )
 
     procedure = models.ForeignKey(
         Procedures,
-        models.CASCADE,
-        related_name="procedure_documents"
+        on_delete=models.CASCADE,
+        related_name="procedure_documents",
+        null=False,
+        blank=False
     )
 
     document = models.ForeignKey(
         Documents,
-        models.DO_NOTHING
+        on_delete=models.PROTECT,
+        null=False,
+        blank=False
     )
 
     office = models.ForeignKey(
         Offices,
-        models.DO_NOTHING,
+        on_delete=models.SET_NULL,
         blank=True,
         null=True
     )
 
     class Meta:
-        managed = True
         db_table = 'procedure_documents'
 
 
 class ProcedureRequirements(models.Model):
-    pk = models.CompositePrimaryKey('procedure_id', 'requirement_id')
+    pk = models.CompositePrimaryKey(
+        'procedure_id',
+        'requirement_id'
+    )
 
     procedure = models.ForeignKey(
         Procedures,
-        models.CASCADE,
-        related_name="procedure_requirements"
+        on_delete=models.CASCADE,
+        related_name="procedure_requirements",
+        null=False,
+        blank=False
     )
 
     requirement = models.ForeignKey(
         Requirements,
-        models.DO_NOTHING
+        on_delete=models.PROTECT,
+        null=False,
+        blank=False
     )
 
     class Meta:
-        managed = True
         db_table = 'procedure_requirements'
-
 
 class ProcedureSteps(models.Model):
     step_id = models.AutoField(primary_key=True)
@@ -297,17 +322,16 @@ class RequestDocuments(models.Model):
 
     request = models.ForeignKey(
         Requests,
-        models.DO_NOTHING,
-        blank=True,
-        null=True
+        on_delete=models.CASCADE, blank=True,null=True
     )
 
     document = models.ForeignKey(
         Documents,
-        models.DO_NOTHING,
-        blank=True,
-        null=True
+        on_delete=models.PROTECT,
+        blank=True,null=True
     )
+
+    document_name_snapshot = models.TextField(blank=True,null=True)
 
     tracking_number = models.IntegerField(
         blank=True,
@@ -321,22 +345,23 @@ class RequestDocuments(models.Model):
         null=True
     )
 
-    status = models.TextField(
-        blank=True,
-        null=True
+    status = models.CharField(
+        max_length=50,
+        default="pending"
     )
 
     updated_by = models.ForeignKey(
         Users,
-        models.DO_NOTHING,
-        db_column='updated_by',
+        on_delete=models.SET_NULL,
         blank=True,
-        null=True
+        null=True,
+        db_column="updated_by"
     )
 
+    updated_by_id_snapshot = models.BigIntegerField(blank=True,null=True)
+
     updated_at = models.DateTimeField(
-        blank=True,
-        null=True
+        auto_now=True
     )
 
     remarks = models.TextField(
@@ -345,5 +370,4 @@ class RequestDocuments(models.Model):
     )
 
     class Meta:
-        managed = True
-        db_table = 'request_documents'
+        db_table = "request_documents"

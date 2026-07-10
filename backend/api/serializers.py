@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 
 from .models import (
+    Notifications,
     Procedures,
     ProcedureSteps,
     ProcedureRequirements,
@@ -9,6 +10,7 @@ from .models import (
     Faqs,
     FaqCategories,
     Requests,
+    RequestDocuments,
     Roles,
     Users
 )
@@ -21,9 +23,7 @@ class AuthUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'password']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
@@ -39,6 +39,18 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Roles
         fields = '__all__'
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notifications
+        fields = [
+            "notification_id",
+            "message",
+            "is_read",
+            "created_at",
+            "request",
+        ]
 
 
 # =========================
@@ -64,10 +76,7 @@ class ProcedureStepSerializer(serializers.ModelSerializer):
 
 
 class ProcedureRequirementSerializer(serializers.ModelSerializer):
-    requirement_text = serializers.CharField(
-        source='requirement.requirement_name',
-        read_only=True
-    )
+    requirement_text = serializers.CharField(source='requirement.requirement_name', read_only=True)
 
     class Meta:
         model = ProcedureRequirements
@@ -106,4 +115,29 @@ class FAQSerializer(serializers.ModelSerializer):
 class RequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Requests
-        fields = '__all__'
+        fields = [
+            'request_id',
+            'user',
+            'procedure',
+            'user_id_number_snapshot',
+            'procedure_name_snapshot',
+            'created_at'
+        ]
+
+
+class RequestDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestDocuments
+        fields = [
+            'req_doc_id',
+            'request',
+            'document',
+            'document_name_snapshot',
+            'tracking_number',
+            'reference_code',
+            'status',
+            'updated_by',
+            'updated_by_id_snapshot',
+            'updated_at',
+            'remarks'
+        ]

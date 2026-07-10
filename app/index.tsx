@@ -23,8 +23,8 @@ import { loginUser } from "../lib/auth";
 import { useAuth } from "../lib/auth-context";
 import { getRememberedId } from "../lib/tokenStore";
 
-import ForgotPasswordModal from "../components/ForgotPasswordModal";
-import TermsModal from "../components/TermsModal";
+import ForgotPasswordModal from "../components/Universal Components/ForgotPasswordModal";
+import TermsModal from "../components/Universal Components/Terms&Conditions";
 
 // ─── Brand tokens ───────────────────────────────────────────────
 // Navy + gold, matching the CITC-APP brand palette used elsewhere in the app.
@@ -146,7 +146,7 @@ export default function LoginScreen() {
           if (roleId === 2) {
             router.replace("/AdminDashboard");
           } else {
-            router.replace("/Userdashboard");
+            router.replace("/UserDashboard");
           }
         }, 700);
       } else {

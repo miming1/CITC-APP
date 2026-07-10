@@ -1,6 +1,9 @@
 from django.urls import path
 from . import views, views_otp
+from .views import NotificationListView
+
 urlpatterns = [
+
     # =========================
     # AUTH
     # =========================
@@ -8,6 +11,7 @@ urlpatterns = [
     path('auth/login/', views.user_login),
     path('auth/me/', views.me),
     #path('auth/admin', views.admin_dashboard),
+
 
     # =========================
     # PROCEDURES
@@ -18,11 +22,20 @@ urlpatterns = [
     path('process/<int:procedure_id>/save/', views.save_full_process),
     path('process/create/', views.create_full_process),
 
+
     # =========================
     # PROCESS SCREEN (service layer)
     # =========================
-    path('process/<int:procedure_id>/', views.get_process_screen),
-    path('process/<int:procedure_id>/documents/', views.get_procedure_documents),
+    path(
+        'process/<int:procedure_id>/',
+        views.get_process_screen
+    ),
+
+    path(
+        'process/<int:procedure_id>/documents/',
+        views.get_procedure_documents
+    ),
+
 
     # =========================
     # FAQS
@@ -33,29 +46,85 @@ urlpatterns = [
     path('faqs/<int:pk>/delete/', views.delete_faq),
     path('faqs/create/', views.create_faq),
 
+
     # =========================
     # REQUESTS
     # =========================
-    path('requests/', views.submit_request),
-    path('requests/track/', views.track_requests),
+    path(
+        'requests/',
+        views.submit_request
+    ),
+
+    path(
+        'requests/track/',
+        views.track_requests
+    ),
+
+
+    # =========================
+    # REQUEST DOCUMENTS
+    # =========================
+    path(
+        'request-documents/create/',
+        views.create_request_document
+    ),
+
+    path(
+        'request-documents/<int:req_doc_id>/update/',
+        views.update_request_document
+    ),
+
 
     # =========================
     # PROFILE 
     # =========================
-    path('auth/update-profile/', views.update_profile),
+    path(
+        'auth/update-profile/',
+        views.update_profile
+    ),
+
+    path(
+        "notifications/",
+        NotificationListView.as_view(),
+        name="notifications"
+    ),
+
 
     # =========================
     # VERIFY PASSWORD 
     # =========================
-    path("verify-password/", views.verify_password, name="verify-password"),
-    
+    path(
+        "verify-password/",
+        views.verify_password,
+        name="verify-password"
+    ),
+
+
     # =========================
     # OTP-BASED AUTH (signup + forgot password)
     # =========================
-    path('auth/send-signup-otp/', views_otp.send_signup_otp),
-    path('auth/verify-signup-otp/', views_otp.verify_signup_otp),
-    path('auth/forgot-password/', views_otp.forgot_password),
-    path('auth/verify-otp/', views_otp.verify_reset_otp),
-    path('auth/reset-password/', views_otp.reset_password),
+    path(
+        'auth/send-signup-otp/',
+        views_otp.send_signup_otp
+    ),
 
+    path(
+        'auth/verify-signup-otp/',
+        views_otp.verify_signup_otp
+    ),
+
+    path(
+        'auth/forgot-password/',
+        views_otp.forgot_password
+    ),
+
+    path(
+        'auth/verify-otp/',
+        views_otp.verify_reset_otp
+    ),
+
+    path(
+        'auth/reset-password/',
+        views_otp.reset_password
+    ),
 ]

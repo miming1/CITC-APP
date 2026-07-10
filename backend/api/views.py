@@ -610,22 +610,22 @@ def create_faq(request):
     if 'answer' not in data or data['answer'] is None:
         data['answer'] = ""
 
+    now = timezone.now()
+    data['created_at'] = now
+    data['updated_at'] = now
+
     serializer = FAQSerializer(data=data)
 
     if serializer.is_valid():
+        try:
+            serializer.save()
+        except Exception as e:
+            print("CREATE FAQ ERROR:", repr(e))
+            return Response({"error": str(e)}, status=500)
 
-        serializer.save()
+        return Response(serializer.data, status=201)
 
-        return Response(
-            serializer.data,
-            status=201
-        )
-
-    return Response(
-        serializer.errors,
-        status=400
-    )
-
+    return Response(serializer.errors, status=400)
 
 @api_view(['PUT', 'PATCH'])
 def update_faq(request, pk):
@@ -681,24 +681,262 @@ def delete_faq(request, pk):
 # =========================
 # REQUESTS
 # =========================
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def submit_request(request):
 
-    serializer = RequestSerializer(data=request.data)
-
-    if serializer.is_valid():
-
-        serializer.save()
-
-        return Response(
-            serializer.data,
-            status=201
+    try:
+        profile = Users.objects.get(
+            auth_user_id=request.user.id
         )
 
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "User profile not found"},
+            status=404
+        )
+
+    procedure_id = request.data.get("procedure")
+
+    if not procedure_id:
+        return Response(
+            {"error": "Procedure is required"},
+            status=400
+        )
+
+    try:
+        procedure = Procedures.objects.get(
+            procedure_id=procedure_id
+        )
+
+    except Procedures.DoesNotExist:
+        return Response(
+            {"error": "Procedure not found"},
+            status=404
+        )
+
+
+    request_record = Requests.objects.create(
+
+        # actual references
+        user=profile,
+        procedure=procedure,
+
+        # snapshots
+        user_id_number_snapshot=profile.id_number,
+        procedure_name_snapshot=procedure.procedure_name,
+
+        created_at=timezone.now()
+    )
+
+
     return Response(
-        serializer.errors,
-        status=400
+        {
+            "message": "Request submitted successfully",
+            "request_id": request_record.request_id,
+            "procedure": request_record.procedure_name_snapshot,
+            "user_id_number": request_record.user_id_number_snapshot
+        },
+        status=201
+    )
+
+# =========================
+# REQUESTS
+# =========================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_request(request):
+
+    try:
+        profile = Users.objects.get(
+            auth_user_id=request.user.id
+        )
+
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "User profile not found"},
+            status=404
+        )
+
+    procedure_id = request.data.get("procedure")
+
+    if not procedure_id:
+        return Response(
+            {"error": "Procedure is required"},
+            status=400
+        )
+
+    try:
+        procedure = Procedures.objects.get(
+            procedure_id=procedure_id
+        )
+
+    except Procedures.DoesNotExist:
+        return Response(
+            {"error": "Procedure not found"},
+            status=404
+        )
+
+
+    request_record = Requests.objects.create(
+
+        # actual references
+        user=profile,
+        procedure=procedure,
+
+        # snapshots
+        user_id_number_snapshot=profile.id_number,
+        procedure_name_snapshot=procedure.procedure_name,
+
+        created_at=timezone.now()
+    )
+
+
+    return Response(
+        {
+            "message": "Request submitted successfully",
+            "request_id": request_record.request_id,
+            "procedure": request_record.procedure_name_snapshot,
+            "user_id_number": request_record.user_id_number_snapshot
+        },
+        status=201
+    )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_request_document(request):
+
+    request_id = request.data.get("request")
+    document_id = request.data.get("document")
+
+
+    if not request_id or not document_id:
+        return Response(
+            {
+                "error": "Request and document are required"
+            },
+            status=400
+        )
+
+
+    try:
+
+        request_record = Requests.objects.get(
+            request_id=request_id
+        )
+
+        document = Documents.objects.get(
+            document_id=document_id
+        )
+
+
+    except Requests.DoesNotExist:
+
+        return Response(
+            {"error": "Request not found"},
+            status=404
+        )
+
+
+    except Documents.DoesNotExist:
+
+        return Response(
+            {"error": "Document not found"},
+            status=404
+        )
+
+
+    request_document = RequestDocuments.objects.create(
+
+        request=request_record,
+
+        document=document,
+
+        # snapshot
+        document_name_snapshot=document.document_name,
+
+        status="pending",
+
+        created_at=timezone.now()
+    )
+
+
+    return Response(
+        {
+            "message": "Document submitted successfully",
+            "request_document_id": request_document.req_doc_id,
+            "document": request_document.document_name_snapshot
+        },
+        status=201
+    )
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_request_document(request, req_doc_id):
+
+    try:
+
+        request_document = RequestDocuments.objects.get(
+            req_doc_id=req_doc_id
+        )
+
+
+    except RequestDocuments.DoesNotExist:
+
+        return Response(
+            {
+                "error": "Request document not found"
+            },
+            status=404
+        )
+
+
+    try:
+
+        profile = Users.objects.get(
+            auth_user_id=request.user.id
+        )
+
+    except Users.DoesNotExist:
+
+        return Response(
+            {
+                "error": "User profile not found"
+            },
+            status=404
+        )
+
+
+    new_status = request.data.get("status")
+    remarks = request.data.get("remarks")
+
+
+    if new_status:
+        request_document.status = new_status
+
+
+    if remarks is not None:
+        request_document.remarks = remarks
+
+
+    # updater snapshot
+    request_document.updated_by = profile
+    request_document.updated_by_id_snapshot = profile.id_number
+
+    request_document.updated_at = timezone.now()
+
+
+    request_document.save()
+
+
+    return Response(
+        {
+            "message": "Request document updated successfully",
+            "status": request_document.status,
+            "updated_by": request_document.updated_by_id_snapshot
+        }
     )
 
 
@@ -1026,3 +1264,28 @@ def create_procedure(request):
     )
 
     return Response({"message": "Process created successfully", "procedure_id": procedure.procedure_id}, status=201)
+
+from .models import Notifications
+from .serializers import NotificationSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+
+class NotificationListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        user_profile = request.user.profile
+
+        notifications = Notifications.objects.filter(
+            user=user_profile
+        ).order_by("-created_at")
+
+        serializer = NotificationSerializer(
+            notifications,
+            many=True
+        )
+
+        return Response(serializer.data)

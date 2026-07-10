@@ -7,7 +7,7 @@ import {
   TouchableOpacity, useColorScheme, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Header from '../components/Header';
+import Header from '../components/Universal Components/Header';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -252,7 +252,7 @@ export default function SubmissionHistory() {
 
       {/* ── Back to Home Button ── */}
       <View style={[styles.footer, { backgroundColor: bg }]}>
-        <TouchableOpacity style={[styles.backBtn, { backgroundColor: accent }]} onPress={() => router.replace('/Userdashboard')}>
+        <TouchableOpacity style={[styles.backBtn, { backgroundColor: accent }]} onPress={() => router.replace('/UserDashboard')}>
           <Text style={styles.backBtnText}>Back to Home</Text>
         </TouchableOpacity>
       </View>
