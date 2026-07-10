@@ -24,9 +24,9 @@ interface Submission {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const SUBMISSIONS: Submission[] = [
-  { id: '1', formName: 'INC Form',               refNo: '35169725031', date: '2026-06-30', status: 'Completed' },
-  { id: '2', formName: 'Medical Certificate',    refNo: '40139340587', date: '2026-06-18', status: 'Completed' },
-  { id: '3', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-06-06', status: 'Completed' },
+  { id: '1', formName: 'INC Form',               refNo: '35169725031', date: '2026-07-30', status: 'Completed' },
+  { id: '2', formName: 'Medical Certificate',    refNo: '40139340587', date: '2026-06-10', status: 'Completed' },
+  { id: '3', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-07-06', status: 'Pending' },
 ];
 
 const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 'Custom Date'];
