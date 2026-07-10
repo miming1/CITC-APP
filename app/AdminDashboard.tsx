@@ -11,15 +11,15 @@ import {
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import AdminQuestionCategories from "../components/AdminQuestionCategories";
-import AdminQuickActions from "../components/AdminQuickActions";
-import AdminStatistics from "../components/AdminStatistics";
-import AssignedProcedures from "../components/AssignedProcedures";
-import Header from "../components/Header";
-import SearchBar from "../components/SearchBar";
+import AdminFAQCategories from "../components/Admin Components/AdminFAQCategories";
+import AssignedProcedures from "../components/Admin Components/AdminProcedures";
+import AdminStatistics from "../components/Admin Components/Statistics";
+import AdminQuickActions from "../components/Admin Components/TrackingCodeActions";
+import Header from "../components/Universal Components/Header";
+import SearchBar from "../components/Universal Components/SearchBar";
 
-import ManualCodeModal from "../components/ManualCodeModal";
-import QRCodeModal from "../components/QRCodeModal";
+import ManualCodeModal from "../components/Admin Components/ManualCodeModal";
+import QRCodeModal from "../components/Admin Components/QRCodeModal";
 
 import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
             procedures={procedures}
             onPressProcedure={(procedure) => {
               router.push({
-                pathname: "/process",
+                pathname: "/ProcedureTab",
                 params:{
                   id: procedure.procedure_id,
                   roleId:"2",
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
             }}
             onSeeAll={()=>{
               router.push({
-                pathname:"/process-list",
+                pathname:"/ProcedurePage",
                 params:{
                   roleId:"2",
                 },
@@ -235,12 +235,12 @@ export default function AdminDashboard() {
 
 
           {/* FAQ CATEGORIES */}
-          <AdminQuestionCategories
+          <AdminFAQCategories
             procedures={procedures}
             categories={faqCategories}
             onPressCategory={(category) => {
               router.push({
-                pathname: "/faq",
+                pathname: "/FAQPage",
                 params: {
                   categoryId: String(category.category_id),
                   roleId: "2",
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
             }}
             onSeeAll={() => {
               router.push({
-                pathname: "/faq",
+                pathname: "/FAQPage",
                 params: {
                   roleId: "2",
                 },

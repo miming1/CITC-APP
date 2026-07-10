@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   Platform,
   ScrollView,
@@ -15,11 +15,11 @@ import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../constants/api";
 import { Colors } from "../constants/theme";
 
-import UserQuestionCategories from "@/components/UserQuestionCategories";
-import FloatingButtons from "../components/FloatingButtons";
-import Header from "../components/Header";
-import PopularProcesses from "../components/PopularProcesses";
-import SearchBar from "../components/SearchBar";
+import UserQuestionCategories from "@/components/User Components/UserFAQCategories";
+import FloatingButtons from "../components/Universal Components/FloatingButtons";
+import Header from "../components/Universal Components/Header";
+import SearchBar from "../components/Universal Components/SearchBar";
+import PopularProcesses from "../components/User Components/ProcedureCard";
 
 import { getToken } from "../lib/auth";
 
@@ -40,6 +40,10 @@ export default function UserDashboard() {
   const colorScheme = useColorScheme() ?? "light";
   const isDark = colorScheme === "dark";
   const colors = Colors[colorScheme as "light" | "dark"];
+
+  const { query } = useLocalSearchParams<{ query: string }>();
+  const [search, setSearch] = useState(query ?? "");
+  
 
   const { width } = useWindowDimensions();
   const isDesktop = width >= 1024;
@@ -174,9 +178,10 @@ export default function UserDashboard() {
             onSearch={(query) => {
               router.push({
                 pathname: "/SearchResults",
-                params: { query },
+                params: { query: search, roleId: 1, },
               });
             }}
+            onChangeText={setSearch}
           />
 
           {/* POPULAR */}
@@ -184,7 +189,7 @@ export default function UserDashboard() {
             processes={processes}
             onPressProcess={(process) => {
               router.push({
-                pathname: "/process",
+                pathname: "/ProcedureTab",
                 params: {
                   id: process.id,
                   roleId: 1,
@@ -193,7 +198,7 @@ export default function UserDashboard() {
             }}
             onSeeAll={() => {
               router.push({
-                pathname: "/process-list",
+                pathname: "/ProcedurePage",
                 params: {
                   roleId: "1",
                 },
@@ -206,7 +211,7 @@ export default function UserDashboard() {
             categories={faqCategories}
             onPressCategory={(category) =>
               router.push({
-                pathname: "/faq",
+                pathname: "/FAQPage",
                 params: {
                   categoryId: category.id,
                   procedureId: category.procedure_id,
@@ -216,7 +221,7 @@ export default function UserDashboard() {
             }
             onSeeAll={() => {
               router.push({
-                pathname: "/faq",
+                pathname: "/FAQPage",
                 params: {
                   roleId: "1",
                 },

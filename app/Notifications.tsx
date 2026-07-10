@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Header from "../components/Header";
+import Header from "../components/Universal Components/Header";
 import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
 import { getToken } from "../lib/auth";
