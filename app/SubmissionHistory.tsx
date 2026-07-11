@@ -48,6 +48,7 @@ const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 
 export default function SubmissionHistory() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme       = Colors[colorScheme];
+  const isDark      = colorScheme === 'dark';
 
   const [search, setSearch]               = useState('');
   // null = no date filter applied, i.e. "All Submissions" (the default state).
@@ -152,10 +153,20 @@ export default function SubmissionHistory() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Search Bar — shape matches reusable SearchBar component ── */}
-        <View style={[styles.searchRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
-          <View style={[styles.searchIconWrap, { backgroundColor: theme.border }]}>
-            <Ionicons name="search" size={20} color={theme.tint} />
+        {/* ── Search Bar — colors/icon/shadow copied exactly from the
+             reusable SearchBar component ── */}
+        <View style={[
+          styles.searchRow,
+          {
+            backgroundColor: isDark ? '#1F2937' : '#F8FAFC',
+            borderColor: theme.border,
+          },
+        ]}>
+          <View style={[
+            styles.searchIconWrap,
+            { backgroundColor: isDark ? '#172554' : '#DBEAFE' },
+          ]}>
+            <Ionicons name="search" size={20} color={isDark ? '#93C5FD' : theme.tint} />
           </View>
           <TextInput
             style={[
@@ -174,7 +185,7 @@ export default function SubmissionHistory() {
               activeOpacity={0.7}
               style={styles.searchClearBtn}
             >
-              <Ionicons name="close-circle" size={22} color={theme.icon} />
+              <Ionicons name="close-circle" size={22} color={isDark ? '#93C5FD' : theme.icon} />
             </TouchableOpacity>
           )}
         </View>
@@ -334,7 +345,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
 
-  // ── Search Bar — same shape as reusable SearchBar component ─────────────────
+  // ── Search Bar — colors/shadow copied exactly from the reusable
+  // SearchBar component's `container`/`iconContainer` styles ─────────────────
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -343,6 +355,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 5,
     marginBottom: 12,
+
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   searchIconWrap: {
     width: 38,
