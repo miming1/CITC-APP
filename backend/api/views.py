@@ -1288,14 +1288,14 @@ def update_request_status(request, request_id):
 
     student = req_doc.request.user
 
-    if status.lower() == "approved":
+    if status and status.lower() == "approved":
 
         message = (
             f"Your request for {req_doc.document_name_snapshot} "
             "has been approved."
         )
 
-    elif status.lower() == "rejected":
+    elif status and status.lower() == "rejected":
 
         message = (
             f"Your request for {req_doc.document_name_snapshot} "
