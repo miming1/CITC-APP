@@ -276,7 +276,7 @@ export default function Header({
         </Text>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => setMenuOpen(true)}
+          onPress={() => setMenuOpen(prev => !prev)}
           style={styles.menuButton}
         >
           <View style={styles.menuIconWrapper}>
@@ -300,7 +300,13 @@ export default function Header({
       >
         <Pressable
           style={styles.overlay}
-          onPress={() => setMenuOpen(false)}
+          onPress={() => {
+            if (menuOpen) {
+              setMenuOpen(false);
+            } else {
+            setMenuOpen(true);
+            }
+          }}
         >
           <Animated.View
             style={[
