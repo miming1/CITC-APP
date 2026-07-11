@@ -13,8 +13,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import Header from "../components/Header";
-import SearchBar from "../components/SearchBar";
+import FloatingButtons from "../components/Universal Components/FloatingButtons";
+import Header from "../components/Universal Components/Header";
+import SearchBar from "../components/Universal Components/SearchBar";
 
 import { Colors } from "../constants/theme";
 import { fetchFAQCategories, fetchProcedures } from "../lib/api";
@@ -32,7 +33,12 @@ interface FAQCategory {
 }
 
 export default function SearchResults() {
-  const { query } = useLocalSearchParams<{ query: string }>();
+  const { query, roleId } = useLocalSearchParams<{ 
+    query: string;
+    roleId: string;
+  }>();
+
+  const isStudent = roleId === "1";
 
   const [search, setSearch] = useState(query ?? "");
 
@@ -332,7 +338,7 @@ export default function SearchResults() {
                   activeOpacity={0.8}
                   onPress={() =>
                     router.push({
-                      pathname: "/process",
+                      pathname: "/ProcedureTab",
                       params: {
                         id: item.procedure_id,
                         roleId: 1,
@@ -410,7 +416,7 @@ export default function SearchResults() {
                   ]}
                   onPress={() =>
                     router.push({
-                      pathname: "/faq",
+                      pathname: "/FAQPage",
                       params: {
                         categoryId: category.id,
                       },
@@ -454,6 +460,9 @@ export default function SearchResults() {
           )}
         </View>
       </ScrollView>
+      {isStudent && (
+        <FloatingButtons chatbotOnly/>
+      )}
     </SafeAreaView>
   );
 }

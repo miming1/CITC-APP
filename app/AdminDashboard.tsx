@@ -11,19 +11,19 @@ import {
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import AdminQuestionCategories from "../components/AdminQuestionCategories";
-import AdminQuickActions from "../components/AdminQuickActions";
-import AdminStatistics from "../components/AdminStatistics";
-import AssignedProcedures from "../components/AssignedProcedures";
-import Header from "../components/Header";
-import SearchBar from "../components/SearchBar";
+import AdminFAQCategories from "../components/Admin Components/AdminFAQCategories";
+import AssignedProcedures from "../components/Admin Components/AdminProcedures";
+import AdminStatistics from "../components/Admin Components/Statistics";
+import AdminQuickActions from "../components/Admin Components/TrackingCodeActions";
+import Header from "../components/Universal Components/Header";
+import SearchBar from "../components/Universal Components/SearchBar";
 
-import ManualCodeModal from "../components/ManualCodeModal";
-import QRCodeModal from "../components/QRCodeModal";
+import ManualCodeModal from "../components/Admin Components/ManualCodeModal";
+import QRCodeModal from "../components/Admin Components/QRCodeModal";
 
-import { searchRequestByReference } from "../lib/api";
 import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
+import { searchRequestByReference } from "../lib/api";
 import { getToken } from "../lib/auth";
 
 // =========================
@@ -217,8 +217,8 @@ export default function AdminDashboard() {
             procedures={procedures}
             onPressProcedure={(procedure) => {
               router.push({
-                pathname: "/process",
-                params: {
+                pathname: "/ProcedureTab",
+                params:{
                   id: procedure.procedure_id,
                   roleId: "2",
                 },
@@ -226,9 +226,9 @@ export default function AdminDashboard() {
             }}
             onSeeAll={() => {
               router.push({
-                pathname: "/process-list",
-                params: {
-                  roleId: "2",
+                pathname:"/ProcedurePage",
+                params:{
+                  roleId:"2",
                 },
               });
             }}
@@ -236,12 +236,12 @@ export default function AdminDashboard() {
 
 
           {/* FAQ CATEGORIES */}
-          <AdminQuestionCategories
+          <AdminFAQCategories
             procedures={procedures}
             categories={faqCategories}
             onPressCategory={(category) => {
               router.push({
-                pathname: "/faq",
+                pathname: "/FAQPage",
                 params: {
                   categoryId: String(category.category_id),
                   roleId: "2",
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
             }}
             onSeeAll={() => {
               router.push({
-                pathname: "/faq",
+                pathname: "/FAQPage",
                 params: {
                   roleId: "2",
                 },
@@ -281,7 +281,7 @@ export default function AdminDashboard() {
             setShowManualModal(false);
 
             router.push({
-              pathname: "/active-req",
+              pathname: "/ActiveRequests",
               params: {
                 roleId: "2",
                 request: JSON.stringify(request),
