@@ -67,7 +67,7 @@ export default function TermsModal({
                   backgroundColor:
                     colorScheme === "dark"
                       ? "#EBA937"
-                      : "#DBEAFE",
+                      : "#fcb843",
                 },
               ]}
             >
