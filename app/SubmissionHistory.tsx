@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
@@ -34,9 +33,12 @@ interface Submission {
 // returns Completed/Rejected records — Pending/active ones stay off this
 // screen entirely.
 const SUBMISSIONS: Submission[] = [
-  { id: '1', formName: 'INC Form',               refNo: '35169725031', date: '2026-07-30', status: 'Completed' },
-  { id: '2', formName: 'Medical Certificate',    refNo: '40139340587', date: '2026-06-10', status: 'Completed' },
-  { id: '3', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-07-06', status: 'Rejected' },
+  { id: '1', formName: 'INC Form',               refNo: '35169725031', date: '2026-07-11', status: 'Completed' },
+  { id: '2', formName: 'Medical Certificate',    refNo: '40139340587', date: '2026-07-03', status: 'Completed' },
+  { id: '3', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-07-09', status: 'Rejected' },
+  { id: '4', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2025-01-06', status: 'Rejected' },
+  { id: '5', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-06-06', status: 'Completed' },
+
 ];
 
 const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 'Custom Date'];
@@ -315,12 +317,6 @@ export default function SubmissionHistory() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ── Back to Home Button ── */}
-      <View style={[styles.footer, { backgroundColor: theme.background }]}>
-        <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.tint }]} onPress={() => router.replace('/UserDashboard')}>
-          <Text style={styles.backBtnText}>Back to Home</Text>
-        </TouchableOpacity>
-      </View>
 
     </SafeAreaView>
   );
@@ -447,7 +443,5 @@ const styles = StyleSheet.create({
 
   // ── Footer ─────────────────────────────────────────────────────────────────
   footer:       { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
-  backBtn:      { borderRadius: 30, paddingVertical: 16, alignItems: 'center' },
-  backBtnText:  { color: '#fff', fontSize: 15, fontWeight: '700' },
 
 });

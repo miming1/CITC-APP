@@ -2,14 +2,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  useWindowDimensions,
-  View,
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useColorScheme,
+    useWindowDimensions,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -101,6 +101,16 @@ export default function SearchResults() {
         c.category_name.toLowerCase().includes(q)
       ),
     [q, categories]
+  );
+
+  // Feeds the SearchBar's autosuggest dropdown from data already loaded on
+  // this page, matching the behavior added on the Dashboard.
+  const suggestionPool = useMemo(
+    () => [
+      ...procedures.map((p) => p.procedure_name),
+      ...categories.map((c) => c.category_name),
+    ],
+    [procedures, categories]
   );
 
   const hasResults =
@@ -210,14 +220,22 @@ export default function SearchResults() {
             isDesktop && styles.desktopContainer,
           ]}
         >
-          <SearchBar
-            placeholder="Search procedures or FAQs..."
-            onSearch={(newQuery) => {
-              setSearch(newQuery);
-              router.setParams({ query: newQuery });
-            }}
-            onChangeText={setSearch}
-          />
+          <View style={styles.searchBarWrap}>
+            <SearchBar
+              placeholder="Search procedures or FAQs..."
+              value={search}
+              suggestions={suggestionPool}
+              onSearch={(newQuery) => {
+                setSearch(newQuery);
+                router.setParams({ query: newQuery });
+              }}
+              onChangeText={setSearch}
+              onSelectSuggestion={(item) => {
+                setSearch(item);
+                router.setParams({ query: item });
+              }}
+            />
+          </View>
 
           {/* SEARCH SUMMARY */}
 
@@ -472,13 +490,17 @@ const styles = StyleSheet.create({
   },
 
   scroll: {
-    paddingTop: 16,
     paddingBottom: 140,
   },
 
   pageContainer: {
     width: "100%",
-    paddingHorizontal: 20,
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+
+  searchBarWrap: {
+    marginBottom: 8,
   },
 
 
