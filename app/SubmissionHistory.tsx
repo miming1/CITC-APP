@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  Modal, Platform, Pressable, ScrollView,
+  KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
   StyleSheet, Text, TextInput,
   TouchableOpacity, useColorScheme, View,
 } from 'react-native';
@@ -47,13 +48,32 @@ export default function SubmissionHistory() {
   const theme       = Colors[colorScheme];
 
   const [search, setSearch]               = useState('');
-  const [activeFilter, setActiveFilter]   = useState<FilterOption>('This Month');
+  // null = no date filter applied, i.e. "All Submissions" (the default state).
+  const [activeFilter, setActiveFilter]   = useState<FilterOption | null>(null);
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [customDateModal, setCustomDateModal] = useState(false);
   const [customYear,  setCustomYear]  = useState('');
   const [customMonth, setCustomMonth] = useState('');
   const [customDay,   setCustomDay]   = useState('');
   const [appliedCustomDate, setAppliedCustomDate] = useState('');
+
+  // Reset search + filters back to default whenever the user navigates away
+  // from this screen, so returning to it later always starts fresh showing
+  // all submissions.
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setSearch('');
+        setActiveFilter(null);
+        setAppliedCustomDate('');
+        setCustomYear('');
+        setCustomMonth('');
+        setCustomDay('');
+        setDropdownOpen(false);
+        setCustomDateModal(false);
+      };
+    }, [])
+  );
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -64,6 +84,9 @@ export default function SubmissionHistory() {
         s.date.includes(search);
 
       if (!matchesSearch) return false;
+
+      // No filter selected — show every match regardless of date.
+      if (!activeFilter) return true;
 
       const submissionDate = new Date(s.date);
       const now = new Date();
@@ -106,9 +129,19 @@ export default function SubmissionHistory() {
     setCustomDateModal(false);
   }
 
-  const filterLabel = activeFilter === 'Custom Date' && appliedCustomDate
-    ? `Custom: ${appliedCustomDate}`
-    : activeFilter;
+  function clearFilter() {
+    setActiveFilter(null);
+    setAppliedCustomDate('');
+    setCustomYear('');
+    setCustomMonth('');
+    setCustomDay('');
+  }
+
+  const filterLabel = activeFilter
+    ? (activeFilter === 'Custom Date' && appliedCustomDate
+        ? `Custom: ${appliedCustomDate}`
+        : activeFilter)
+    : null;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -155,10 +188,20 @@ export default function SubmissionHistory() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Active Filter Label ── */}
-        <Text style={[styles.filterLabel, { color: theme.icon }]}>
-          Filtered by: <Text style={[styles.filterLabelBold, { color: theme.tint2 }]}>{filterLabel}</Text>
-        </Text>
+        {/* ── Active Filter Pill ── */}
+        <View style={styles.filterLabelRow}>
+          <Text style={[styles.filterLabel, { color: theme.icon }]}>Filtered by:</Text>
+          {filterLabel ? (
+            <View style={[styles.filterPill, { backgroundColor: theme.border }]}>
+              <Text style={[styles.filterPillText, { color: theme.tint2 }]}>{filterLabel}</Text>
+              <TouchableOpacity onPress={clearFilter} hitSlop={8} style={styles.filterPillClose}>
+                <Ionicons name="close" size={13} color={theme.tint2} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Text style={[styles.filterLabelBold, { color: theme.tint2 }]}>All Submissions</Text>
+          )}
+        </View>
 
         {/* ── Table Header ── */}
         <View style={styles.tableHeader}>
@@ -228,43 +271,48 @@ export default function SubmissionHistory() {
         animationType="fade"
         onRequestClose={() => setCustomDateModal(false)}
       >
-        {/* Only THIS outer Pressable closes the modal. The card below stops
-            the press from bubbling up, so tapping any input inside it
-            (or anywhere on the card) no longer dismisses the modal. */}
-        <Pressable style={styles.modalOverlay} onPress={() => setCustomDateModal(false)}>
-          <Pressable
-            style={[styles.modalCard, { backgroundColor: theme.background }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <Text style={[styles.modalTitle, { color: theme.tint }]}>Enter Custom Date</Text>
-            <View style={[styles.modalDivider, { backgroundColor: theme.border }]} />
-            <View style={styles.dateRow}>
-              <TextInput
-                style={[styles.dateInput, { flex: 1.3, color: theme.tint, borderBottomColor: theme.tint }]}
-                placeholder="YYYY" placeholderTextColor={theme.icon}
-                value={customYear} onChangeText={setCustomYear}
-                keyboardType="numeric" maxLength={4}
-              />
-              <Text style={[styles.dateSep, { color: theme.tint }]}>/</Text>
-              <TextInput
-                style={[styles.dateInput, { flex: 1, color: theme.tint, borderBottomColor: theme.tint }]}
-                placeholder="MM" placeholderTextColor={theme.icon}
-                value={customMonth} onChangeText={setCustomMonth}
-                keyboardType="numeric" maxLength={2}
-              />
-              <Text style={[styles.dateSep, { color: theme.tint }]}>/</Text>
-              <TextInput
-                style={[styles.dateInput, { flex: 1, color: theme.tint, borderBottomColor: theme.tint }]}
-                placeholder="DD" placeholderTextColor={theme.icon}
-                value={customDay} onChangeText={setCustomDay}
-                keyboardType="numeric" maxLength={2}
-              />
-            </View>
-            <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.tint }]} onPress={applyCustomDate}>
-              <Text style={styles.modalBtnText}>Apply</Text>
-            </TouchableOpacity>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          {/* Only THIS outer Pressable closes the modal. The card below stops
+              the press from bubbling up, so tapping any input inside it
+              (or anywhere on the card) no longer dismisses the modal. */}
+          <Pressable style={styles.modalOverlay} onPress={() => setCustomDateModal(false)}>
+            <Pressable
+              style={[styles.modalCard, { backgroundColor: theme.background }]}
+              onPress={(e) => e.stopPropagation()}
+            >
+              <Text style={[styles.modalTitle, { color: theme.tint }]}>Enter Custom Date</Text>
+              <View style={[styles.modalDivider, { backgroundColor: theme.border }]} />
+              <View style={styles.dateRow}>
+                <TextInput
+                  style={[styles.dateInput, styles.dateInputYear, { color: theme.tint, borderBottomColor: theme.tint }]}
+                  placeholder="YYYY" placeholderTextColor={theme.icon}
+                  value={customYear} onChangeText={setCustomYear}
+                  keyboardType="numeric" maxLength={4}
+                />
+                <Text style={[styles.dateSep, { color: theme.tint }]}>/</Text>
+                <TextInput
+                  style={[styles.dateInput, styles.dateInputShort, { color: theme.tint, borderBottomColor: theme.tint }]}
+                  placeholder="MM" placeholderTextColor={theme.icon}
+                  value={customMonth} onChangeText={setCustomMonth}
+                  keyboardType="numeric" maxLength={2}
+                />
+                <Text style={[styles.dateSep, { color: theme.tint }]}>/</Text>
+                <TextInput
+                  style={[styles.dateInput, styles.dateInputShort, { color: theme.tint, borderBottomColor: theme.tint }]}
+                  placeholder="DD" placeholderTextColor={theme.icon}
+                  value={customDay} onChangeText={setCustomDay}
+                  keyboardType="numeric" maxLength={2}
+                />
+              </View>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: theme.tint }]} onPress={applyCustomDate}>
+                <Text style={styles.modalBtnText}>Apply</Text>
+              </TouchableOpacity>
+            </Pressable>
           </Pressable>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ── Back to Home Button ── */}
@@ -315,8 +363,20 @@ const styles = StyleSheet.create({
   filterRow:     { alignItems: 'flex-end', marginBottom: 4 },
   filterBtn:     { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, gap: 6 },
   filterBtnText: { fontSize: 13, fontWeight: '500' },
-  filterLabel:   { fontSize: 13, marginBottom: 10 },
+  filterLabelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
+  filterLabel:   { fontSize: 13 },
   filterLabelBold: { fontWeight: '700' },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    paddingLeft: 12,
+    paddingRight: 6,
+    paddingVertical: 4,
+    gap: 6,
+  },
+  filterPillText:  { fontSize: 12, fontWeight: '700' },
+  filterPillClose: { padding: 2 },
 
   // ── Dropdown ───────────────────────────────────────────────────────────────
   dropdownOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
@@ -362,11 +422,25 @@ const styles = StyleSheet.create({
 
   // ── Custom Date Modal ──────────────────────────────────────────────────────
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
-  modalCard:    { borderRadius: 16, padding: 28, width: '80%', alignItems: 'center', elevation: 8 },
+  modalCard:    { borderRadius: 16, padding: 28, width: '80%', maxWidth: 360, alignItems: 'center', elevation: 8 },
   modalTitle:   { fontSize: 17, fontWeight: '600', marginBottom: 12 },
   modalDivider: { width: '100%', height: 1, marginBottom: 24 },
   dateRow:      { flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 28, gap: 6 },
-  dateInput:    { flex: 1, borderBottomWidth: 1.5, fontSize: 20, textAlign: 'center', paddingVertical: 4 },
+  dateInput:    {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    borderBottomWidth: 1.5,
+    fontSize: 20,
+    textAlign: 'center',
+    paddingVertical: 4,
+  },
+  // YYYY needs to hold 4 digits vs. 2 for MM/DD, so it gets more of the row's
+  // available space — but flexBasis: 0 + minWidth: 0 above is what actually
+  // lets every input shrink to fit the modal card instead of overflowing it.
+  dateInputYear:  { flexGrow: 1.3 },
+  dateInputShort: { flexGrow: 1 },
   dateSep:      { fontSize: 20, fontWeight: '300', flexShrink: 0 },
   modalBtn:     { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 40 },
   modalBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
