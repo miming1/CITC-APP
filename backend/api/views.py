@@ -36,7 +36,8 @@ from .serializers import (
     ProcedureRequirementSerializer,
     FAQCategorySerializer,
     FAQSerializer,
-    RequestSerializer
+    RequestSerializer,
+    ActiveRequestSerializer
 )
 
 from .services.procedure_service import get_full_procedure
@@ -805,6 +806,128 @@ def track_requests(request):
     return Response(
         RequestSerializer(requests, many=True).data
     )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def active_requests(request):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=404,
+        )
+
+    # STUDENT
+    if profile.role.role_id == 1:
+        requests = (
+            Requests.objects
+            .filter(user=profile)
+            .select_related("procedure", "user")
+            .order_by("-created_at")
+        )
+
+    # ADMIN
+    else:
+        allowed_procedures = OfficeProcedures.objects.filter(
+            office_id=profile.office_id
+        ).values_list(
+            "procedure_id",
+            flat=True,
+        )
+
+        requests = (
+            Requests.objects
+            .filter(procedure_id__in=allowed_procedures)
+            .select_related("procedure", "user")
+            .order_by("-created_at")
+        )
+
+    serializer = ActiveRequestSerializer(
+        requests,
+        many=True,
+    )
+
+    return Response(serializer.data)
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def search_request_by_reference(request):
+
+    reference_code = request.data.get("reference_code")
+
+    if not reference_code:
+        return Response(
+            {"error": "Reference code is required"},
+            status=400
+        )
+
+    try:
+        req_doc = (
+            RequestDocuments.objects
+            .select_related(
+                "request",
+                "request__procedure",
+                "document",
+            )
+            .get(reference_code=reference_code)
+        )
+
+    except RequestDocuments.DoesNotExist:
+        return Response(
+            {"error": "Request not found"},
+            status=404
+        )
+
+    serializer = ActiveRequestSerializer(req_doc.request)
+
+    return Response(serializer.data)
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_request_status(request, request_id):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=404
+        )
+
+    # only admins
+    if getattr(profile.role, "role_id", None) != 2:
+        return Response(
+            {"error": "Unauthorized"},
+            status=403
+        )
+
+    try:
+        req_doc = RequestDocuments.objects.get(
+            request_id=request_id
+        )
+    except RequestDocuments.DoesNotExist:
+        return Response(
+            {"error": "Request not found"},
+            status=404
+        )
+
+    status = request.data.get("status")
+    remarks = request.data.get("remarks")
+
+    if status is not None:
+        req_doc.status = status
+
+    if remarks is not None:
+        req_doc.remarks = remarks
+
+    req_doc.updated_at = timezone.now()
+    req_doc.save()
+
+    return Response({
+        "message": "Request updated successfully"
+    })
 
 # =========================
 # PROCESS SCREEN

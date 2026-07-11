@@ -51,7 +51,7 @@ export default function TrackScreen() {
   const { width } = useWindowDimensions();
   const horizontalMargin = width > 768 ? 100 : 20;
 
-  const isDesktop = width >= 1024;
+  const isDesktop = width >= 768;
 
   const [documents, setDocuments] = useState<Document[]>([]);
 
@@ -305,7 +305,7 @@ export default function TrackScreen() {
             },
           ]}
         >
-          Choose Document to Track
+          Track Document
         </Text>
 
         <Text
@@ -316,7 +316,7 @@ export default function TrackScreen() {
             },
           ]}
         >
-          Select the document you want to track.
+          Select the type of document you need to track and provide your student information.
         </Text>
         {errors.length > 0 && (
           <View
@@ -367,6 +367,18 @@ export default function TrackScreen() {
             ))}
           </View>
         )}
+
+        <Text
+          style={[
+            styles.sectionTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          Available Documents
+        </Text>
+
         <View style={styles.docListContainer}>
           {documents.map((doc) => (
             <DocList
@@ -387,6 +399,17 @@ export default function TrackScreen() {
           ))}
         </View>
 
+        <Text
+          style={[
+            styles.sectionTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          Student Information
+        </Text>
+
         <View
           style={styles.detailsContainer}
         >
@@ -401,8 +424,8 @@ export default function TrackScreen() {
             }
             shadow={
               colorScheme === "dark"
-                ? "0px 4px 16px rgba(255,255,255,0.08)"
-                : "0px 4px 16px rgba(0,0,0,0.12)"
+                ? "0px 4px 16px rgba(255, 255, 255, 0.1)"
+                : "0px 4px 16px rgba(0, 0, 0, 0.12)"
             }
           >
             {loadingProfile ? (
@@ -464,135 +487,125 @@ export default function TrackScreen() {
                   ]}
                 />
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                    },
-                  ]}
-                >
-                  Student ID
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Student ID
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.studentId,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {
-                    studentInfo.studentId
-                  }
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.studentId}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Name
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Name
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {studentInfo.name}
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.name}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Program
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Program
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {
-                    studentInfo.program
-                  }
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.program}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Year Level
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Year Level
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {
-                    studentInfo.yearLevel
-                  }
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.yearLevel}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Email
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Email
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {studentInfo.email}
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.email}
+                  </Text>
+                </View>
               </>
             ) : (
               <>
@@ -729,18 +742,27 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginTop: 20,
-    marginBottom: 3,
+    fontSize: 24,
+    fontWeight: "700",
+    marginTop: 4,
   },
 
   description: {
-    marginBottom: 10,
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 16,
+    lineHeight: 22,
   },
 
   detailsContainer: {
     width: "100%",
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 20,
+    marginBottom: 12,
   },
 
   errorContainer: {
@@ -765,7 +787,7 @@ const styles = StyleSheet.create({
   },
 
   docListContainer: {
-    marginTop: 16,
+    marginTop: 10,
   },
 
   loadingText: {
@@ -788,7 +810,7 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
   },
 
@@ -803,19 +825,19 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 13,
+    fontSize: 17,
+    fontWeight: "700",
   },
 
-  studentId: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginTop: 6,
+  infoGroup: {
+    marginBottom: 18,
   },
 
   infoValue: {
     fontSize: 16,
-    fontWeight: "600",
-    marginTop: 4,
+    fontWeight: "400",
+    marginTop: 3,
+    lineHeight: 22,
   },
 
   messageText: {
@@ -839,19 +861,22 @@ const styles = StyleSheet.create({
 
   footer: {
     borderColor: "#d8d8d8",
-    borderTopWidth: 0.1,
+    borderTopWidth: 0.5,
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    paddingVertical: 15,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
 
   ProceedBtn: {
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
-    marginHorizontal: 500,
+    width: "100%",
+    maxWidth: 420,
+    alignSelf: "center",
   },
 
   ProceedBtnText: {

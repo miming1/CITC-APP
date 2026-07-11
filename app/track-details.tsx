@@ -19,7 +19,7 @@ export default function TrackingDetailsScreen() {
     const { width } = useWindowDimensions();
     const horizontalMargin = width > 768 ? 100 : 20;
 
-    const isDesktop = width >= 1024;
+    const isDesktop = width >= 768;
 
     const {
         reference,
@@ -100,22 +100,7 @@ export default function TrackingDetailsScreen() {
                         Request Submitted Successfully!
                     </Text>
 
-                    <View
-                        style={[
-                            styles.qrCard,
-                            {
-                                backgroundColor: colors.background,
-                                borderColor:
-                                    colorScheme === "dark"
-                                        ? "#2c346b"
-                                        : "#FFFFFF",
-                                boxShadow:
-                                    colorScheme === "dark"
-                                        ? "0px 4px 16px rgba(255,255,255,0.08)"
-                                        : "0px 4px 16px rgba(0,0,0,0.12)",
-                            },
-                        ]}
-                    >
+                    <View>
                         <QRCode
                             value={String(reference || "")}
                             size={180}
@@ -156,18 +141,23 @@ export default function TrackingDetailsScreen() {
                     }
                     shadow={
                         colorScheme === "dark"
-                            ? "0px 4px 16px rgba(255,255,255,0.08)"
-                            : "0px 4px 16px rgba(0,0,0,0.12)"
+                            ? "0px 4px 16px rgba(255, 255, 255, 0.1)"
+                            : "0px 5px 17px rgba(0, 0, 0, 0.12)"
                     }
                 >
 
-                    <View style={styles.cardHeader}>
+                    <View
+                        style={
+                            styles.cardHeader
+                        }
+                    >
                         <View style={styles.profileIcon}>
                             <MaterialIcons
                                 name="person"
                                 size={30}
                                 color={
-                                    colorScheme === "dark"
+                                    colorScheme ===
+                                        "dark"
                                         ? "#ffffff"
                                         : "#141A73"
                                 }
@@ -179,7 +169,8 @@ export default function TrackingDetailsScreen() {
                                 style={[
                                     styles.cardTitle,
                                     {
-                                        color: colors.text,
+                                        color:
+                                            colors.text,
                                     },
                                 ]}
                             >
@@ -199,170 +190,18 @@ export default function TrackingDetailsScreen() {
                             },
                         ]}
                     />
-                    <Text
-                        style={[
-                            styles.label,
-                            {
-                                color: colors.icon,
-                            },
-                        ]}
-                    >
-                        Student ID
-                    </Text>
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Student ID
+                        </Text>
 
-                    <Text
-                        style={[
-                            styles.studentId,
-                            {
-                                color: colors.text,
-                            },
-                        ]}
-                    >
-                        {studentId || "-"}
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.label,
-                            {
-                                color: colors.icon,
-                                marginTop: 16,
-                            },
-                        ]}
-                    >
-                        Name
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.infoValue,
-                            {
-                                color: colors.text,
-                            },
-                        ]}
-                    >
-                        {name || "-"}
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.label,
-                            {
-                                color: colors.icon,
-                                marginTop: 16,
-                            },
-                        ]}
-                    >
-                        Program
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.infoValue,
-                            {
-                                color: colors.text,
-                            },
-                        ]}
-                    >
-                        {program || "-"}
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.label,
-                            {
-                                color: colors.icon,
-                                marginTop: 16,
-                            },
-                        ]}
-                    >
-                        Year Level
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.infoValue,
-                            {
-                                color: colors.text,
-                            },
-                        ]}
-                    >
-                        {yearLevel || "-"}
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.label,
-                            {
-                                color: colors.icon,
-                                marginTop: 16,
-                            },
-                        ]}
-                    >
-                        Document
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.infoValue,
-                            {
-                                color: colors.text,
-                            },
-                        ]}
-                    >
-                        {documentName || "-"}
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.label,
-                            {
-                                color: colors.icon,
-                                marginTop: 16,
-                            },
-                        ]}
-                    >
-                        Date Submitted
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.infoValue,
-                            {
-                                color: colors.text,
-                            },
-                        ]}
-                    >
-                        {date || "-"}
-                    </Text>
-
-                    <Text
-                        style={[
-                            styles.label,
-                            {
-                                color: colors.icon,
-                                marginTop: 16,
-                            },
-                        ]}
-                    >
-                        Office
-                    </Text>
-
-                    {offices.length > 0 ? (
-                        offices.map((office, index) => (
-                            <Text
-                                key={index}
-                                style={[
-                                    styles.infoValue,
-                                    {
-                                        color: colors.text,
-                                    },
-                                ]}
-                            >
-                                {office}
-                            </Text>
-                        ))
-                    ) : (
                         <Text
                             style={[
                                 styles.infoValue,
@@ -371,9 +210,169 @@ export default function TrackingDetailsScreen() {
                                 },
                             ]}
                         >
-                            Loading...
+                            {studentId || "-"}
                         </Text>
-                    )}
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Name
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {name || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Program
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {program || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Year Level
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {yearLevel || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Document
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {documentName || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Date Submitted
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {date || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Office
+                        </Text>
+
+                        {offices.length > 0 ? (
+                            offices.map((office, index) => (
+                                <Text
+                                    key={index}
+                                    style={[
+                                        styles.infoValue,
+                                        {
+                                            color: colors.text,
+                                        },
+                                    ]}
+                                >
+                                    {office}
+                                </Text>
+                            ))
+                        ) : (
+                            <Text
+                                style={[
+                                    styles.infoValue,
+                                    {
+                                        color: colors.text,
+                                    },
+                                ]}
+                            >
+                                Loading...
+                            </Text>
+                        )}
+                    </View>
 
                 </InfoCard>
 
@@ -458,27 +457,11 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
 
-    qrCard: {
-        backgroundColor: "#fff",
-        borderRadius: 16,
-        padding: 20,
-        alignItems: "center",
-        elevation: 3,
-        width: "100%",
-        maxWidth: 300,
-        alignSelf: "center",
-    },
-
     qrLabel: {
         marginTop: 16,
         fontSize: 14,
         color: "#777",
-    },
-
-    refLabel: {
-        fontSize: 16,
-        color: "#555",
-        marginTop: 10,
+        alignSelf: "center",
     },
 
     refNum: {
@@ -486,10 +469,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "700",
         letterSpacing: 2,
+        alignSelf: "center",
     },
 
     cardTitle: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: "700",
     },
 
@@ -504,16 +488,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-    studentId: {
-        fontSize: 22,
-        fontWeight: "700",
-        marginTop: 6,
+    infoGroup: {
+        marginBottom: 18,
     },
 
     infoValue: {
         fontSize: 16,
-        fontWeight: "600",
-        marginTop: 4,
+        fontWeight: "400",
+        marginTop: 3,
+        lineHeight: 22,
     },
 
     divider: {
@@ -522,8 +505,10 @@ const styles = StyleSheet.create({
     },
 
     label: {
-        fontSize: 13,
+        fontSize: 17,
+        fontWeight: "700",
     },
+
 
     /* ✅ FIXED FOOTER LAYOUT */
     footer: {

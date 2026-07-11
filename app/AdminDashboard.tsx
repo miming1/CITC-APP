@@ -21,6 +21,7 @@ import SearchBar from "../components/SearchBar";
 import ManualCodeModal from "../components/ManualCodeModal";
 import QRCodeModal from "../components/QRCodeModal";
 
+import { searchRequestByReference } from "../lib/api";
 import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
 import { getToken } from "../lib/auth";
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
 
-  const [deleteMessage,setDeleteMessage] = useState("");
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   // =========================
   // FETCH HELPERS
@@ -217,17 +218,17 @@ export default function AdminDashboard() {
             onPressProcedure={(procedure) => {
               router.push({
                 pathname: "/process",
-                params:{
+                params: {
                   id: procedure.procedure_id,
-                  roleId:"2",
+                  roleId: "2",
                 },
               });
             }}
-            onSeeAll={()=>{
+            onSeeAll={() => {
               router.push({
-                pathname:"/process-list",
-                params:{
-                  roleId:"2",
+                pathname: "/process-list",
+                params: {
+                  roleId: "2",
                 },
               });
             }}
@@ -271,9 +272,25 @@ export default function AdminDashboard() {
       <ManualCodeModal
         visible={showManualModal}
         onClose={() => setShowManualModal(false)}
-        onSubmit={(code) => {
-          setShowManualModal(false);
-          console.log("Manual code submitted:", code);
+        onSubmit={async (code) => {
+          try {
+            const request = await searchRequestByReference(code);
+
+            console.log("Found Request:", request);
+
+            setShowManualModal(false);
+
+            router.push({
+              pathname: "/active-req",
+              params: {
+                roleId: "2",
+                request: JSON.stringify(request),
+              },
+            });
+
+          } catch (err) {
+            console.log(err);
+          }
         }}
       />
 

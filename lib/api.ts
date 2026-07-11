@@ -89,6 +89,80 @@ export async function fetchMyRequests() {
   // returns: [{ id, user, procedure, status, created_at, updated_at }]
 }
 
+// ── Fetch Requests ───────────────────────────
+export async function fetchActiveRequests() {
+  const token = await getToken();
+
+  const res = await fetch(ENDPOINTS.activeReq, {
+    headers: {
+      Authorization: `Token ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch active requests");
+  }
+
+  return res.json();
+}
+
+// ── Search Request (Admin) ───────────────────────────
+export async function searchRequestByReference(referenceCode: string) {
+  const token = await getToken();
+
+  const res = await fetch(ENDPOINTS.searchRequest, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Token ${token}`,
+    },
+    body: JSON.stringify({
+      reference_code: referenceCode,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Request not found");
+  }
+
+  return res.json();
+}
+
+// ── Update Request Status (Admin) ───────────────────────────
+export async function updateRequestStatus(
+  requestId: number,
+  status: string,
+  remarks: string
+) {
+  const token = await getToken();
+
+  const res = await fetch(
+    `${API_BASE_URL}/requests/${requestId}/`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({
+        status,
+        remarks,
+      }),
+    }
+  );
+
+  const data = await res.json();
+
+  console.log("STATUS CODE:", res.status);
+  console.log("UPDATE RESPONSE:", data);
+
+  if (!res.ok) {
+    throw new Error(JSON.stringify(data));
+  }
+
+  return data;
+}
+
 // ── Submit Request (needs auth token) ────────────────────────
 export async function submitRequest(procedureId: number) {
   const token = await getToken();

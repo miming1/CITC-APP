@@ -40,6 +40,9 @@ urlpatterns = [
     # =========================
     path('requests/', views.submit_request),
     path('requests/track/', views.track_requests),
+    path('requests/active/', views.active_requests),
+    path("search-request/", views.search_request_by_reference),
+    path("requests/<int:request_id>/",views.update_request_status),
 
     # =========================
     # PROFILE 
