@@ -1,14 +1,13 @@
+import Header from "@/components/Universal Components/Header";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useColorScheme, useWindowDimensions, } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MaterialIcons } from "@expo/vector-icons";
-
-import Header from "@/components/Universal Components/Header";
 import { Colors } from "../constants/theme";
 
 import { fetchActiveRequests, updateRequestStatus } from "@/lib/api";
-import { useEffect } from "react";
+import React, { useCallback, useState } from "react";
 
 type ActiveRequest = {
   request_id: number;
@@ -64,23 +63,27 @@ export default function UserActiveReq() {
     }, 2500);
   };
 
-  useEffect(() => {
-    if (isAdmin && request) {
-      const parsedRequest = JSON.parse(request as string);
+  useFocusEffect(
+    useCallback(() => {
 
-      setRequests([parsedRequest]);
+      if (isAdmin && request) {
+        const parsedRequest = JSON.parse(request as string);
 
-      setTimeout(() => {
-        openModal(parsedRequest);
-      }, 300);
+        setRequests([parsedRequest]);
 
-      setLoading(false);
+        setTimeout(() => {
+          openModal(parsedRequest);
+        }, 300);
 
-      return;
-    }
+        setLoading(false);
 
-    loadActiveRequests();
-  }, []);
+        return;
+      }
+
+      loadActiveRequests();
+
+    }, [request, isAdmin])
+  );
 
   const openModal = (item: ActiveRequest) => {
     setSelectedItem(item);
@@ -195,7 +198,12 @@ export default function UserActiveReq() {
 
       console.log("Grouped Data:", grouped);
 
-      setRequests(grouped as any);
+      if(isAdmin){
+          setRequests(data);
+      }
+      else{
+          setRequests(grouped as any);
+      }
     } catch (err) {
       console.log("Active Request Error:", err);
     } finally {

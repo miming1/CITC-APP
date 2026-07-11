@@ -241,9 +241,11 @@ class ActiveRequestSerializer(serializers.ModelSerializer):
             .first()
         )
 
-    def get_document_name(self, obj):
+    def get_document_name(self,obj):
         req_doc = self.get_request_document(obj)
-        return req_doc.document.document_name if req_doc else None
+        if not req_doc or not req_doc.document:
+            return None
+        return req_doc.document.document_name
 
     def get_reference_code(self, obj):
         req_doc = self.get_request_document(obj)

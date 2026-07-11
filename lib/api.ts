@@ -212,3 +212,27 @@ export async function updateProfile(
 
   return data;
 }
+
+export async function fetchAdminStatistics() {
+
+  const token = await getToken();
+
+  const res = await fetch(
+    `${API_BASE_URL}/admin/statistics/`,
+    {
+      headers:{
+        Authorization:`Token ${token}`,
+      },
+    }
+  );
+
+
+  if(!res.ok){
+    throw new Error(
+      "Failed to fetch admin statistics"
+    );
+  }
+
+
+  return res.json();
+}

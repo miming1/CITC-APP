@@ -28,7 +28,8 @@ from .models import (
     Requests,
     RequestDocuments,
     Users,
-    Roles
+    Roles,
+    Notifications
 )
 
 from .serializers import (
@@ -858,8 +859,16 @@ def get_faqs(request):
         if profile.office_id:
             allowed_procedures = OfficeProcedures.objects.filter(
                 office_id=profile.office_id
-            ).values_list("procedure_id", flat=True)
-
+            ).values_list(
+                "procedure_id",
+                flat=True
+            )
+            allowed_documents = ProcedureDocuments.objects.filter(
+                office_id=profile.office_id
+            ).values_list(
+                "document_id",
+                flat=True
+            )
             faqs = faqs.filter(
                 category__procedure_id__in=allowed_procedures
             )
@@ -1100,11 +1109,11 @@ def active_requests(request):
             if not req_doc:
                 continue
 
-            if req_doc.status == "Pending":
+            if req_doc.status.lower() == "pending":
                 active_requests.append(req)
 
             elif (
-                req_doc.status == "Rejected"
+                req_doc.status.lower() == "rejected"
                 and req_doc.updated_at >= cutoff
             ):
                 active_requests.append(req)
@@ -1118,48 +1127,65 @@ def active_requests(request):
 
     # ADMIN
     else:
-        allowed_procedures = OfficeProcedures.objects.filter(
-        office_id=profile.office_id
-    ).values_list(
-        "procedure_id",
-        flat=True
-    )
 
-    cutoff = timezone.now() - timedelta(days=7)
+        allowed_documents = ProcedureDocuments.objects.filter(
+            office_id=profile.office_id
+        ).values_list(
+            "document_id",
+            flat=True
+        )
 
-    requests = (
-        Requests.objects
-        .filter(procedure_id__in=allowed_procedures)
-        .select_related("procedure", "user")
-        .prefetch_related("requestdocuments_set")
-        .order_by("-created_at")
-    )
+        cutoff = timezone.now() - timedelta(days=7)
 
-    active_requests = []
 
-    for req in requests:
-        req_doc = req.requestdocuments_set.first()
+        requests = (
+            Requests.objects
+            .filter(
+                requestdocuments__document_id__in=allowed_documents
+            )
+            .select_related(
+                "procedure",
+                "user"
+            )
+            .prefetch_related(
+                "requestdocuments_set"
+            )
+            .order_by("-created_at")
+        )
 
-        if not req_doc:
-            continue
 
-        # Pending
-        if req_doc.status == "Pending":
-            active_requests.append(req)
+        active_requests = []
 
-        # Rejected less than 7 days
-        elif (
-            req_doc.status == "Rejected"
-            and req_doc.updated_at >= cutoff
-        ):
-            active_requests.append(req)
 
-    serializer = ActiveRequestSerializer(
-        active_requests,
-        many=True,
-    )
+        for req in requests:
 
-    return Response(serializer.data)
+            req_doc = req.requestdocuments_set.first()
+
+
+            if not req_doc:
+                continue
+
+
+            if req_doc.status.lower() == "pending":
+
+                active_requests.append(req)
+
+
+            elif (
+                req_doc.status.lower() == "rejected"
+                and req_doc.updated_at >= cutoff
+            ):
+
+                active_requests.append(req)
+
+
+        serializer = ActiveRequestSerializer(
+            active_requests,
+            many=True
+        )
+
+
+        return Response(serializer.data)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -1240,12 +1266,12 @@ def update_request_status(request, request_id):
             req_doc.is_followed_up = False
             req_doc.followed_up_at = None
 
-    if status.lower() == "rejected":
+    if status and status.lower() == "rejected":
         # Student has one week to follow up
         req_doc.follow_up_deadline = timezone.now() + timedelta(days=7)
         req_doc.history_at = None
 
-    elif status.lower() == "approved":
+    elif status and status.lower() == "approved":
         # Immediately move to history
         req_doc.history_at = timezone.now()
         req_doc.follow_up_deadline = None
@@ -1255,6 +1281,43 @@ def update_request_status(request, request_id):
 
     req_doc.updated_at = timezone.now()
     req_doc.save()
+
+    # =========================
+    # CREATE STUDENT NOTIFICATION
+    # =========================
+
+    student = req_doc.request.user
+
+    if status.lower() == "approved":
+
+        message = (
+            f"Your request for {req_doc.document_name_snapshot} "
+            "has been approved."
+        )
+
+    elif status.lower() == "rejected":
+
+        message = (
+            f"Your request for {req_doc.document_name_snapshot} "
+            f"has been rejected."
+        )
+
+        if req_doc.remarks:
+            message += f" Remarks: {req_doc.remarks}"
+
+    else:
+        message = (
+            f"Your request for {req_doc.document_name_snapshot} "
+            f"status has been updated to {status}."
+        )
+
+
+    Notifications.objects.create(
+        user=student,
+        request=req_doc.request,
+        message=message,
+        is_read=False
+    )
 
     return Response({
         "message": "Request updated successfully"
@@ -1633,3 +1696,56 @@ class NotificationListView(APIView):
         )
 
         return Response(serializer.data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_statistics(request):
+
+    try:
+        profile = Users.objects.get(
+            auth_user_id=request.user.id
+        )
+
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=404
+        )
+
+
+    if profile.role.role_id != 2:
+        return Response(
+            {"error": "Unauthorized"},
+            status=403
+        )
+
+
+    # Get procedures assigned to this admin's office
+    office_procedures = OfficeProcedures.objects.filter(
+        office_id=profile.office_id
+    ).values_list(
+        "procedure_id",
+        flat=True
+    )
+
+
+    procedure_count = Procedures.objects.filter(
+        procedure_id__in=office_procedures
+    ).count()
+
+
+    faq_count = Faqs.objects.filter(
+        category__procedure_id__in=office_procedures
+    ).count()
+
+
+    request_count = Requests.objects.filter(
+        procedure_id__in=office_procedures
+    ).count()
+
+
+    return Response({
+        "procedures": procedure_count,
+        "faqs": faq_count,
+        "requests": request_count,
+    })

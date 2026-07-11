@@ -193,7 +193,7 @@ class Notifications(models.Model):
     notification_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(Users,on_delete=models.CASCADE,blank=True,null=True)
     message = models.TextField()
-    is_read = models.BooleanField(blank=True, null=True)
+    is_read = is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     request = models.ForeignKey(Requests, models.DO_NOTHING, blank=True, null=True)
 

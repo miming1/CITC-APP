@@ -12,6 +12,7 @@ urlpatterns = [
     path('auth/login/', views.user_login),
     path('auth/me/', views.me),
     #path('auth/admin', views.admin_dashboard),
+    path("admin/statistics/",views.admin_statistics),
 
 
     # =========================
