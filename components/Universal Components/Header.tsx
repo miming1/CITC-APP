@@ -36,7 +36,7 @@ type MenuItem = {
 const MENU_ITEMS: MenuItem[] = [
   {
     label: "Dashboard",
-    route: "/Userdashboard",
+    route: "/UserDashboard",
     icon: "home-outline",
   },
   {
