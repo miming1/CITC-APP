@@ -239,7 +239,7 @@ export default function Header({
 
   const lineColor = menuActiveAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["#FFFFFF", theme.icon],
+    outputRange: ["#FFFFFF", "#EBA937"],
   });
 
   const greeting = isNewUser
@@ -277,10 +277,7 @@ export default function Header({
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => setMenuOpen(true)}
-          style={[
-            styles.menuButton,
-            menuOpen && styles.menuButtonActive
-          ]}
+          style={styles.menuButton}
         >
           <View style={styles.menuIconWrapper}>
             <Animated.View
@@ -333,7 +330,7 @@ export default function Header({
                   <Ionicons
                     name={item.icon}
                     size={20}
-                    color={theme.tint}
+                    color= "#4d57af"
                   />
                   {item.route === "/notifications" &&
                     hasUnreadNotifications && (
@@ -415,24 +412,22 @@ StyleSheet.create({
     justifyContent:"center",
     alignItems:"center",
   },
-  menuButtonActive:{
-    backgroundColor:theme.tint2,
-  },
   menuIconWrapper:{
     width:20,
     height:16,
     justifyContent:"space-between",
   },
   menuLineFull:{
-    width:20,
+    width:30,
     height:2.8,
     borderRadius:999,
   },
   menuLineShort:{
-    width:12,
+    width:20,
     height:2.8,
     borderRadius:999,
     alignSelf:"center",
+    marginLeft: 10,
   },
   overlay:{
     flex:1,
