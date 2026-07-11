@@ -50,6 +50,12 @@ export default function SubmissionHistory() {
   const theme       = Colors[colorScheme];
   const isDark      = colorScheme === 'dark';
 
+  // Custom colors for the Filter button (independent of theme.ts)
+const filterColors = {
+  text: isDark ? "#FFFFFF" : "#374151",      // White in dark mode, dark gray in light mode
+  arrow: isDark ? "#EBA937" : "#B87300",     // Orange in dark mode, darker orange in light mode
+};
+
   const [search, setSearch]               = useState('');
   // null = no date filter applied, i.e. "All Submissions" (the default state).
   const [activeFilter, setActiveFilter]   = useState<FilterOption | null>(null);
@@ -196,8 +202,22 @@ export default function SubmissionHistory() {
             style={[styles.filterBtn, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}
             onPress={() => setDropdownOpen((prev) => !prev)}
           >
-            <Text style={[styles.filterBtnText, { color: theme.tint }]}>Filter by Date</Text>
-            <Text style={[styles.filterBtnText, { color: theme.tint }]}>{dropdownOpen ? '∧' : '∨'}</Text>
+            <Text
+  style={[
+    styles.filterBtnText,
+    { color: filterColors.text },
+  ]}
+>
+  Filter by Date
+</Text>
+
+<Text
+  style={[
+    styles.filterBtnText,
+    { color: filterColors.arrow },
+  ]}
+>
+  {dropdownOpen ? "∧" : "∨"}</Text>
           </TouchableOpacity>
         </View>
 
@@ -377,7 +397,7 @@ const styles = StyleSheet.create({
   // ── Filter ─────────────────────────────────────────────────────────────────
   filterRow:     { alignItems: 'flex-end', marginBottom: 4 },
   filterBtn:     { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, gap: 6 },
-  filterBtnText: { fontSize: 13, fontWeight: '500' },
+  filterBtnText: { fontSize: 14, fontWeight: '500' },
   filterLabelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   filterLabel:   { fontSize: 13 },
   filterLabelBold: { fontWeight: '700' },
@@ -390,7 +410,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     gap: 6,
   },
-  filterPillText:  { fontSize: 12, fontWeight: '700' },
+  filterPillText:  { fontSize: 13, fontWeight: '700' },
   filterPillClose: { padding: 2 },
 
   // ── Dropdown ───────────────────────────────────────────────────────────────
