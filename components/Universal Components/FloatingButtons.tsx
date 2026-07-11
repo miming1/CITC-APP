@@ -1,9 +1,10 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import {
-    StyleSheet,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 
 import { Colors } from "../../constants/theme";
@@ -30,6 +31,7 @@ export default function FloatingButtons({
   adminTooltip,
   onAdminPress,
 }: FloatingButtonsProps) {
+  const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
   const theme = Colors[colorScheme];
 
@@ -73,7 +75,7 @@ export default function FloatingButtons({
   // =========================================================
 
   const handleChatbotPress = () => {
-    console.log("Chatbot pressed (not implemented yet)");
+    router.push("/chatbot");
   };
 
   if (chatbotOnly) {

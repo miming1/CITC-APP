@@ -52,8 +52,8 @@ export default function SubmissionHistory() {
 
   // Custom colors for the Filter button (independent of theme.ts)
 const filterColors = {
-  text: isDark ? "#FFFFFF" : "#374151",      // White in dark mode, dark gray in light mode
-  arrow: isDark ? "#EBA937" : "#B87300",     // Orange in dark mode, darker orange in light mode
+  text: isDark ? "#ffffff" : "#141A73",      // dark mode, light mode
+  arrow: isDark ? "#ffffff" : "#141A73",     // dark mode, light mode
 };
 
   const [search, setSearch]               = useState('');
@@ -286,7 +286,8 @@ const filterColors = {
               >
                 <Text style={[
                   styles.dropdownText,
-                  { color: theme.icon },
+                  { color: isDark ? "#ffffff" : "#141A73" },
+
                   activeFilter === opt && { color: theme.tint2, fontWeight: '700' },
                 ]}>
                   {opt}
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
   filterBtn:     { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, gap: 6 },
   filterBtnText: { fontSize: 14, fontWeight: '500' },
   filterLabelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
-  filterLabel:   { fontSize: 13 },
+  filterLabel:   { fontSize: 12 },
   filterLabelBold: { fontWeight: '700' },
   filterPill: {
     flexDirection: 'row',
@@ -410,11 +411,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     gap: 6,
   },
-  filterPillText:  { fontSize: 13, fontWeight: '700' },
+  filterPillText:  { fontSize: 12, fontWeight: '700' },
   filterPillClose: { padding: 2 },
 
   // ── Dropdown ───────────────────────────────────────────────────────────────
-  dropdownOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  dropdownOverlay: { position: 'absolute', top: 38, left: 0, right: 0, bottom: 0 },
   dropdown: {
     position: 'absolute',
     top: 140,
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   dropdownItem:      { paddingVertical: 12, paddingHorizontal: 16 },
-  dropdownText:      { fontSize: 13 },
+  dropdownText:      { fontSize: 13, fontWeight: '500' },
 
   // ── Table ──────────────────────────────────────────────────────────────────
   tableHeader:     { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 12, marginBottom: 4 },

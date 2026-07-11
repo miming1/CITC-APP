@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
   FlatList,
@@ -13,7 +12,9 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../constants/theme';
+
+import Header from "../components/Universal Components/Header";
+import { Colors } from "../constants/theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,9 +53,11 @@ const SEED_MESSAGES: Message[] = [
 function MessageBubble({
   message,
   isDark,
+  theme,
 }: {
   message: Message;
   isDark: boolean;
+  theme: typeof Colors.light;
 }) {
   const isUser = message.sender === 'user';
 
@@ -66,7 +69,7 @@ function MessageBubble({
       ]}
     >
       {!isUser && (
-        <View style={styles.botAvatar}>
+        <View style={[styles.botAvatar, { backgroundColor: theme.tint }]}>
           <MaterialCommunityIcons
             name="robot-outline"
             size={16}
@@ -79,14 +82,17 @@ function MessageBubble({
         style={[
           styles.bubble,
           isUser
-            ? [styles.bubbleUser, { backgroundColor: isDark ? '#7C5CBF' : '#9B7FD4' }]
-            : [styles.bubbleBot, { backgroundColor: isDark ? '#2A2040' : '#EDE8F7' }],
+            ? [styles.bubbleUser, { backgroundColor: theme.tint }]
+            : [
+                styles.bubbleBot,
+                { backgroundColor: isDark ? '#1E293B' : '#EEF0FA' },
+              ],
         ]}
       >
         <Text
           style={[
             styles.bubbleText,
-            { color: isUser ? '#fff' : isDark ? '#ECEDEE' : '#1E1340' },
+            { color: isUser ? '#fff' : theme.text },
           ]}
         >
           {message.text}
@@ -99,16 +105,13 @@ function MessageBubble({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function chatbot() {
-  const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const isDark = colorScheme === 'dark';
-  const colors = Colors[colorScheme as 'light' | 'dark'];
+  const theme = Colors[colorScheme as 'light' | 'dark'];
 
-  const bg       = colors.background;
-  const inputBg  = isDark ? '#2A2040' : '#EDE8F7';
-  const textPri  = isDark ? '#ECEDEE' : '#1E1340';
-  const textSec  = isDark ? '#9BA1A6' : '#6B6485';
-  const accent   = isDark ? '#B8A4FF' : '#9B7FD4';
+  const bg = theme.background;
+  const inputBg = isDark ? '#1E293B' : '#EEF0FA';
+  const textSec = theme.icon;
 
   const [messages, setMessages] = useState<Message[]>(SEED_MESSAGES);
   const [input, setInput] = useState('');
@@ -145,22 +148,8 @@ export default function chatbot() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bg }]}>
 
-      {/* ── Header ── */}
-      <View style={[styles.header, { backgroundColor: accent }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.headerBack}
-          activeOpacity={0.75}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={22} color="#fff" />
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Chat with AI</Text>
-
-        <TouchableOpacity style={styles.headerMenu} activeOpacity={0.75}>
-          <MaterialCommunityIcons name="menu" size={22} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      {/* ── Shared Header (back button, title, hamburger menu) ── */}
+      <Header title="Chat with AI" showBack />
 
       {/* ── Messages ── */}
       <KeyboardAvoidingView
@@ -173,7 +162,7 @@ export default function chatbot() {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <MessageBubble message={item} isDark={isDark} />
+            <MessageBubble message={item} isDark={isDark} theme={theme} />
           )}
           contentContainerStyle={styles.messageList}
           showsVerticalScrollIndicator={false}
@@ -188,7 +177,7 @@ export default function chatbot() {
             styles.inputBar,
             {
               backgroundColor: bg,
-              borderTopColor: isDark ? '#2A2040' : '#EDE8F7',
+              borderTopColor: theme.border,
             },
           ]}
         >
@@ -197,7 +186,7 @@ export default function chatbot() {
               styles.input,
               {
                 backgroundColor: inputBg,
-                color: textPri,
+                color: theme.text,
               },
             ]}
             placeholder="Input Message.."
@@ -210,7 +199,7 @@ export default function chatbot() {
           />
 
           <TouchableOpacity
-            style={[styles.sendBtn, { backgroundColor: accent }]}
+            style={[styles.sendBtn, { backgroundColor: theme.tint }]}
             onPress={handleSend}
             activeOpacity={0.8}
           >
@@ -227,23 +216,6 @@ export default function chatbot() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  headerBack:  { padding: 4 },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  headerMenu:  { padding: 4 },
 
   // ── Messages ──────────────────────────────────────────────────────────────
   messageList: {
@@ -265,7 +237,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#9B7FD4',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 2,
