@@ -108,7 +108,6 @@ export default function Header({
 
   const slideAnim = useRef(new Animated.Value(-20)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const menuActiveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isAdmin) return;
@@ -207,11 +206,6 @@ export default function Header({
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-      Animated.timing(menuActiveAnim, {
-        toValue: menuOpen ? 1 : 0,
-        duration: 200,
-        useNativeDriver: false, // color interpolation requires the JS driver
-      }),
     ]).start();
   }, [menuOpen]);
 
@@ -237,10 +231,9 @@ export default function Header({
 
   const styles = createStyles(theme);
 
-  const lineColor = menuActiveAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["#FFFFFF", "#EBA937"],
-  });
+  // Bound directly to state rather than an Animated value, so the color
+  // always matches menuOpen exactly and can never get stuck mid-transition.
+  const lineColor = menuOpen ? "#EBA937" : "#FFFFFF";
 
   const greeting = isNewUser
     ? "Welcome"
@@ -280,13 +273,13 @@ export default function Header({
           style={styles.menuButton}
         >
           <View style={styles.menuIconWrapper}>
-            <Animated.View
+            <View
               style={[styles.menuLineFull, { backgroundColor: lineColor }]}
             />
-            <Animated.View
+            <View
               style={[styles.menuLineShort, { backgroundColor: lineColor }]}
             />
-            <Animated.View
+            <View
               style={[styles.menuLineFull, { backgroundColor: lineColor }]}
             />
           </View>
@@ -300,13 +293,7 @@ export default function Header({
       >
         <Pressable
           style={styles.overlay}
-          onPress={() => {
-            if (menuOpen) {
-              setMenuOpen(false);
-            } else {
-            setMenuOpen(true);
-            }
-          }}
+          onPress={() => setMenuOpen(false)}
         >
           <Animated.View
             style={[
