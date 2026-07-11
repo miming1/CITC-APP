@@ -354,6 +354,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: 14,
     paddingVertical: 5,
+    marginTop: 3,
     marginBottom: 12,
 
     shadowColor: '#000',

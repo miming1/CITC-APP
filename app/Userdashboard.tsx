@@ -293,6 +293,8 @@ const styles = StyleSheet.create({
 
   searchBarWrap: {
     marginBottom: 8,
+    position: "relative",
+    zIndex: 20,
   },
 
   desktopContainer: {

@@ -22,6 +22,8 @@ interface HeaderProps {
   showBack?: boolean;
   roleId?: string | number;
   adminMode?: string;
+  /** When true, replaces the title with a personalized greeting (e.g. dashboard page) */
+  showGreeting?: boolean;
 }
 
 type MenuItem = {
@@ -32,6 +34,11 @@ type MenuItem = {
 };
 
 const MENU_ITEMS: MenuItem[] = [
+  {
+    label: "Dashboard",
+    route: "/Userdashboard",
+    icon: "home-outline",
+  },
   {
     label: "Notifications",
     route: "/Notifications",
@@ -65,11 +72,21 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
+// Rotation of greetings shown to returning (non-new) users.
+// "Welcome, {name}!" is reserved for first-time/new users.
+const RETURNING_GREETINGS = [
+  "Welcome back",
+  "Hello",
+  "Good to see you",
+  "Great to have you back",
+];
+
 export default function Header({
   title,
   showBack = true,
   roleId,
   adminMode,
+  showGreeting = false,
 }: HeaderProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
@@ -82,12 +99,16 @@ export default function Header({
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
 
+  const [studentName, setStudentName] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
+  // Pick one returning-user greeting per mount so it doesn't change on re-render
+  const [greetingIndex] = useState(() =>
+    Math.floor(Math.random() * RETURNING_GREETINGS.length)
+  );
+
   const slideAnim = useRef(new Animated.Value(-20)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const topLine = useRef(new Animated.Value(0)).current;
-  const middleLine = useRef(new Animated.Value(1)).current;
-  const bottomLine = useRef(new Animated.Value(0)).current;
+  const menuActiveAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isAdmin) return;
@@ -128,64 +149,66 @@ export default function Header({
   }, [isAdmin]);
 
   useEffect(() => {
-    if (menuOpen) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 220,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(topLine, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(bottomLine, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(middleLine, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: -20,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(topLine, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(bottomLine, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(middleLine, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    if (isAdmin || !showGreeting) return;
+
+    async function fetchProfile() {
+      try {
+        const token = await getToken();
+
+        const response = await fetch(ENDPOINTS.me, {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        const rawName = String(data.student_name ?? "");
+        const idNumber = String(data.id_number ?? "");
+
+        // student_name defaults to id_number right after signup,
+        // so that doesn't count as a real name yet
+        const hasRealName =
+          rawName.trim() !== "" && rawName.trim() !== idNumber.trim();
+
+        setStudentName(hasRealName ? rawName : "");
+
+        const isComplete =
+          !!data.id_number &&
+          !!data.program &&
+          !!data.year_level;
+
+        setIsNewUser(!isComplete);
+      } catch (error) {
+        console.log("Profile fetch error:", error);
+      }
     }
+
+    fetchProfile();
+  }, [isAdmin, showGreeting]);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: menuOpen ? 1 : 0,
+        duration: menuOpen ? 220 : 180,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: menuOpen ? 0 : -20,
+        duration: menuOpen ? 220 : 180,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(menuActiveAnim, {
+        toValue: menuOpen ? 1 : 0,
+        duration: 200,
+        useNativeDriver: false, // color interpolation requires the JS driver
+      }),
+    ]).start();
   }, [menuOpen]);
 
   const handleNavigation = (route: string) => {
@@ -209,7 +232,20 @@ export default function Header({
   };
 
   const styles = createStyles(theme);
-    return (
+
+  const lineColor = menuActiveAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["#FFFFFF", theme.icon],
+  });
+
+  const displayTitle =
+    showGreeting && studentName
+      ? isNewUser
+        ? `Welcome, ${studentName}!`
+        : `${RETURNING_GREETINGS[greetingIndex]}, ${studentName}!`
+      : title;
+
+  return (
     <>
       <View style={styles.container}>
         {showBack ? (
@@ -231,7 +267,7 @@ export default function Header({
           style={styles.title}
           numberOfLines={1}
         >
-          {title}
+          {displayTitle}
         </Text>
         <TouchableOpacity
           activeOpacity={0.85}
@@ -241,56 +277,17 @@ export default function Header({
             menuOpen && styles.menuButtonActive
           ]}
         >
-          <Animated.View
-            style={[
-              styles.menuLine,
-              {
-                transform:[
-                  {
-                    rotate:topLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:["0deg","45deg"]
-                    })
-                  },
-                  {
-                    translateY:topLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:[0,7]
-                    })
-                  }
-                ]
-              }
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.menuLine,
-              {
-                opacity:middleLine
-              }
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.menuLine,
-              {
-                transform:[
-                  {
-                    rotate:bottomLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:["0deg","-45deg"]
-                    })
-                  },
-                  {
-                    translateY:bottomLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:[0,-7]
-                    })
-                  }
-                ]
-              }
-            ]}
-          />
+          <View style={styles.menuIconWrapper}>
+            <Animated.View
+              style={[styles.menuLineFull, { backgroundColor: lineColor }]}
+            />
+            <Animated.View
+              style={[styles.menuLineShort, { backgroundColor: lineColor }]}
+            />
+            <Animated.View
+              style={[styles.menuLineFull, { backgroundColor: lineColor }]}
+            />
+          </View>
         </TouchableOpacity>
       </View>
       <Modal
@@ -416,12 +413,21 @@ StyleSheet.create({
   menuButtonActive:{
     backgroundColor:theme.tint2,
   },
-  menuLine:{
-    position:"absolute",
+  menuIconWrapper:{
+    width:20,
+    height:16,
+    justifyContent:"space-between",
+  },
+  menuLineFull:{
     width:20,
     height:2.8,
     borderRadius:999,
-    backgroundColor:"#FFFFFF",
+  },
+  menuLineShort:{
+    width:12,
+    height:2.8,
+    borderRadius:999,
+    alignSelf:"center",
   },
   overlay:{
     flex:1,
