@@ -355,5 +355,14 @@ class RequestDocuments(models.Model):
         null=True
     )
 
+    rejected_at = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+
+    archived = models.BooleanField(
+        default=False
+    )
+
     class Meta:
         db_table = "request_documents"

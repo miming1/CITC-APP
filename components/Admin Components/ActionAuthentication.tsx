@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -263,10 +262,7 @@ export default function AdminAuthModal({
                   borderColor:
                     colors.border,
 
-                  paddingRight:
-                    Platform.OS === "web"
-                      ? 14
-                      : 50,
+                  paddingRight: 50,
 
                 },
 
@@ -274,42 +270,36 @@ export default function AdminAuthModal({
 
             />
 
+            <TouchableOpacity
 
+              style={styles.iconButton}
 
-            {Platform.OS !== "web" && (
+              onPress={() =>
+                setShowPassword(
+                  !showPassword
+                )
+              }
 
-              <TouchableOpacity
+            >
 
-                style={styles.iconButton}
+              <MaterialIcons
 
-                onPress={() =>
-                  setShowPassword(
-                    !showPassword
-                  )
+                name={
+                  showPassword
+                    ? "visibility"
+                    : "visibility-off"
                 }
 
-              >
+                size={22}
 
-                <MaterialIcons
+                color={
+                  colors.icon
+                }
 
-                  name={
-                    showPassword
-                      ? "visibility"
-                      : "visibility-off"
-                  }
-
-                  size={22}
-
-                  color={
-                    colors.icon
-                  }
-
-                />
+              />
 
 
-              </TouchableOpacity>
-
-            )}
+            </TouchableOpacity>
 
 
 

@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
 from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Q
 import uuid
 import random
 
@@ -1069,32 +1071,91 @@ def active_requests(request):
         )
 
     # STUDENT
+    from pprint import pprint
+
+    for r in RequestDocuments.objects.all():
+        print(
+            r.req_doc_id,
+            r.status,
+            r.updated_at,
+            r.request_id,
+        )
+        
     if profile.role.role_id == 1:
         requests = (
             Requests.objects
             .filter(user=profile)
             .select_related("procedure", "user")
+            .prefetch_related("requestdocuments_set")
             .order_by("-created_at")
         )
+
+        cutoff = timezone.now() - timedelta(days=7)
+
+        active_requests = []
+
+        for req in requests:
+            req_doc = req.requestdocuments_set.first()
+
+            if not req_doc:
+                continue
+
+            if req_doc.status == "Pending":
+                active_requests.append(req)
+
+            elif (
+                req_doc.status == "Rejected"
+                and req_doc.updated_at >= cutoff
+            ):
+                active_requests.append(req)
+
+        serializer = ActiveRequestSerializer(
+            active_requests,
+            many=True,
+        )
+
+        return Response(serializer.data)
 
     # ADMIN
     else:
         allowed_procedures = OfficeProcedures.objects.filter(
-            office_id=profile.office_id
-        ).values_list(
-            "procedure_id",
-            flat=True,
-        )
+        office_id=profile.office_id
+    ).values_list(
+        "procedure_id",
+        flat=True
+    )
 
-        requests = (
-            Requests.objects
-            .filter(procedure_id__in=allowed_procedures)
-            .select_related("procedure", "user")
-            .order_by("-created_at")
-        )
+    cutoff = timezone.now() - timedelta(days=7)
+
+    requests = (
+        Requests.objects
+        .filter(procedure_id__in=allowed_procedures)
+        .select_related("procedure", "user")
+        .prefetch_related("requestdocuments_set")
+        .order_by("-created_at")
+    )
+
+    active_requests = []
+
+    for req in requests:
+        req_doc = req.requestdocuments_set.first()
+
+        if not req_doc:
+            continue
+
+        # Pending
+        if req_doc.status == "Pending":
+            active_requests.append(req)
+
+        # Rejected less than 7 days
+        elif (
+            req_doc.status == "Rejected"
+            and req_doc.updated_at >= cutoff
+        ):
+            active_requests.append(req)
 
     serializer = ActiveRequestSerializer(
-        requests,
+        active_requests,
         many=True,
     )
 
@@ -1162,11 +1223,32 @@ def update_request_status(request, request_id):
             status=404
         )
 
+    from datetime import timedelta
+    from django.utils import timezone
+
     status = request.data.get("status")
     remarks = request.data.get("remarks")
 
     if status is not None:
+
         req_doc.status = status
+        if status == "Approved":
+            req_doc.is_followed_up = True
+            req_doc.followed_up_at = timezone.now()
+
+        elif status == "Rejected":
+            req_doc.is_followed_up = False
+            req_doc.followed_up_at = None
+
+    if status.lower() == "rejected":
+        # Student has one week to follow up
+        req_doc.follow_up_deadline = timezone.now() + timedelta(days=7)
+        req_doc.history_at = None
+
+    elif status.lower() == "approved":
+        # Immediately move to history
+        req_doc.history_at = timezone.now()
+        req_doc.follow_up_deadline = None
 
     if remarks is not None:
         req_doc.remarks = remarks
