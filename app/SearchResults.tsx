@@ -459,10 +459,10 @@ export default function SearchResults() {
             </View>
           )}
         </View>
-        {isStudent && (
-          <FloatingButtons chatbotOnly/>
-        )}
       </ScrollView>
+      {isStudent && (
+        <FloatingButtons chatbotOnly/>
+      )}
     </SafeAreaView>
   );
 }

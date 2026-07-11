@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views, views_otp
 from .views import NotificationListView
+from .views import update_full_process
 
 urlpatterns = [
 
@@ -19,7 +20,7 @@ urlpatterns = [
     path('procedures/', views.get_procedures),
     path('procedures/<int:pk>/', views.update_procedure),
     path('procedures/<int:pk>/delete/', views.delete_procedure),
-    path('process/<int:procedure_id>/save/', views.save_full_process),
+    path("process/<int:procedure_id>/save/",update_full_process,name="update_full_process"),
     path('process/create/', views.create_full_process),
 
 

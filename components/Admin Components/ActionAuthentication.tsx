@@ -2,15 +2,15 @@ import { MaterialIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 
 import {
-    ActivityIndicator,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 
 import { API_BASE_URL } from "../../constants/api";
@@ -21,7 +21,7 @@ import { getToken } from "../../lib/auth";
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSuccess: () => Promise<void> | void;
+  onSuccess: () => Promise<boolean> | boolean;
 }
 
 
@@ -108,12 +108,13 @@ export default function AdminAuthModal({
       }
 
       // Only continue if password is correct
-      await onSuccess();
+      const success = await onSuccess();
 
-      setPassword("");
-      setError("");
-
-      onClose();
+      if (success !== false) {
+        setPassword("");
+        setError("");
+        onClose();
+      }
 
 
 

@@ -36,7 +36,7 @@ export default function RootLayout() {
          <Stack.Screen name="index" />
          <Stack.Screen name="UserDashboard" />
          <Stack.Screen name="AdminDashboard" />
-         <Stack.Screen name="QRScanResults" />
+         <Stack.Screen name="QRScanResult" />
          <Stack.Screen name="Profile" />
          <Stack.Screen name="ProcedurePage" />
          <Stack.Screen name="ProcedureTab" />

@@ -112,6 +112,8 @@ export default function ProcessScreen() {
 
       if (!res.ok) {
         console.log("ERROR RESPONSE:", data);
+        console.log("FULL RESPONSE", JSON.stringify(data, null, 2));
+        console.log("Requirements:", JSON.stringify(data.requirements, null, 2));
         return;
       }
 
@@ -143,7 +145,7 @@ export default function ProcessScreen() {
     const response = await fetch(
       `${API_BASE_URL}/process/${procedureId}/save/`,
       {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Token ${token}`,
@@ -161,6 +163,7 @@ export default function ProcessScreen() {
               req.requirement_text ??
               req.name ??
               "",
+            is_document: req.is_document ?? false,
           })),
         }),
       }
@@ -324,7 +327,10 @@ export default function ProcessScreen() {
               await fetchAll();
               setIsEditingProcedure(false);
             }}
-            onSave={() => setShowAdminAuthModal(true)}
+            onSave={() => {
+              console.log("Opening admin auth");
+              setShowAdminAuthModal(true);
+            }}
             onDelete={() => {
               setDeleteType("procedure");
               setShowDeleteModal(true);
@@ -427,6 +433,14 @@ export default function ProcessScreen() {
           setShowAdminDeleteAuthModal(true);
         }}
       />
+
+      {isAdmin && (
+        <AdminAuthModal
+          visible={showAdminAuthModal}
+          onClose={() => setShowAdminAuthModal(false)}
+          onSuccess={handleAuthSuccess}
+        />
+      )}
 
       {isAdmin && (
         <AdminAuthModal
