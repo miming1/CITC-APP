@@ -1291,14 +1291,14 @@ def update_request_status(request, request_id):
     if status and status.lower() == "approved":
 
         message = (
-            f"Your request for {req_doc.document_name_snapshot} "
+            f"Your request for {req_doc.document.document_name} "
             "has been approved."
         )
 
     elif status and status.lower() == "rejected":
 
         message = (
-            f"Your request for {req_doc.document_name_snapshot} "
+            f"Your request for {req_doc.document.document_name} "
             f"has been rejected."
         )
 
