@@ -186,7 +186,11 @@ export default function UserDashboard() {
   // =========================
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
-<Header title="Welcome!" showBack={false} roleId={1} />
+    <Header
+        title="Dashboard"
+        showBack={false}
+        showGreeting
+    />
 
       <ScrollView
         style={styles.scrollView}

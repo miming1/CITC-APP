@@ -173,7 +173,11 @@ export default function Header({
         const hasRealName =
           rawName.trim() !== "" && rawName.trim() !== idNumber.trim();
 
-        setStudentName(hasRealName ? rawName : "");
+        const firstName = hasRealName
+          ? rawName.trim().split(" ")[0]
+          : "";
+
+        setStudentName(firstName);
 
         const isComplete =
           !!data.id_number &&
@@ -238,12 +242,13 @@ export default function Header({
     outputRange: ["#FFFFFF", theme.icon],
   });
 
-  const displayTitle =
-    showGreeting && studentName
-      ? isNewUser
-        ? `Welcome, ${studentName}!`
-        : `${RETURNING_GREETINGS[greetingIndex]}, ${studentName}!`
-      : title;
+  const greeting = isNewUser
+    ? "Welcome"
+    : RETURNING_GREETINGS[greetingIndex];
+
+  const displayTitle = showGreeting
+    ? `${greeting}, ${studentName || "User"}!`
+    : title;
 
   return (
     <>
