@@ -2,6 +2,7 @@ from django.urls import path
 from . import views, views_otp
 from .views import NotificationListView
 from .views import update_full_process
+from .views import user_submission_history
 
 urlpatterns = [
 
@@ -56,6 +57,12 @@ urlpatterns = [
     # ADMIN
     # =========================
     path('admin/transaction-history/', views.admin_transaction_history),
+
+
+    # =========================
+    # USER
+    # =========================
+    path('user/submission-history/', views.user_submission_history),
 
 
     # =========================

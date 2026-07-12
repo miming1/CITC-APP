@@ -15,7 +15,7 @@ import { getStoredToken } from '../lib/tokenStore';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FilterOption = 'This Week' | 'This Month' | 'This Year' | 'Custom Date';
-type FinalizedStatus = 'Approved' | 'rejected';
+type FinalizedStatus = 'approved' | 'rejected';
 
 interface AdminTransaction {
   req_doc_id: number;
@@ -274,15 +274,15 @@ export default function AdminTransHis() {
                 <View style={styles.statusCell}>
                   <View style={[
                     styles.statusBadge,
-                    item.status === 'Approved' && styles.statusApproved,
+                    item.status === 'approved' && styles.statusApproved,
                     item.status === 'rejected'  && styles.statusRejected,
                   ]}>
                     <Text style={[
                       styles.statusText,
-                      item.status === 'Approved' && styles.statusTextApproved,
+                      item.status === 'approved' && styles.statusTextApproved,
                       item.status === 'rejected'  && styles.statusTextRejected,
                     ]}>
-                      {item.status === 'Approved' ? 'Approved' : 'Rejected'}
+                      {item.status === 'approved' ? 'Approved' : 'Rejected'}
                     </Text>
                   </View>
                 </View>

@@ -6,7 +6,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from rest_framework import status
 
+from .models  import Requests
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Q
@@ -1771,6 +1773,53 @@ def admin_statistics(request):
         "requests": request_count,
     })
 
+# =========================
+# USER SUBMISSION HISTORY
+# =========================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def user_submission_history(request):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
+
+    req_docs = (
+        RequestDocuments.objects
+        .filter(request__user=profile)
+        .filter(
+            Q(status__iexact="approved") |
+            Q(status__iexact="rejected")
+        )
+        .select_related("request", "request__procedure", "document")
+        .order_by("-updated_at")
+    )
+
+    data = []
+
+    for doc in req_docs:
+        req = doc.request
+
+        data.append({
+            "req_doc_id": doc.req_doc_id,
+            "reference_code": doc.reference_code,
+            "status": doc.status,
+            "remarks": doc.remarks,
+            "updated_at": doc.updated_at,
+            "procedure_name": (
+                req.procedure.procedure_name
+                if req and req.procedure
+                else (req.procedure_name_snapshot if req else None)
+            ),
+            "document_name": (
+                doc.document.document_name
+                if doc.document
+                else doc.document_name_snapshot
+            ),
+        })
+
+    return Response(data)
 
 # =========================
 # ADMIN TRANSACTION HISTORY
@@ -1805,7 +1854,7 @@ def admin_transaction_history(request):
         RequestDocuments.objects
         .filter(document_id__in=allowed_documents)
         .filter(
-            Q(status__iexact="Approved") |
+            Q(status__iexact="approved") |
             Q(
                 status__iexact="rejected",
                 rejected_at__lte=cutoff
