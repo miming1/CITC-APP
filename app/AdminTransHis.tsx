@@ -195,7 +195,7 @@ export default function AdminTransHis() {
           adminMode="true"
           />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={true}>
 
         {/* ── Search Bar ── */}
         <View style={[
