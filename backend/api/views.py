@@ -1749,3 +1749,69 @@ def admin_statistics(request):
         "faqs": faq_count,
         "requests": request_count,
     })
+
+
+# =========================
+# ADMIN TRANSACTION HISTORY
+# =========================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_transaction_history(request):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
+
+    if getattr(profile.role, "role_id", None) != 2:
+        return Response({"error": "Unauthorized"}, status=403)
+
+    if not profile.office_id:
+        return Response([])
+
+    # Same office-scoping pattern as active_requests: which documents
+    # belong to this admin's office
+    allowed_documents = ProcedureDocuments.objects.filter(
+        office_id=profile.office_id
+    ).values_list("document_id", flat=True)
+
+    now = timezone.now()
+
+    # Belongs in Transaction History if:
+    #  - it's already been moved to history (history_at is set) -> Approved case, OR
+    #  - it's Rejected and its 7-day follow-up window has passed
+    req_docs = (
+        RequestDocuments.objects
+        .filter(document_id__in=allowed_documents)
+        .filter(
+            Q(history_at__isnull=False) |
+            Q(status__iexact="rejected", follow_up_deadline__lte=now)
+        )
+        .select_related("request", "request__user", "document")
+        .order_by("-updated_at")
+    )
+
+    data = []
+
+    for doc in req_docs:
+        req = doc.request
+        student = req.user if req else None
+
+        data.append({
+            "req_doc_id": doc.req_doc_id,
+            "document_name": (
+                doc.document.document_name if doc.document
+                else doc.document_name_snapshot
+            ),
+            "reference_code": doc.reference_code,
+            "tracking_number": doc.tracking_number,
+            "status": doc.status,
+            "updated_at": doc.updated_at,
+            "history_at": doc.history_at,
+            "remarks": doc.remarks,
+            "student_name": student.student_name if student else None,
+            "student_id_number": student.id_number if student else None,
+            "days_idle": (now - doc.updated_at).days,
+        })
+
+    return Response(data)

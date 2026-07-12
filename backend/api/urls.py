@@ -51,6 +51,13 @@ urlpatterns = [
     path("search-request/", views.search_request_by_reference),
     path("requests/<int:request_id>/",views.update_request_status),
 
+
+    # =========================
+    # ADMIN
+    # =========================
+    path('admin/transaction-history/', views.admin_transaction_history),
+
+
     # =========================
     # PROFILE 
     # =========================

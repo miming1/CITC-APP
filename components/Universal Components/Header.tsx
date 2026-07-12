@@ -82,7 +82,6 @@ const STUDENT_MENU_ITEMS: MenuItem[] = [
 
 // ─── Admin menu ─────────────────────────────────────────────────────────────
 // Mirrors the student menu, minus Notifications, with two renamed/repointed items:
-// "Form Submission Progress" -> "Active Submissions", "Submission History" -> "Transaction History"
 const ADMIN_MENU_ITEMS: MenuItem[] = [
   {
     label: "Dashboard",
