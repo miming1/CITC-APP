@@ -203,7 +203,7 @@ export default function UserActiveReq() {
   return (
     <SafeAreaView
       style={[
-        styles.safeArea,
+        rstyles.safeArea,
         {
           backgroundColor: colors.background,
         },
@@ -218,7 +218,7 @@ export default function UserActiveReq() {
       {message !== "" && (
         <View
           style={[
-            styles.toast,
+            rstyles.toast,
             {
               backgroundColor:
                 colorScheme === "dark"
@@ -235,7 +235,7 @@ export default function UserActiveReq() {
 
           <Text
             style={[
-              styles.toastText,
+              rstyles.toastText,
               {
                 color:
                   colorScheme === "dark"
@@ -251,13 +251,13 @@ export default function UserActiveReq() {
 
       <ScrollView
         contentContainerStyle={[
-          styles.container,
-          isDesktop && styles.desktopContent,
+          rstyles.container,
+          isDesktop && rstyles.desktopContent,
         ]}
       >
         <View
           style={[
-            styles.disclaimerBox,
+            rstyles.disclaimerBox,
             {
               backgroundColor:
                 colorScheme === "dark"
@@ -283,7 +283,7 @@ export default function UserActiveReq() {
 
           <Text
             style={[
-              styles.disclaimerText,
+              rstyles.disclaimerText,
               {
                 color:
                   colorScheme === "dark"
@@ -300,7 +300,7 @@ export default function UserActiveReq() {
             <View key={group.procedure}>
               <Text
                 style={[
-                  styles.procedureTitle,
+                  rstyles.procedureTitle,
                   { color: colors.text },
                 ]}
               >
@@ -313,7 +313,7 @@ export default function UserActiveReq() {
                   item={item}
                   colors={colors}
                   colorScheme={colorScheme}
-                  styles={styles}
+                  styles={rstyles}
                   openModal={openModal}
                   isAdmin={isAdmin}
                 />
@@ -326,7 +326,7 @@ export default function UserActiveReq() {
             <View key={group.procedure}>
               <Text
                 style={[
-                  styles.procedureTitle,
+                  rstyles.procedureTitle,
                   { color: colors.text },
                 ]}
               >
@@ -339,7 +339,7 @@ export default function UserActiveReq() {
                   item={item}
                   colors={colors}
                   colorScheme={colorScheme}
-                  styles={styles}
+                  styles={rstyles}
                   openModal={openModal}
                   isAdmin={isAdmin}
                 />
@@ -358,7 +358,7 @@ export default function UserActiveReq() {
         isMobile={isMobile}
         colors={colors}
         colorScheme={colorScheme}
-        styles={styles}
+        styles={rstyles}
         remarks={remarks}
         setRemarks={setRemarks}
         remarksFocused={remarksFocused}
@@ -372,7 +372,7 @@ export default function UserActiveReq() {
   );
 }
 
-const styles = StyleSheet.create({
+export const rstyles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f9fafb" },
 
   container: {

@@ -8,19 +8,21 @@ import {
   TouchableOpacity, useColorScheme, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ActiveRequestModal from '../components/Universal Components/ActiveRequestModal';
 import Header from '../components/Universal Components/Header';
-import { ENDPOINTS } from '../constants/api'; // adjust path if different in your project
+import { ENDPOINTS } from '../constants/api';
 import { Colors } from '../constants/theme';
-import { getStoredToken } from '../lib/tokenStore'; // swap for getToken from '@/lib/auth' if that's the one this screen should use
+import { getStoredToken } from '../lib/tokenStore';
+import { rstyles } from "./ActiveRequests";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FilterOption = 'This Week' | 'This Month' | 'This Year' | 'Custom Date';
-type FinalizedStatus = 'completed' | 'rejected';
+type FinalizedStatus = 'approved' | 'rejected';
 
 interface AdminTransaction {
   req_doc_id: number;
-  document_name_snapshot: string;
+  document_name: string;
   reference_code: string;
   tracking_number: number | null;
   status: FinalizedStatus;
@@ -28,7 +30,6 @@ interface AdminTransaction {
   remarks: string | null;
   student_name: string | null;
   student_id_number: number | null;
-  days_idle: number;
 }
 
 const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 'Custom Date'];
@@ -61,6 +62,19 @@ export default function AdminTransHis() {
   const [customDay,   setCustomDay]   = useState('');
   const [appliedCustomDate, setAppliedCustomDate] = useState('');
 
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  function openModal(item:any){
+    setSelectedItem(item);
+    setModalVisible(true);
+  }
+
+  function closeModal(){
+    setSelectedItem(null);
+    setModalVisible(false);
+  }
+
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -72,6 +86,7 @@ export default function AdminTransHis() {
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
       const json: AdminTransaction[] = await res.json();
+      console.log("Transaction History Response:", json);
       setData(json);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load transaction history.');
@@ -101,7 +116,7 @@ export default function AdminTransHis() {
     return data.filter((s) => {
       const dateOnly = s.updated_at?.slice(0, 10) ?? '';
       const matchesSearch =
-        s.document_name_snapshot?.toLowerCase().includes(search.toLowerCase()) ||
+        s.document_name?.toLowerCase().includes(search.toLowerCase()) ||
         s.reference_code?.includes(search) ||
         (s.student_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
         String(s.student_id_number ?? '').includes(search) ||
@@ -253,41 +268,50 @@ export default function AdminTransHis() {
               <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Form Name</Text>
               <Text style={[styles.tableHeaderText, { flex: 1.5, color: theme.icon }]}>Ref No.</Text>
               <Text style={[styles.tableHeaderText, { flex: 1.2, color: theme.icon }]}>Date</Text>
-              <Text style={[styles.tableHeaderText, { flex: 1, color: theme.icon }]}>Idle</Text>
               <Text style={[styles.tableHeaderText, styles.statusHeaderText, { flex: 1.3, color: theme.icon }]}>Status</Text>
             </View>
 
             {/* ── Table Rows ── */}
             {filtered.map((item) => (
-              <View key={item.req_doc_id} style={[styles.tableRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <TouchableOpacity
+                key={item.req_doc_id}
+                activeOpacity={0.7}
+                onPress={() => openModal(item)}
+                style={[
+                  styles.tableRow,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.border,
+                  }
+                ]}
+              >
                 <View style={{ flex: 2 }}>
                   <Text style={[styles.tableCell, { color: theme.text, fontWeight: '600' }]}>
-                    {item.student_name ?? '—'}
+                    {item.student_id_number ?? '—'}
                   </Text>
                   <Text style={[styles.tableCell, { color: theme.icon, fontSize: 11 }]}>
-                    {item.student_id_number ?? ''}
+                    {item.student_name ?? '—'}
                   </Text>
                 </View>
-                <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.document_name_snapshot}</Text>
+                <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.document_name}</Text>
                 <Text style={[styles.tableCell, { flex: 1.5, color: theme.text }]}>{item.reference_code}</Text>
                 <Text style={[styles.tableCell, { flex: 1.2, color: theme.text }]}>{item.updated_at?.slice(0, 10)}</Text>
-                <Text style={[styles.tableCell, { flex: 1, color: theme.text }]}>{item.days_idle}d</Text>
                 <View style={styles.statusCell}>
                   <View style={[
                     styles.statusBadge,
-                    item.status === 'completed' && styles.statusCompleted,
+                    item.status === 'approved' && styles.statusCompleted,
                     item.status === 'rejected'  && styles.statusRejected,
                   ]}>
                     <Text style={[
                       styles.statusText,
-                      item.status === 'completed' && styles.statusTextCompleted,
+                      item.status === 'approved' && styles.statusTextCompleted,
                       item.status === 'rejected'  && styles.statusTextRejected,
                     ]}>
-                      {item.status === 'completed' ? 'Completed' : 'Rejected'}
+                      {item.status === 'approved' ? 'Approved' : 'Rejected'}
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
 
             {filtered.length === 0 && (
@@ -297,7 +321,6 @@ export default function AdminTransHis() {
         )}
 
       </ScrollView>
-
       {/* ── Dropdown Overlay ── */}
       {dropdownOpen && (
         <Pressable style={styles.dropdownOverlay} onPress={() => setDropdownOpen(false)}>
@@ -350,6 +373,27 @@ export default function AdminTransHis() {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
+      <ActiveRequestModal
+        modalVisible={modalVisible}
+        closeModal={closeModal}
+        selectedItem={selectedItem}
+        isAdmin={true}
+        isMobile={false}
+        colors={theme}
+        colorScheme={colorScheme}
+        styles={rstyles}
+        remarks={selectedItem?.remarks ?? ""}
+        setRemarks={() => {}}
+        remarksFocused={false}
+        setRemarksFocused={() => {}}
+        selectedStatus={null}
+        setSelectedStatus={() => {}}
+        handleUpdateStatus={() => {}}
+        formatYearLevel={(year)=>{
+            return year ? `Year ${year}` : "N/A";
+        }}
+
+      />
 
     </SafeAreaView>
   );
@@ -394,12 +438,12 @@ const styles = StyleSheet.create({
   },
   tableCell: { fontSize: 12 },
   statusCell:          { flex: 1.3, alignItems: 'center', justifyContent: 'center' },
-  statusBadge:         { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  statusCompleted:     { backgroundColor: '#d1fae5' },
-  statusRejected:      { backgroundColor: '#fee2e2' },
-  statusText:          { fontSize: 11, fontWeight: '600', textAlign: 'center' },
-  statusTextCompleted: { color: '#065f46' },
-  statusTextRejected:  { color: '#991b1b' },
+  statusBadge:         { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
+  statusCompleted: { backgroundColor: '#16A34A',},
+  statusRejected: { backgroundColor: '#DC2626',},
+  statusText:          { fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  statusTextCompleted: { color: '#ffffff',},
+  statusTextRejected: {color: '#ffffff',},
   empty: { textAlign: 'center', marginTop: 12, fontSize: 13 },
   centerBlock: { alignItems: 'center', marginTop: 30, gap: 10 },
   retryBtn: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 8 },
