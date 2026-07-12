@@ -1,283 +1,551 @@
+import InfoCard from "@/components/User Components/InfoCard";
 import { MaterialIcons } from "@expo/vector-icons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from "react-native";
+import { useLocalSearchParams, useRouter, } from "expo-router";
+import { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, useColorScheme, useWindowDimensions } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { API_BASE_URL } from "../constants/api";
 import { Colors } from "../constants/theme";
+import { getStoredToken } from "../lib/tokenStore";
 
-export default function TrackerScreen() {
-    const colorScheme = useColorScheme() ?? "light";
-    const colors = Colors[colorScheme];
+export default function TrackingDetailsScreen() {
     const router = useRouter();
 
-    const { ref } = useLocalSearchParams();
+    const colorScheme = useColorScheme() ?? "light";
+    const colors = Colors[colorScheme];
+
+    const { width } = useWindowDimensions();
+    const horizontalMargin = width > 768 ? 100 : 20;
+
+    const isDesktop = width >= 768;
+
+    const {
+        reference,
+        studentId,
+        name,
+        program,
+        yearLevel,
+        documentName,
+        date,
+        procedureId,
+    } = useLocalSearchParams();
+
+    const [offices, setOffices] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchOffices = async () => {
+            try {
+                const token = await getStoredToken();
+
+                const res = await fetch(
+                    `${API_BASE_URL}/process/${procedureId}/offices/`,
+                    {
+                        headers: {
+                            Authorization: `Token ${token}`,
+                        },
+                    }
+                );
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    setOffices(data.map((item: any) => item.office_name));
+                } else {
+                    console.log(data);
+                }
+            } catch (err) {
+                console.log(err);
+            }
+        };
+
+        if (procedureId) {
+            fetchOffices();
+        }
+    }, [procedureId]);
+
 
     return (
         <SafeAreaView
-            style={[styles.container, { backgroundColor: colors.background }]}
+            style={[
+                styles.container,
+                {
+                    backgroundColor: colors.background,
+                },
+            ]}
         >
-            <ScrollView contentContainerStyle={styles.content}>
-
+            <ScrollView
+                contentContainerStyle={[
+                    styles.content,
+                    isDesktop && styles.desktopContent,
+                ]}
+            >
                 {/* TOP */}
                 <View style={styles.topSection}>
                     <FontAwesome
                         name="check-circle"
-                        size={120}
-                        color="#9B7FD4"
+                        size={40}
+                        color="#22C55E"
                     />
-                    <Text style={styles.ref}>Reference No</Text>
-                    <Text style={styles.refNum}>{ref || "No Reference"}</Text>
-                </View>
 
-                {/* ✅ QR CODE CONTAINER (placeholder only) */}
-                <View style={styles.qrContainer}>
-                    <View style={styles.qrBox}>
-                        <Text style={styles.qrText}>QR CODE</Text>
+                    <Text
+                        style={[
+                            styles.successText,
+                            {
+                                color: colors.text,
+                            },
+                        ]}
+                    >
+                        Request Submitted Successfully!
+                    </Text>
+
+                    <View>
+                        <QRCode
+                            value={String(reference || "")}
+                            size={180}
+                        />
+
+                        <Text
+                            style={[
+                                styles.qrLabel,
+                                {
+                                    color: colors.icon,
+                                },
+                            ]}
+                        >
+                            Tracking Code
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.refNum,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {reference || "-"}
+                        </Text>
                     </View>
-
-                    <Text style={styles.qrLabel}>
-                        Scan this code for tracking</Text>
                 </View>
 
                 {/* DETAILS */}
-                <View style={styles.detailsContainer}>
-                    <Text style={styles.detailsTitle}>Details</Text>
+                <InfoCard
+                    marginHorizontal={horizontalMargin}
+                    backgroundColor={colors.background}
+                    borderColor={
+                        colorScheme === "dark"
+                            ? "#2c346b"
+                            : "#FFFFFF"
+                    }
+                    shadow={
+                        colorScheme === "dark"
+                            ? "0px 4px 16px rgba(255, 255, 255, 0.1)"
+                            : "0px 5px 17px rgba(0, 0, 0, 0.12)"
+                    }
+                >
 
-                    <View style={styles.card}>
-
-                        {/* Student */}
-                        <View style={styles.row}>
-                            <MaterialIcons name="badge" size={28} color="#9B7FD4" />
-                            <View style={styles.textBlock}>
-                                <Text style={styles.label}>Student ID:</Text>
-                                <Text style={styles.value}>2023045033</Text>
-
-                                <Text style={styles.label}>Name:</Text>
-                                <Text style={styles.value}>Linda Walker</Text>
-                            </View>
+                    <View
+                        style={
+                            styles.cardHeader
+                        }
+                    >
+                        <View style={styles.profileIcon}>
+                            <MaterialIcons
+                                name="person"
+                                size={30}
+                                color={
+                                    colorScheme ===
+                                        "dark"
+                                        ? "#ffffff"
+                                        : "#141A73"
+                                }
+                            />
                         </View>
 
-                        <View style={styles.divider} />
-
-                        {/* Document */}
-                        <View style={styles.row}>
-                            <MaterialIcons name="description" size={28} color="#9B7FD4" />
-                            <View style={styles.textBlock}>
-                                <Text style={styles.label}>Document Type:</Text>
-                                <Text style={styles.value}>Medical Certificate</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        {/* Date */}
-                        <View style={styles.row}>
-                            <MaterialIcons name="calendar-today" size={28} color="#9B7FD4" />
-                            <View style={styles.textBlock}>
-                                <Text style={styles.label}>Date:</Text>
-                                <Text style={styles.value}>March 18, 2026</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        {/* Office */}
-                        <View style={styles.row}>
-                            <MaterialIcons name="location-on" size={28} color="#9B7FD4" />
-                            <View style={styles.textBlock}>
-                                <Text style={styles.label}>Office:</Text>
-                                <Text style={styles.value}>Registrar</Text>
-                            </View>
-                        </View>
-
-                    </View>
-                </View>
-                
-                <View style={[styles.footer, { backgroundColor: colors.background }]}>
-                    <View style={styles.footerRow}>
-
-                        <TouchableOpacity
-                            style={[styles.backBtn, { backgroundColor: "#9B7FD4" }]}
-                            onPress={() => router.replace("/UserDashboard")}
-                        >
-                            <Text style={styles.backBtnText}>Back to Home</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.secondaryBtn, { borderColor: "#9B7FD4" }]}
-                            onPress={() => router.push("/ActiveRequests")} 
-                        >
-                            <Text style={[styles.secondaryBtnText, { color: "#9B7FD4" }]}>
-                                View Request
+                        <View>
+                            <Text
+                                style={[
+                                    styles.cardTitle,
+                                    {
+                                        color:
+                                            colors.text,
+                                    },
+                                ]}
+                            >
+                                Student Profile
                             </Text>
-                        </TouchableOpacity>
-
+                        </View>
                     </View>
+
+                    <View
+                        style={[
+                            styles.divider,
+                            {
+                                backgroundColor:
+                                    colorScheme === "dark"
+                                        ? "#2c346b"
+                                        : "#E2E8F0",
+                            },
+                        ]}
+                    />
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Student ID
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {studentId || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Name
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {name || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Program
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {program || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Year Level
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {yearLevel || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Document
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {documentName || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Date Submitted
+                        </Text>
+
+                        <Text
+                            style={[
+                                styles.infoValue,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            {date || "-"}
+                        </Text>
+                    </View>
+
+                    <View style={styles.infoGroup}>
+                        <Text
+                            style={[
+                                styles.label,
+                                {
+                                    color: colors.text,
+                                },
+                            ]}
+                        >
+                            Office
+                        </Text>
+
+                        {offices.length > 0 ? (
+                            offices.map((office, index) => (
+                                <Text
+                                    key={index}
+                                    style={[
+                                        styles.infoValue,
+                                        {
+                                            color: colors.text,
+                                        },
+                                    ]}
+                                >
+                                    {office}
+                                </Text>
+                            ))
+                        ) : (
+                            <Text
+                                style={[
+                                    styles.infoValue,
+                                    {
+                                        color: colors.text,
+                                    },
+                                ]}
+                            >
+                                Loading...
+                            </Text>
+                        )}
+                    </View>
+
+                </InfoCard>
+
+                {/* FOOTER BUTTONS */}
+                <View
+                    style={[
+                        styles.footer,
+                        {
+                            backgroundColor: colors.background,
+                        },
+                    ]}
+                >
+
+                    <TouchableOpacity
+                        style={[
+                            styles.backBtn,
+                            {
+                                backgroundColor: colors.tint,
+                            },
+                        ]}
+                        onPress={() => router.replace("/UserDashboard")}
+                    >
+                        <Text style={
+                            styles.backText}>
+                            Back to Home
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.viewBtn,
+                            {
+                                backgroundColor: colors.tint2,
+                                borderColor: colors.tint2,
+                            },
+                        ]}
+                        onPress={() => router.push("/ActiveRequests")}
+                    >
+                        <Text style={[
+                            styles.viewText,
+                            { color: colors.background },
+                        ]}>
+                            View Request
+                        </Text>
+                    </TouchableOpacity>
+
                 </View>
+
             </ScrollView>
-        </SafeAreaView >
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+
     container: {
         flex: 1,
+        backgroundColor: "#f9fafb",
+    },
+
+    desktopContent: {
+        width: "95%",
+        maxWidth: 1600,
+        alignSelf: "center",
     },
 
     content: {
-        paddingBottom: 140,
+        padding: 20,
+        paddingBottom: 120,
     },
 
     topSection: {
         alignItems: "center",
-        marginTop: 30,
-    },
-
-    ref: {
-        fontSize: 18,
-        fontWeight: "500",
-        color: "#333",
-        marginTop: 10,
-    },
-
-    refNum: {
-        fontSize: 15,
-        fontWeight: "bold",
-        color: "#000",
-        letterSpacing: 4,
-    },
-
-    qrContainer: {
         marginTop: 20,
-        alignItems: "center",
+        marginBottom: 20,
     },
 
-    qrBox: {
-        width: 160,
-        height: 160,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: "#9B7FD4",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#F8F6FF",
-    },
-
-    qrText: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#9B7FD4",
-        letterSpacing: 2,
+    successText: {
+        fontSize: 13,
+        fontWeight: "500",
+        marginTop: 10,
+        marginBottom: 20,
     },
 
     qrLabel: {
-        marginTop: 8,
-        fontSize: 12,
-        color: "#666",
+        marginTop: 16,
+        fontSize: 14,
+        color: "#777",
+        alignSelf: "center",
     },
 
-    detailsContainer: {
-        width: "100%",
-        paddingHorizontal: 20,
-        marginTop: 10,
-    },
-
-    detailsTitle: {
+    refNum: {
+        marginTop: 6,
         fontSize: 18,
-        fontWeight: "500",
-        marginBottom: 10,
-        color: "#000",
+        fontWeight: "700",
+        letterSpacing: 2,
+        alignSelf: "center",
     },
 
-    card: {
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        padding: 16,
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-        elevation: 4,
-        marginBottom: 10,
+    cardTitle: {
+        fontSize: 18,
+        fontWeight: "700",
     },
 
-    row: {
+    cardHeader: {
         flexDirection: "row",
-        alignItems: "flex-start",
+        alignItems: "center",
     },
 
-    textBlock: {
-        marginLeft: 12,
-        flex: 1,
+    profileIcon: {
+        marginRight: 12,
+        justifyContent: "center",
+        alignItems: "center",
     },
 
-    label: {
-        fontSize: 13,
-        color: "#666",
+    infoGroup: {
+        marginBottom: 18,
     },
 
-    value: {
-        fontSize: 15,
-        fontWeight: "500",
-        marginBottom: 4,
+    infoValue: {
+        fontSize: 16,
+        fontWeight: "400",
+        marginTop: 3,
+        lineHeight: 22,
     },
 
     divider: {
         height: 1,
-        backgroundColor: "#eee",
-        marginVertical: 8,
+        marginVertical: 16,
     },
 
-    smallCard: {
-        backgroundColor: "#fff",
-        borderRadius: 12,
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        marginTop: 12,
-        shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-        elevation: 4,
+    label: {
+        fontSize: 17,
+        fontWeight: "700",
     },
 
+
+    /* ✅ FIXED FOOTER LAYOUT */
     footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 15,
-    },
-
-    footerRow: {
         flexDirection: "row",
-        justifyContent: "space-between",
+        justifyContent: "center",
         alignItems: "center",
+        gap: 12,
+        marginTop: 25,
     },
 
+    /* Buttons equal sizing for perfect alignment */
     backBtn: {
-        width: "40%",
-        borderRadius: 20,
-        paddingVertical: 16,
-        alignItems: 'center'
-    },
-
-    backBtnText: {
-        color: '#fff',
-        fontSize: 15,
-        fontWeight: '700'
-    },
-
-    secondaryBtn: {
-        borderWidth: 2,
-        borderRadius: 20,
         paddingVertical: 14,
-        paddingHorizontal: 15,
+        paddingHorizontal: 20,
+        borderRadius: 25,
+        width: 220,
+        maxWidth: "45%",
         alignItems: "center",
-        backgroundColor: "transparent",
     },
 
-    secondaryBtnText: {
+    viewBtn: {
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 25,
+        width: 220,
+        maxWidth: "45%",
+        alignItems: "center",
+    },
+
+    backText: {
+        color: "#FFFFFF",
         fontSize: 15,
         fontWeight: "700",
     },
 
+    viewText: {
+        fontSize: 15,
+        fontWeight: "700",
+    },
 });

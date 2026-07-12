@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import Header from "@/components/Universal Components/Header";
+import InfoCard from "@/components/User Components/InfoCard";
 import DocList from "../components/User Components/DocumentChoices";
 
 import { API_BASE_URL, ENDPOINTS } from "../constants/api";
@@ -48,13 +49,14 @@ export default function TrackScreen() {
   // =========================
 
   const { width } = useWindowDimensions();
+  const horizontalMargin = width > 768 ? 100 : 20;
 
-  const isDesktop = width >= 1024;
+  const isDesktop = width >= 768;
 
   const [documents, setDocuments] = useState<Document[]>([]);
 
-  const [selectedDocumentIds, setSelectedDocumentIds] =
-    useState<number[]>([]);
+  const [selectedDocumentId, setSelectedDocumentId] =
+    useState<number | null>(null);
 
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -105,18 +107,18 @@ export default function TrackScreen() {
 
   const validateForm = () => {
     if (
-      selectedDocumentIds.length === 0 &&
+      selectedDocumentId === null &&
       missingFields.length > 0
     ) {
       setErrors([
-        "Please select at least one document and complete your profile before proceeding.",
+        "Please select a document and complete your profile before proceeding.",
       ]);
       return false;
     }
 
-    if (selectedDocumentIds.length === 0) {
+    if (selectedDocumentId === null) {
       setErrors([
-        "Please select at least one document before proceeding.",
+        "Please select a document before proceeding.",
       ]);
       return false;
     }
@@ -220,20 +222,59 @@ export default function TrackScreen() {
 
   const hasStudentInfo = missingFields.length === 0;
 
-  const canProceed = hasStudentInfo && selectedDocumentIds.length > 0;
+  const canProceed = hasStudentInfo && selectedDocumentId !== null;
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
     if (!validateForm()) return;
 
-    const reference = generateReference();
+    const token = await getStoredToken();
+
+    if (!token) {
+      showAlert("Error", "You are not logged in.");
+      return;
+    }
+
+    const response = await fetch(ENDPOINTS.submitReq, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token ${token}`,
+      },
+      body: JSON.stringify({
+        procedure: procedureId,
+        document: selectedDocumentId,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      showAlert("Error", data.error || "Failed to submit request.");
+      return;
+    }
+
+    const selectedDocument = documents.find(
+      (doc) => doc.document_id === selectedDocumentId
+    );
+
+    const today = new Date().toLocaleDateString();
 
     router.push({
       pathname: "/ConfirmationPage",
       params: {
-        procedureId: String(procedureId),
-        documentIds: JSON.stringify(selectedDocumentIds),
+        reference: data.reference_code,
+
         studentId: studentInfo.studentId,
-        reference,
+        name: studentInfo.name,
+        program: studentInfo.program,
+        yearLevel: studentInfo.yearLevel,
+
+        procedureId: String(procedureId),
+
+        documentId: String(selectedDocument?.document_id ?? ""),
+        documentName: selectedDocument?.document_name ?? "",
+
+        date: today,
       },
     });
   };
@@ -264,7 +305,7 @@ export default function TrackScreen() {
             },
           ]}
         >
-          Choose Documents to Track
+          Track Document
         </Text>
 
         <Text
@@ -275,35 +316,8 @@ export default function TrackScreen() {
             },
           ]}
         >
-          Select one or more documents you want to track.
+          Select the type of document you need to track and provide your student information.
         </Text>
-
-        {documents.map((doc) => (
-          <DocList
-            key={doc.document_id}
-            icon="description"
-            text={doc.document_name}
-            selected={selectedDocumentIds.includes(doc.document_id)}
-            onPress={() => {
-              setErrors([]);
-              if (selectedDocumentIds.includes(doc.document_id)) {
-                setSelectedDocumentIds(
-                  selectedDocumentIds.filter(
-                    (id) => id !== doc.document_id
-                  )
-                );
-              } else {
-                setSelectedDocumentIds([
-                  ...selectedDocumentIds,
-                  doc.document_id,
-                ]);
-              }
-            }}
-          />
-        ))}
-
-
-
         {errors.length > 0 && (
           <View
             style={[
@@ -353,37 +367,66 @@ export default function TrackScreen() {
             ))}
           </View>
         )}
+
+        <Text
+          style={[
+            styles.sectionTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          Available Documents
+        </Text>
+
+        <View style={styles.docListContainer}>
+          {documents.map((doc) => (
+            <DocList
+              key={doc.document_id}
+              icon="description"
+              text={doc.document_name}
+              selected={selectedDocumentId === doc.document_id}
+              onPress={() => {
+                setErrors([]);
+
+                if (selectedDocumentId === doc.document_id) {
+                  setSelectedDocumentId(null);
+                } else {
+                  setSelectedDocumentId(doc.document_id);
+                }
+              }}
+            />
+          ))}
+        </View>
+
+        <Text
+          style={[
+            styles.sectionTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          Student Information
+        </Text>
+
         <View
           style={styles.detailsContainer}
         >
-          <Text
-            style={[
-              styles.detailsTitle,
-              {
-                color: colors.text,
-              },
-            ]}
-          >
-            Student Information
-          </Text>
 
-          <View
-            style={[
-              styles.infoCard,
-              {
-                backgroundColor: colors.background,
-
-                borderColor:
-                  colorScheme === "dark"
-                    ? "#2c346b"
-                    : "#FFFFFF",
-
-                boxShadow:
-                  colorScheme === "dark"
-                    ? "0px 4px 16px rgba(255,255,255,0.08)"
-                    : "0px 4px 16px rgba(0,0,0,0.12)",
-              },
-            ]}
+          <InfoCard
+            marginHorizontal={horizontalMargin}
+            backgroundColor={colors.background}
+            borderColor={
+              colorScheme === "dark"
+                ? "#2c346b"
+                : "#FFFFFF"
+            }
+            shadow={
+              colorScheme === "dark"
+                ? "0px 4px 16px rgba(255, 255, 255, 0.1)"
+                : "0px 4px 16px rgba(0, 0, 0, 0.12)"
+            }
           >
             {loadingProfile ? (
               <Text
@@ -444,135 +487,125 @@ export default function TrackScreen() {
                   ]}
                 />
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                    },
-                  ]}
-                >
-                  Student ID
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Student ID
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.studentId,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {
-                    studentInfo.studentId
-                  }
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.studentId}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Name
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Name
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {studentInfo.name}
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.name}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Program
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Program
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {
-                    studentInfo.program
-                  }
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.program}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Year Level
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Year Level
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {
-                    studentInfo.yearLevel
-                  }
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.yearLevel}
+                  </Text>
+                </View>
 
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color:
-                        colors.icon,
-                      marginTop: 16,
-                    },
-                  ]}
-                >
-                  Email
-                </Text>
+                <View style={styles.infoGroup}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    Email
+                  </Text>
 
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color:
-                        colors.text,
-                    },
-                  ]}
-                >
-                  {studentInfo.email}
-                </Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
+                  >
+                    {studentInfo.email}
+                  </Text>
+                </View>
               </>
             ) : (
               <>
@@ -658,7 +691,7 @@ export default function TrackScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </InfoCard>
         </View>
       </ScrollView>
       <View
@@ -709,33 +742,35 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 8,
+    fontSize: 24,
+    fontWeight: "700",
+    marginTop: 4,
   },
 
   description: {
-    marginBottom: 10,
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 16,
+    lineHeight: 22,
   },
 
   detailsContainer: {
     width: "100%",
   },
 
-  detailsTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
-    marginTop: 5,
-    marginBottom: 10,
+    marginTop: 20,
+    marginBottom: 12,
   },
 
   errorContainer: {
     backgroundColor: "rgba(220,38,38,0.12)",
     borderWidth: 0.1,
     borderRadius: 10,
-    padding: 8,
+    padding: 6,
     marginTop: 2,
-    marginBottom: 10,
   },
 
   errorRow: {
@@ -751,18 +786,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  infoCard: {
-    borderRadius: 18,
-    padding: 20,
-    borderWidth: 0.1,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+  docListContainer: {
+    marginTop: 10,
   },
 
   loadingText: {
@@ -785,7 +810,7 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
   },
 
@@ -800,19 +825,19 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 13,
+    fontSize: 17,
+    fontWeight: "700",
   },
 
-  studentId: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginTop: 6,
+  infoGroup: {
+    marginBottom: 18,
   },
 
   infoValue: {
     fontSize: 16,
-    fontWeight: "600",
-    marginTop: 4,
+    fontWeight: "400",
+    marginTop: 3,
+    lineHeight: 22,
   },
 
   messageText: {
@@ -835,17 +860,23 @@ const styles = StyleSheet.create({
   },
 
   footer: {
+    borderColor: "#d8d8d8",
+    borderTopWidth: 0.5,
     position: "absolute",
     bottom: 0,
-    left: 16,
-    right: 16,
-    paddingVertical: 20,
+    left: 0,
+    right: 0,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
 
   ProceedBtn: {
     borderRadius: 30,
     paddingVertical: 16,
     alignItems: "center",
+    width: "100%",
+    maxWidth: 420,
+    alignSelf: "center",
   },
 
   ProceedBtnText: {

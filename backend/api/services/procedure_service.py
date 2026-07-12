@@ -1,9 +1,10 @@
 from ..models import (
     Procedures,
     ProcedureSteps,
-    ProcedureRequirements,
+    Requirements,
+    ProcedureDocuments,
     FaqCategories,
-    Faqs
+    Faqs,
 )
 
 
@@ -12,50 +13,73 @@ def get_full_procedure(procedure_id):
     # =========================
     # MAIN PROCEDURE
     # =========================
-    procedure = Procedures.objects.get(pk=procedure_id)
+
+    procedure = Procedures.objects.get(
+        pk=procedure_id
+    )
+
 
     # =========================
     # STEPS
     # =========================
+
     steps = ProcedureSteps.objects.filter(
         procedure_id=procedure_id
-    ).order_by("step_number")
+    ).order_by(
+        "step_number"
+    )
+
 
     # =========================
     # REQUIREMENTS
     # =========================
-    requirement_links = (
-        ProcedureRequirements.objects
-        .filter(procedure_id=procedure_id)
-        .select_related("requirement")
+
+    requirements_query = Requirements.objects.filter(
+        procedure_id=procedure_id
     )
 
-    requirements = [
-        {
-            "requirement_id": link.requirement.requirement_id,
-            "requirement_name": link.requirement.requirement_name,
-        }
-        for link in requirement_links
-    ]
+
+    requirements = []
+
+
+    for requirement in requirements_query:
+
+
+        is_document = ProcedureDocuments.objects.filter(
+            procedure=procedure,
+            document__document_name__iexact=requirement.requirement_name,
+        ).exists()
+
+
+        requirements.append({
+            "requirement_id": requirement.requirement_id,
+            "requirement_name": requirement.requirement_name,
+            "is_document": is_document,
+        })
+
+
 
     # =========================
-    # FAQ CATEGORIES (OPTIONAL RAW SOURCE ONLY)
+    # FAQ CATEGORIES
     # =========================
-    # NOTE: We DO NOT flatten FAQs here anymore.
-    # Views will handle category → faqs grouping.
+    # NOTE:
+    # We DO NOT flatten FAQs here anymore.
+    # Views handle category → faqs grouping.
 
     faq_categories = FaqCategories.objects.filter(
         procedure_id=procedure_id
     )
 
+
     # =========================
     # RETURN
     # =========================
+
     return {
         "procedure": procedure,
         "steps": steps,
         "requirements": requirements,
 
-        # optional raw categories only (not used directly in UI anymore)
+        # optional raw categories only
         "faq_categories": faq_categories,
     }

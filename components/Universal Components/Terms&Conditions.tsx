@@ -9,10 +9,10 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from "react-native";
 
 import { Colors, Fonts } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -27,7 +27,8 @@ export default function TermsModal({
 }: Props) {
 
   const colorScheme = useColorScheme() ?? "light";
-  const colors = Colors[colorScheme];
+  const colors = Colors[colorScheme] ?? Colors.light;
+  
 
 
   return (
@@ -65,8 +66,8 @@ export default function TermsModal({
                 {
                   backgroundColor:
                     colorScheme === "dark"
-                      ? "#172554"
-                      : "#DBEAFE",
+                      ? "#EBA937"
+                      : "#fcb843",
                 },
               ]}
             >
@@ -230,7 +231,7 @@ const styles = StyleSheet.create({
 
   overlay:{
     flex:1,
-    backgroundColor:"rgba(0,0,0,0.45)",
+    backgroundColor:"rgba(20,26,115,0.35)",
     justifyContent:"center",
     alignItems:"center",
     padding:24,

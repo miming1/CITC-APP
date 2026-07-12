@@ -23,6 +23,7 @@ import QRCodeModal from "../components/Admin Components/QRCodeModal";
 
 import { ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
+import { fetchAdminStatistics, searchRequestByReference } from "../lib/api";
 import { getToken } from "../lib/auth";
 
 // =========================
@@ -46,6 +47,11 @@ export default function AdminDashboard() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? "dark" : "light";
   const colors = Colors[theme];
+  const [stats,setStats] = useState({
+    procedures:0,
+    faqs:0,
+    requests:0,
+  });
 
   // =========================
   // STATE
@@ -60,7 +66,6 @@ export default function AdminDashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showManualModal, setShowManualModal] = useState(false);
 
-  const [deleteMessage,setDeleteMessage] = useState("");
 
   // =========================
   // FETCH HELPERS
@@ -76,6 +81,29 @@ export default function AdminDashboard() {
       return [];
     }
   }
+
+  useEffect(()=>{
+
+    const loadStats = async()=>{
+
+      try{
+
+        const data = await fetchAdminStatistics();
+
+        setStats(data);
+
+      }catch(error){
+
+        console.log(error);
+
+      }
+
+    };
+
+
+    loadStats();
+
+},[]);
 
   // =========================
   // LOAD DASHBOARD
@@ -205,9 +233,9 @@ export default function AdminDashboard() {
 
           {/* STATISTICS */}
           <AdminStatistics
-            procedures={procedures.length}
-            requests={0}
-            faqs={faqCount}
+            procedures={stats.procedures}
+            requests={stats.requests}
+            faqs={stats.faqs}
           />
 
 
@@ -219,11 +247,11 @@ export default function AdminDashboard() {
                 pathname: "/ProcedureTab",
                 params:{
                   id: procedure.procedure_id,
-                  roleId:"2",
+                  roleId: "2",
                 },
               });
             }}
-            onSeeAll={()=>{
+            onSeeAll={() => {
               router.push({
                 pathname:"/ProcedurePage",
                 params:{
@@ -271,9 +299,25 @@ export default function AdminDashboard() {
       <ManualCodeModal
         visible={showManualModal}
         onClose={() => setShowManualModal(false)}
-        onSubmit={(code) => {
-          setShowManualModal(false);
-          console.log("Manual code submitted:", code);
+        onSubmit={async (code) => {
+          try {
+            const request = await searchRequestByReference(code);
+
+            console.log("Found Request:", request);
+
+            setShowManualModal(false);
+
+            router.push({
+              pathname: "/ActiveRequests",
+              params: {
+                roleId: "2",
+                request: JSON.stringify(request),
+              },
+            });
+
+          } catch (err) {
+            console.log(err);
+          }
         }}
       />
 

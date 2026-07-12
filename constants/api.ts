@@ -10,6 +10,8 @@ export const ENDPOINTS = {
   faqs:       `${API_BASE_URL}/faqs/`,
   submitReq:  `${API_BASE_URL}/requests/`,
   trackReq:   `${API_BASE_URL}/requests/track/`,
+  activeReq: `${API_BASE_URL}/requests/active/`,
+  searchRequest: `${API_BASE_URL}/search-request/`,
   updateProfile: `${API_BASE_URL}/auth/update-profile/`,
   verifyPassword: `${API_BASE_URL}/verify-password/`,
   notifications: `${API_BASE_URL}/notifications/`,

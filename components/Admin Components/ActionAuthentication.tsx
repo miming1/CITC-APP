@@ -2,15 +2,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 
 import {
-    ActivityIndicator,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useColorScheme,
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useColorScheme,
 } from "react-native";
 
 import { API_BASE_URL } from "../../constants/api";
@@ -21,7 +20,7 @@ import { getToken } from "../../lib/auth";
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSuccess: () => Promise<void> | void;
+  onSuccess: () => Promise<boolean> | boolean;
 }
 
 
@@ -108,12 +107,13 @@ export default function AdminAuthModal({
       }
 
       // Only continue if password is correct
-      await onSuccess();
+      const success = await onSuccess();
 
-      setPassword("");
-      setError("");
-
-      onClose();
+      if (success !== false) {
+        setPassword("");
+        setError("");
+        onClose();
+      }
 
 
 
@@ -262,10 +262,7 @@ export default function AdminAuthModal({
                   borderColor:
                     colors.border,
 
-                  paddingRight:
-                    Platform.OS === "web"
-                      ? 14
-                      : 50,
+                  paddingRight: 50,
 
                 },
 
@@ -273,42 +270,36 @@ export default function AdminAuthModal({
 
             />
 
+            <TouchableOpacity
 
+              style={styles.iconButton}
 
-            {Platform.OS !== "web" && (
+              onPress={() =>
+                setShowPassword(
+                  !showPassword
+                )
+              }
 
-              <TouchableOpacity
+            >
 
-                style={styles.iconButton}
+              <MaterialIcons
 
-                onPress={() =>
-                  setShowPassword(
-                    !showPassword
-                  )
+                name={
+                  showPassword
+                    ? "visibility"
+                    : "visibility-off"
                 }
 
-              >
+                size={22}
 
-                <MaterialIcons
+                color={
+                  colors.icon
+                }
 
-                  name={
-                    showPassword
-                      ? "visibility"
-                      : "visibility-off"
-                  }
-
-                  size={22}
-
-                  color={
-                    colors.icon
-                  }
-
-                />
+              />
 
 
-              </TouchableOpacity>
-
-            )}
+            </TouchableOpacity>
 
 
 

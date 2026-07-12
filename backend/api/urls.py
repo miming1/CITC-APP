@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views, views_otp
 from .views import NotificationListView
+from .views import update_full_process
 
 urlpatterns = [
 
@@ -11,6 +12,7 @@ urlpatterns = [
     path('auth/login/', views.user_login),
     path('auth/me/', views.me),
     #path('auth/admin', views.admin_dashboard),
+    path("admin/statistics/",views.admin_statistics),
 
 
     # =========================
@@ -19,23 +21,16 @@ urlpatterns = [
     path('procedures/', views.get_procedures),
     path('procedures/<int:pk>/', views.update_procedure),
     path('procedures/<int:pk>/delete/', views.delete_procedure),
-    path('process/<int:procedure_id>/save/', views.save_full_process),
+    path("process/<int:procedure_id>/save/",update_full_process,name="update_full_process"),
     path('process/create/', views.create_full_process),
 
 
     # =========================
     # PROCESS SCREEN (service layer)
     # =========================
-    path(
-        'process/<int:procedure_id>/',
-        views.get_process_screen
-    ),
-
-    path(
-        'process/<int:procedure_id>/documents/',
-        views.get_procedure_documents
-    ),
-
+    path('process/<int:procedure_id>/', views.get_process_screen),
+    path('process/<int:procedure_id>/documents/', views.get_procedure_documents),
+    path('process/<int:procedure_id>/offices/', views.get_procedure_offices),
 
     # =========================
     # FAQS
@@ -50,30 +45,11 @@ urlpatterns = [
     # =========================
     # REQUESTS
     # =========================
-    path(
-        'requests/',
-        views.submit_request
-    ),
-
-    path(
-        'requests/track/',
-        views.track_requests
-    ),
-
-
-    # =========================
-    # REQUEST DOCUMENTS
-    # =========================
-    path(
-        'request-documents/create/',
-        views.create_request_document
-    ),
-
-    path(
-        'request-documents/<int:req_doc_id>/update/',
-        views.update_request_document
-    ),
-
+    path('requests/', views.submit_request),
+    path('requests/track/', views.track_requests),
+    path('requests/active/', views.active_requests),
+    path("search-request/", views.search_request_by_reference),
+    path("requests/<int:request_id>/",views.update_request_status),
 
     # =========================
     # PROFILE 

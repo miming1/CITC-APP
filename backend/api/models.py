@@ -28,11 +28,22 @@ class Procedures(models.Model):
 
 class Requirements(models.Model):
     requirement_id = models.AutoField(primary_key=True)
-    requirement_name = models.TextField(unique=True)
+
+    procedure = models.ForeignKey(
+        'Procedures',
+        on_delete=models.CASCADE,
+        related_name='requirements',
+        db_column='procedure_id'
+    )
+
+    requirement_name = models.TextField()
 
     class Meta:
         managed = True
         db_table = 'requirements'
+
+    def __str__(self):
+        return self.requirement_name
 
 
 class Roles(models.Model):
@@ -182,7 +193,7 @@ class Notifications(models.Model):
     notification_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(Users,on_delete=models.CASCADE,blank=True,null=True)
     message = models.TextField()
-    is_read = models.BooleanField(blank=True, null=True)
+    is_read = is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     request = models.ForeignKey(Requests, models.DO_NOTHING, blank=True, null=True)
 
@@ -238,7 +249,7 @@ class ProcedureDocuments(models.Model):
 
     document = models.ForeignKey(
         Documents,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         null=False,
         blank=False
     )
@@ -252,31 +263,6 @@ class ProcedureDocuments(models.Model):
 
     class Meta:
         db_table = 'procedure_documents'
-
-
-class ProcedureRequirements(models.Model):
-    pk = models.CompositePrimaryKey(
-        'procedure_id',
-        'requirement_id'
-    )
-
-    procedure = models.ForeignKey(
-        Procedures,
-        on_delete=models.CASCADE,
-        related_name="procedure_requirements",
-        null=False,
-        blank=False
-    )
-
-    requirement = models.ForeignKey(
-        Requirements,
-        on_delete=models.PROTECT,
-        null=False,
-        blank=False
-    )
-
-    class Meta:
-        db_table = 'procedure_requirements'
 
 class ProcedureSteps(models.Model):
     step_id = models.AutoField(primary_key=True)
@@ -327,7 +313,7 @@ class RequestDocuments(models.Model):
 
     document = models.ForeignKey(
         Documents,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         blank=True,null=True
     )
 
@@ -367,6 +353,15 @@ class RequestDocuments(models.Model):
     remarks = models.TextField(
         blank=True,
         null=True
+    )
+
+    rejected_at = models.DateTimeField(
+        blank=True,
+        null=True
+    )
+
+    archived = models.BooleanField(
+        default=False
     )
 
     class Meta:

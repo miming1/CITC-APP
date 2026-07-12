@@ -75,8 +75,17 @@ export default function ProcessTab({
       {
         requirement_id: null,
         requirement_name: "",
+        is_document: false,
       },
     ]);
+  };
+
+  const toggleRequirementDocument = (index: number) => {
+    const updated = [...requirements];
+
+    updated[index].is_document = !updated[index].is_document;
+
+    setRequirements(updated);
   };
 
   const removeRequirement = (index: number) => {
@@ -130,6 +139,14 @@ export default function ProcessTab({
     setSteps(renumbered);
   };
 
+  console.log(
+    "Requirement checkbox values:",
+    requirements.map(req => ({
+      name: req.requirement_name,
+      value: req.is_document,
+      type: typeof req.is_document,
+    }))
+  );
   return (
     <View
       style={[
@@ -279,7 +296,6 @@ export default function ProcessTab({
                   updated[index].requirement_name = text;
                   setRequirements(updated);
                 }}
-                placeholder="Requirement"
                 style={[
                   styles.input,
                   {
@@ -290,9 +306,40 @@ export default function ProcessTab({
               />
 
               <TouchableOpacity
-                onPress={() =>
-                  removeRequirement(index)
-                }
+                style={styles.checkboxRow}
+                onPress={() => toggleRequirementDocument(index)}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      borderColor: colors.border,
+                    },
+                    req.is_document && {
+                      backgroundColor: colors.tint,
+                      borderColor: colors.tint,
+                    },
+                  ]}
+                >
+                  {req.is_document && (
+                    <Text style={{ color: "#fff" }}>
+                      ✓
+                    </Text>
+                  )}
+                </View>
+
+                <Text
+                  style={{
+                    color: colors.text,
+                    marginLeft: 8,
+                  }}
+                >
+                  Track as document
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => removeRequirement(index)}
               >
                 <Text style={{ color: "red" }}>
                   Remove
@@ -453,7 +500,10 @@ export default function ProcessTab({
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={onSave}
+            onPress={() => {
+              console.log("SAVE BUTTON PRESSED");
+              onSave();
+            }}
             style={styles.saveBtn}
           >
             <Text style={{ color: "#FFF" }}>
@@ -554,5 +604,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 8,
+  },
+
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 1,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

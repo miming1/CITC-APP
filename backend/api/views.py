@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
 from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Q
 import uuid
 import random
 
@@ -19,7 +21,6 @@ from .models import (
     Procedures,
     ProcedureSteps,
     Requirements,
-    ProcedureRequirements,
     ProcedureDocuments,
     Documents,
     FaqCategories,
@@ -27,16 +28,17 @@ from .models import (
     Requests,
     RequestDocuments,
     Users,
-    Roles
+    Roles,
+    Notifications
 )
 
 from .serializers import (
     ProcedureSerializer,
     ProcedureStepSerializer,
-    ProcedureRequirementSerializer,
     FAQCategorySerializer,
     FAQSerializer,
-    RequestSerializer
+    RequestSerializer,
+    ActiveRequestSerializer
 )
 
 from .services.procedure_service import get_full_procedure
@@ -272,20 +274,21 @@ def update_procedure(request, pk):
 def delete_procedure(request, pk):
 
     try:
-
         procedure = Procedures.objects.get(pk=pk)
 
     except Procedures.DoesNotExist:
-
-        return Response({
-            'error': 'Procedure not found'
-        }, status=404)
+        return Response(
+            {
+                'error': 'Procedure not found'
+            },
+            status=404
+        )
 
     procedure.delete()
 
-    return Response({
-        'message': 'Procedure deleted successfully'
-    }, status=204)
+    return Response(
+        status=204
+    )
 
 @api_view(['POST'])
 def save_full_process(request, procedure_id):
@@ -297,37 +300,88 @@ def save_full_process(request, procedure_id):
 
     data = request.data
 
-    # =========================
+# =========================
 # CREATE FULL PROCESS (ADMIN)
 # =========================
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_full_process(request):
 
     try:
-        profile = Users.objects.get(auth_user_id=request.user.id)
-    except Users.DoesNotExist:
-        return Response({"error": "Profile not found"}, status=404)
+        profile = Users.objects.get(
+            auth_user_id=request.user.id
+        )
 
-    role_id = getattr(profile.role, "role_id", None)
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=404
+        )
+
+
+    role_id = getattr(
+        profile.role,
+        "role_id",
+        None
+    )
+
 
     if role_id != 2:
-        return Response({"error": "Only admins can create processes"}, status=403)
+        return Response(
+            {"error": "Only admins can create processes"},
+            status=403
+        )
+
 
     data = request.data
 
-    procedure_name = (data.get("procedure_name") or "").strip()
-    description = data.get("description") or ""
-    category_name = (data.get("category_name") or "").strip() or procedure_name
-    requirements = data.get("requirements", [])
-    steps = data.get("steps", [])
+
+    print("INCOMING REQUIREMENTS:")
+    print(data.get("requirements"))
+
+
+    procedure_name = (
+        data.get("procedure_name") or ""
+    ).strip()
+
+
+    description = (
+        data.get("description") or ""
+    )
+
+
+    category_name = (
+        data.get("category_name") or ""
+    ).strip() or procedure_name
+
+
+
+    requirements = data.get(
+        "requirements",
+        []
+    )
+
+
+    steps = data.get(
+        "steps",
+        []
+    )
+
+
 
     if not procedure_name:
-        return Response({"error": "Procedure name is required"}, status=400)
+        return Response(
+            {"error": "Procedure name is required"},
+            status=400
+        )
+
+
 
     # =========================
     # CREATE PROCEDURE
     # =========================
+
     procedure = Procedures.objects.create(
         procedure_name=procedure_name,
         description=description,
@@ -335,124 +389,242 @@ def create_full_process(request):
         updated_at=timezone.now(),
     )
 
+
+
     # =========================
     # LINK TO ADMIN'S OFFICE
     # =========================
+
     if profile.office_id:
+
         OfficeProcedures.objects.get_or_create(
             office_id=profile.office_id,
             procedure=procedure,
         )
 
+
+
     # =========================
-    # REQUIREMENTS
+    # CREATE REQUIREMENTS + DOCUMENTS
     # =========================
+
     for req in requirements:
-        req_name = (req or "").strip()
+
+
+        req_name = (
+            req.get("requirement_name") or ""
+        ).strip()
+
+
+        is_document = req.get(
+            "is_document",
+            False
+        )
+
 
         if not req_name:
             continue
 
-        requirement, _ = Requirements.objects.get_or_create(
-            requirement_name=req_name
-        )
 
-        ProcedureRequirements.objects.get_or_create(
+
+        # =========================
+        # CREATE REQUIREMENT
+        # =========================
+
+        requirement = Requirements.objects.create(
             procedure=procedure,
-            requirement=requirement,
+            requirement_name=req_name,
         )
 
+
+
+        # =========================
+        # IF MARKED AS DOCUMENT
+        # CREATE TRACKABLE DOCUMENT
+        # =========================
+
+        if is_document:
+
+
+            document, _ = Documents.objects.get_or_create(
+                document_name=req_name
+            )
+
+
+            ProcedureDocuments.objects.get_or_create(
+                procedure=procedure,
+                document=document,
+                office=profile.office,
+            )
+
+
+
     # =========================
-    # STEPS
+    # CREATE STEPS
     # =========================
-    for idx, step in enumerate(steps, start=1):
-        step_description = (step.get("step_description") or "").strip()
+
+    for idx, step in enumerate(
+        steps,
+        start=1
+    ):
+
+
+        step_description = (
+            step.get("step_description") or ""
+        ).strip()
+
 
         if not step_description:
             continue
 
+
+
         ProcedureSteps.objects.create(
             procedure=procedure,
-            step_number=step.get("step_number") or idx,
+            step_number=step.get(
+                "step_number"
+            ) or idx,
+
             step_description=step_description,
-            office_location=step.get("office_location") or "",
-            reference_link=step.get("reference_link") or "",
+
+            office_location=step.get(
+                "office_location"
+            ) or "",
+
+            reference_link=step.get(
+                "reference_link"
+            ) or "",
         )
+
+
 
     # =========================
     # AUTO-CREATE EMPTY FAQ CATEGORY
-    # (Individual FAQs are added later on the FAQ page)
     # =========================
+
     faq_category = FaqCategories.objects.create(
         category_name=category_name,
         procedure=procedure,
     )
 
-    return Response({
-        "message": "Process created successfully",
-        "procedure": ProcedureSerializer(procedure).data,
-        "category_id": faq_category.category_id,
-        "category_name": faq_category.category_name,
-    }, status=201)
+
+
+    return Response(
+        {
+            "message": "Process created successfully",
+            "procedure": ProcedureSerializer(procedure).data,
+            "category_id": faq_category.category_id,
+            "category_name": faq_category.category_name,
+        },
+        status=201
+    )
+
+# =========================
+# UPDATE FULL PROCESS (ADMIN)
+# =========================
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_full_process(request, procedure_id):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
+
+    if getattr(profile.role, "role_id", None) != 2:
+        return Response({"error": "Only admins can update processes"}, status=403)
+
+    try:
+        procedure = Procedures.objects.get(procedure_id=procedure_id)
+    except Procedures.DoesNotExist:
+        return Response({"error": "Procedure not found"}, status=404)
+
+    data = request.data
 
     # =========================
     # UPDATE PROCEDURE
     # =========================
-    procedure.procedure_name = data.get(
-        "procedure_name",
-        procedure.procedure_name
-    )
 
-    procedure.description = data.get(
-        "description",
-        procedure.description
-    )
-
+    procedure.procedure_name = data.get("procedure_name", procedure.procedure_name)
+    procedure.description = data.get("description", procedure.description)
+    procedure.updated_at = timezone.now()
     procedure.save()
 
+
     # =========================
-    # SYNC REQUIREMENTS
+    # SYNC REQUIREMENTS + DOCUMENTS
     # =========================
+
     incoming_requirements = data.get("requirements", [])
 
-    existing_links = ProcedureRequirements.objects.filter(
+    existing_requirements = Requirements.objects.filter(
         procedure=procedure
     )
 
-    linked_requirement_ids = []
+    existing_documents = ProcedureDocuments.objects.filter(
+        procedure=procedure
+    )
+
+    incoming_requirement_ids = []
+    linked_document_ids = []
+
 
     for req in incoming_requirements:
 
-        requirement_name = (
-            req.get("requirement_name") or ""
-        ).strip()
+        requirement_name = (req.get("requirement_name") or "").strip()
+        is_document = req.get("is_document", False)
 
         if not requirement_name:
             continue
 
-        # Reuse existing requirement if it already exists
+
         requirement, _ = Requirements.objects.get_or_create(
+            procedure=procedure,
             requirement_name=requirement_name
         )
 
-        linked_requirement_ids.append(
+        incoming_requirement_ids.append(
             requirement.requirement_id
         )
 
-        # Create link if it doesn't already exist
-        ProcedureRequirements.objects.get_or_create(
-            procedure=procedure,
-            requirement=requirement
-        )
 
-    # Remove links that are no longer included
-    existing_links.exclude(
-        requirement_id__in=linked_requirement_ids
+        if is_document:
+
+            document, _ = Documents.objects.get_or_create(
+                document_name=requirement_name
+            )
+
+            linked_document_ids.append(
+                document.document_id
+            )
+
+            ProcedureDocuments.objects.get_or_create(
+                procedure=procedure,
+                document=document,
+                office=profile.office
+            )
+
+
+    # Remove deleted requirements
+
+    existing_requirements.exclude(
+        requirement_id__in=incoming_requirement_ids
     ).delete()
+
+
+    # Remove document links when unchecked
+
+    existing_documents.exclude(
+        document_id__in=linked_document_ids
+    ).delete()
+
+
 
     # =========================
     # SYNC STEPS
     # =========================
+
     incoming_steps = data.get("steps", [])
 
     existing_steps = ProcedureSteps.objects.filter(
@@ -461,37 +633,48 @@ def create_full_process(request):
 
     incoming_step_ids = []
 
+
     for step in incoming_steps:
 
         step_id = step.get("step_id")
 
+
         if step_id:
 
-            obj = ProcedureSteps.objects.get(
-                pk=step_id
-            )
+            try:
+                obj = ProcedureSteps.objects.get(
+                    step_id=step_id,
+                    procedure=procedure
+                )
+
+            except ProcedureSteps.DoesNotExist:
+                continue
+
 
             obj.step_description = step.get(
-                "step_description"
+                "step_description",
+                obj.step_description
             )
 
             obj.office_location = step.get(
-                "office_location"
+                "office_location",
+                obj.office_location
             )
 
             obj.reference_link = step.get(
-                "reference_link"
+                "reference_link",
+                obj.reference_link
             )
 
             obj.step_number = step.get(
-                "step_number"
+                "step_number",
+                obj.step_number
             )
 
             obj.save()
 
-            incoming_step_ids.append(
-                obj.step_id
-            )
+            incoming_step_ids.append(obj.step_id)
+
 
         else:
 
@@ -507,14 +690,104 @@ def create_full_process(request):
                 new_step.step_id
             )
 
-    # Delete removed steps
+
+    # Remove deleted steps
+
     existing_steps.exclude(
         step_id__in=incoming_step_ids
     ).delete()
 
-    return Response({
-        "message": "Process updated successfully"
-    }, status=200)
+
+    return Response(
+        {
+            "message": "Process updated successfully"
+        },
+        status=200
+    )
+
+# =========================
+# DELETE FULL PROCESS (ADMIN)
+# =========================
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_full_process(request, procedure_id):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
+
+    if getattr(profile.role, "role_id", None) != 2:
+        return Response({"error": "Only admins can delete processes"}, status=403)
+
+    try:
+        procedure = Procedures.objects.get(
+            procedure_id=procedure_id
+        )
+    except Procedures.DoesNotExist:
+        return Response({"error": "Procedure not found"}, status=404)
+
+
+    # =========================
+    # DELETE RELATED DATA
+    # =========================
+
+    ProcedureDocuments.objects.filter(
+        procedure=procedure
+    ).delete()
+
+    Requirements.objects.filter(
+        procedure=procedure
+    ).delete()
+
+    ProcedureSteps.objects.filter(
+        procedure=procedure
+    ).delete()
+
+    OfficeProcedures.objects.filter(
+        procedure=procedure
+    ).delete()
+
+    FaqCategories.objects.filter(
+        procedure=procedure
+    ).delete()
+
+
+    # =========================
+    # DELETE PROCEDURE
+    # =========================
+
+    procedure.delete()
+
+
+    return Response(
+        {
+            "message": "Process deleted successfully"
+        },
+        status=200
+    )
+
+# =========================
+# DISPLAY PROCEDURE OFFICES
+# =========================
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_procedure_offices(request, procedure_id):
+
+    offices = (
+        OfficeProcedures.objects
+        .filter(procedure_id=procedure_id)
+        .select_related("office")
+    )
+
+    return Response([
+        {
+            "office_id": item.office.office_id,
+            "office_name": item.office.office_name,
+        }
+        for item in offices
+    ])
 
 # =========================
 # FAQ CATEGORIES
@@ -586,8 +859,16 @@ def get_faqs(request):
         if profile.office_id:
             allowed_procedures = OfficeProcedures.objects.filter(
                 office_id=profile.office_id
-            ).values_list("procedure_id", flat=True)
-
+            ).values_list(
+                "procedure_id",
+                flat=True
+            )
+            allowed_documents = ProcedureDocuments.objects.filter(
+                office_id=profile.office_id
+            ).values_list(
+                "document_id",
+                flat=True
+            )
             faqs = faqs.filter(
                 category__procedure_id__in=allowed_procedures
             )
@@ -687,258 +968,70 @@ def delete_faq(request, pk):
 def submit_request(request):
 
     try:
-        profile = Users.objects.get(
-            auth_user_id=request.user.id
-        )
-
+        profile = Users.objects.get(auth_user_id=request.user.id)
     except Users.DoesNotExist:
-        return Response(
-            {"error": "User profile not found"},
-            status=404
-        )
+        return Response({"error": "Profile not found"}, status=404)
 
     procedure_id = request.data.get("procedure")
-
-    if not procedure_id:
-        return Response(
-            {"error": "Procedure is required"},
-            status=400
-        )
-
-    try:
-        procedure = Procedures.objects.get(
-            procedure_id=procedure_id
-        )
-
-    except Procedures.DoesNotExist:
-        return Response(
-            {"error": "Procedure not found"},
-            status=404
-        )
-
-
-    request_record = Requests.objects.create(
-
-        # actual references
-        user=profile,
-        procedure=procedure,
-
-        # snapshots
-        user_id_number_snapshot=profile.id_number,
-        procedure_name_snapshot=procedure.procedure_name,
-
-        created_at=timezone.now()
-    )
-
-
-    return Response(
-        {
-            "message": "Request submitted successfully",
-            "request_id": request_record.request_id,
-            "procedure": request_record.procedure_name_snapshot,
-            "user_id_number": request_record.user_id_number_snapshot
-        },
-        status=201
-    )
-
-# =========================
-# REQUESTS
-# =========================
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def submit_request(request):
-
-    try:
-        profile = Users.objects.get(
-            auth_user_id=request.user.id
-        )
-
-    except Users.DoesNotExist:
-        return Response(
-            {"error": "User profile not found"},
-            status=404
-        )
-
-    procedure_id = request.data.get("procedure")
-
-    if not procedure_id:
-        return Response(
-            {"error": "Procedure is required"},
-            status=400
-        )
-
-    try:
-        procedure = Procedures.objects.get(
-            procedure_id=procedure_id
-        )
-
-    except Procedures.DoesNotExist:
-        return Response(
-            {"error": "Procedure not found"},
-            status=404
-        )
-
-
-    request_record = Requests.objects.create(
-
-        # actual references
-        user=profile,
-        procedure=procedure,
-
-        # snapshots
-        user_id_number_snapshot=profile.id_number,
-        procedure_name_snapshot=procedure.procedure_name,
-
-        created_at=timezone.now()
-    )
-
-
-    return Response(
-        {
-            "message": "Request submitted successfully",
-            "request_id": request_record.request_id,
-            "procedure": request_record.procedure_name_snapshot,
-            "user_id_number": request_record.user_id_number_snapshot
-        },
-        status=201
-    )
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_request_document(request):
-
-    request_id = request.data.get("request")
     document_id = request.data.get("document")
 
-
-    if not request_id or not document_id:
+    if not procedure_id or not document_id:
         return Response(
-            {
-                "error": "Request and document are required"
-            },
+            {"error": "Procedure and document are required."},
             status=400
         )
 
-
     try:
-
-        request_record = Requests.objects.get(
-            request_id=request_id
-        )
-
-        document = Documents.objects.get(
-            document_id=document_id
-        )
-
-
-    except Requests.DoesNotExist:
-
+        procedure = Procedures.objects.get(pk=procedure_id)
+        document = Documents.objects.get(pk=document_id)
+    except (Procedures.DoesNotExist, Documents.DoesNotExist):
         return Response(
-            {"error": "Request not found"},
-            status=404
+            {"error": "Invalid procedure or document."},
+            status=400
         )
 
+    # Create request
+    new_request = Requests.objects.create(
+        user=profile,
+        procedure=procedure,
+        created_at=timezone.now(),
+    )
 
-    except Documents.DoesNotExist:
+    # Find the latest tracking number for this document
+    last_request = (
+        RequestDocuments.objects
+        .filter(document=document)
+        .order_by("-tracking_number")
+        .first()
+    )
 
-        return Response(
-            {"error": "Document not found"},
-            status=404
-        )
+    if last_request and last_request.tracking_number:
+        next_tracking_number = last_request.tracking_number + 1
+    else:
+        next_tracking_number = 1
 
+    # Format the reference code
+    reference_code = f"{document.document_id:04d}-{next_tracking_number:08d}"
 
+    # Create request document
     request_document = RequestDocuments.objects.create(
-
-        request=request_record,
-
+        request=new_request,
         document=document,
-
-        # snapshot
-        document_name_snapshot=document.document_name,
-
-        status="pending",
-
-        created_at=timezone.now()
+        tracking_number=next_tracking_number,
+        reference_code=reference_code,
+        status="Pending",
+        updated_at=timezone.now(),
     )
-
 
     return Response(
-        {
-            "message": "Document submitted successfully",
-            "request_document_id": request_document.req_doc_id,
-            "document": request_document.document_name_snapshot
-        },
-        status=201
-    )
-
-@api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
-def update_request_document(request, req_doc_id):
-
-    try:
-
-        request_document = RequestDocuments.objects.get(
-            req_doc_id=req_doc_id
-        )
-
-
-    except RequestDocuments.DoesNotExist:
-
-        return Response(
-            {
-                "error": "Request document not found"
-            },
-            status=404
-        )
-
-
-    try:
-
-        profile = Users.objects.get(
-            auth_user_id=request.user.id
-        )
-
-    except Users.DoesNotExist:
-
-        return Response(
-            {
-                "error": "User profile not found"
-            },
-            status=404
-        )
-
-
-    new_status = request.data.get("status")
-    remarks = request.data.get("remarks")
-
-
-    if new_status:
-        request_document.status = new_status
-
-
-    if remarks is not None:
-        request_document.remarks = remarks
-
-
-    # updater snapshot
-    request_document.updated_by = profile
-    request_document.updated_by_id_snapshot = profile.id_number
-
-    request_document.updated_at = timezone.now()
-
-
-    request_document.save()
-
-
-    return Response(
-        {
-            "message": "Request document updated successfully",
-            "status": request_document.status,
-            "updated_by": request_document.updated_by_id_snapshot
-        }
-    )
-
+    {
+        "request_id": new_request.request_id,
+        "reference_code": reference_code,
+        "tracking_number": next_tracking_number,
+        "status": request_document.status,
+    },
+    status=201,
+)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -973,6 +1066,262 @@ def track_requests(request):
     return Response(
         RequestSerializer(requests, many=True).data
     )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def active_requests(request):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=404,
+        )
+
+    # STUDENT
+    from pprint import pprint
+
+    for r in RequestDocuments.objects.all():
+        print(
+            r.req_doc_id,
+            r.status,
+            r.updated_at,
+            r.request_id,
+        )
+        
+    if profile.role.role_id == 1:
+        requests = (
+            Requests.objects
+            .filter(user=profile)
+            .select_related("procedure", "user")
+            .prefetch_related("requestdocuments_set")
+            .order_by("-created_at")
+        )
+
+        cutoff = timezone.now() - timedelta(days=7)
+
+        active_requests = []
+
+        for req in requests:
+            req_doc = req.requestdocuments_set.first()
+
+            if not req_doc:
+                continue
+
+            if req_doc.status.lower() == "pending":
+                active_requests.append(req)
+
+            elif (
+                req_doc.status.lower() == "rejected"
+                and req_doc.updated_at >= cutoff
+            ):
+                active_requests.append(req)
+
+        serializer = ActiveRequestSerializer(
+            active_requests,
+            many=True,
+        )
+
+        return Response(serializer.data)
+
+    # ADMIN
+    else:
+
+        allowed_documents = ProcedureDocuments.objects.filter(
+            office_id=profile.office_id
+        ).values_list(
+            "document_id",
+            flat=True
+        )
+
+        cutoff = timezone.now() - timedelta(days=7)
+
+
+        requests = (
+            Requests.objects
+            .filter(
+                requestdocuments__document_id__in=allowed_documents
+            )
+            .select_related(
+                "procedure",
+                "user"
+            )
+            .prefetch_related(
+                "requestdocuments_set"
+            )
+            .order_by("-created_at")
+        )
+
+
+        active_requests = []
+
+
+        for req in requests:
+
+            req_doc = req.requestdocuments_set.first()
+
+
+            if not req_doc:
+                continue
+
+
+            if req_doc.status.lower() == "pending":
+
+                active_requests.append(req)
+
+
+            elif (
+                req_doc.status.lower() == "rejected"
+                and req_doc.updated_at >= cutoff
+            ):
+
+                active_requests.append(req)
+
+
+        serializer = ActiveRequestSerializer(
+            active_requests,
+            many=True
+        )
+
+
+        return Response(serializer.data)
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def search_request_by_reference(request):
+
+    reference_code = request.data.get("reference_code")
+
+    if not reference_code:
+        return Response(
+            {"error": "Reference code is required"},
+            status=400
+        )
+
+    try:
+        req_doc = (
+            RequestDocuments.objects
+            .select_related(
+                "request",
+                "request__procedure",
+                "document",
+            )
+            .get(reference_code=reference_code)
+        )
+
+    except RequestDocuments.DoesNotExist:
+        return Response(
+            {"error": "Request not found"},
+            status=404
+        )
+
+    serializer = ActiveRequestSerializer(req_doc.request)
+
+    return Response(serializer.data)
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_request_status(request, request_id):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=404
+        )
+
+    # only admins
+    if getattr(profile.role, "role_id", None) != 2:
+        return Response(
+            {"error": "Unauthorized"},
+            status=403
+        )
+
+    try:
+        req_doc = RequestDocuments.objects.get(
+            request_id=request_id
+        )
+    except RequestDocuments.DoesNotExist:
+        return Response(
+            {"error": "Request not found"},
+            status=404
+        )
+
+    from datetime import timedelta
+    from django.utils import timezone
+
+    status = request.data.get("status")
+    remarks = request.data.get("remarks")
+
+    if status is not None:
+
+        req_doc.status = status
+        if status == "Approved":
+            req_doc.is_followed_up = True
+            req_doc.followed_up_at = timezone.now()
+
+        elif status == "Rejected":
+            req_doc.is_followed_up = False
+            req_doc.followed_up_at = None
+
+    if status and status.lower() == "rejected":
+        # Student has one week to follow up
+        req_doc.follow_up_deadline = timezone.now() + timedelta(days=7)
+        req_doc.history_at = None
+
+    elif status and status.lower() == "approved":
+        # Immediately move to history
+        req_doc.history_at = timezone.now()
+        req_doc.follow_up_deadline = None
+
+    if remarks is not None:
+        req_doc.remarks = remarks
+
+    req_doc.updated_at = timezone.now()
+    req_doc.save()
+
+    # =========================
+    # CREATE STUDENT NOTIFICATION
+    # =========================
+
+    student = req_doc.request.user
+
+    if status and status.lower() == "approved":
+
+        message = (
+            f"Your request for {req_doc.document.document_name} "
+            "has been approved."
+        )
+
+    elif status and status.lower() == "rejected":
+
+        message = (
+            f"Your request for {req_doc.document.document_name} "
+            f"has been rejected."
+        )
+
+        if req_doc.remarks:
+            message += f" Remarks: {req_doc.remarks}"
+
+    else:
+        message = (
+            f"Your request for {req_doc.document_name_snapshot} "
+            f"status has been updated to {status}."
+        )
+
+
+    Notifications.objects.create(
+        user=student,
+        request=req_doc.request,
+        message=message,
+        is_read=False
+    )
+
+    return Response({
+        "message": "Request updated successfully"
+    })
 
 # =========================
 # PROCESS SCREEN
@@ -1102,6 +1451,10 @@ def get_process_screen(request, procedure_id):
             ).data,
     })
 
+# =========================
+# DOCUMENTS
+# =========================
+
 @api_view(["GET"])
 def get_procedure_documents(request, procedure_id):
 
@@ -1223,14 +1576,32 @@ def verify_password(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_procedure(request):
-    profile = Users.objects.get(auth_user_id=request.user.id)
+
+    profile = Users.objects.get(
+        auth_user_id=request.user.id
+    )
+
     if getattr(profile.role, "role_id", None) != 2:
-        return Response({"error": "Only office admins can create a process."}, status=403)
+        return Response(
+            {"error": "Only office admins can create a process."},
+            status=403
+        )
+
 
     data = request.data
+
     procedure_name = (data.get("procedure_name") or "").strip()
+
     if not procedure_name:
-        return Response({"error": "Procedure name is required."}, status=400)
+        return Response(
+            {"error": "Procedure name is required."},
+            status=400
+        )
+
+
+    # =========================
+    # CREATE PROCEDURE
+    # =========================
 
     procedure = Procedures.objects.create(
         procedure_name=procedure_name,
@@ -1239,17 +1610,41 @@ def create_procedure(request):
         updated_at=timezone.now(),
     )
 
+
+    # =========================
+    # LINK OFFICE
+    # =========================
+
     if profile.office_id:
-        OfficeProcedures.objects.get_or_create(office_id=profile.office_id, procedure=procedure)
+        OfficeProcedures.objects.get_or_create(
+            office_id=profile.office_id,
+            procedure=procedure
+        )
+
+
+    # =========================
+    # CREATE REQUIREMENTS
+    # =========================
 
     for req_name in data.get("requirements", []):
+
         req_name = (req_name or "").strip()
+
         if not req_name:
             continue
-        requirement, _ = Requirements.objects.get_or_create(requirement_name=req_name)
-        ProcedureRequirements.objects.get_or_create(procedure=procedure, requirement=requirement)
+
+        Requirements.objects.create(
+            procedure=procedure,
+            requirement_name=req_name
+        )
+
+
+    # =========================
+    # CREATE STEPS
+    # =========================
 
     for step in data.get("steps", []):
+
         ProcedureSteps.objects.create(
             procedure=procedure,
             step_number=step.get("step_number"),
@@ -1258,12 +1653,24 @@ def create_procedure(request):
             reference_link=step.get("reference_link", ""),
         )
 
+
+    # =========================
+    # CREATE FAQ CATEGORY
+    # =========================
+
     FaqCategories.objects.create(
         category_name=(data.get("category_name") or procedure_name).strip(),
         procedure=procedure,
     )
 
-    return Response({"message": "Process created successfully", "procedure_id": procedure.procedure_id}, status=201)
+
+    return Response(
+        {
+            "message": "Process created successfully",
+            "procedure_id": procedure.procedure_id
+        },
+        status=201
+    )
 
 from .models import Notifications
 from .serializers import NotificationSerializer
@@ -1289,3 +1696,56 @@ class NotificationListView(APIView):
         )
 
         return Response(serializer.data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_statistics(request):
+
+    try:
+        profile = Users.objects.get(
+            auth_user_id=request.user.id
+        )
+
+    except Users.DoesNotExist:
+        return Response(
+            {"error": "Profile not found"},
+            status=404
+        )
+
+
+    if profile.role.role_id != 2:
+        return Response(
+            {"error": "Unauthorized"},
+            status=403
+        )
+
+
+    # Get procedures assigned to this admin's office
+    office_procedures = OfficeProcedures.objects.filter(
+        office_id=profile.office_id
+    ).values_list(
+        "procedure_id",
+        flat=True
+    )
+
+
+    procedure_count = Procedures.objects.filter(
+        procedure_id__in=office_procedures
+    ).count()
+
+
+    faq_count = Faqs.objects.filter(
+        category__procedure_id__in=office_procedures
+    ).count()
+
+
+    request_count = Requests.objects.filter(
+        procedure_id__in=office_procedures
+    ).count()
+
+
+    return Response({
+        "procedures": procedure_count,
+        "faqs": faq_count,
+        "requests": request_count,
+    })
