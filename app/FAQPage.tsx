@@ -47,6 +47,11 @@ export default function FAQScreen() {
     Number(roleId) === 2 ||
     admin_mode === "true";
 
+  console.log("FAQ Params:", {
+  roleId,
+  admin_mode,
+});
+
   const [search, setSearch] = useState("");
   const [faqs, setFaqs] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);

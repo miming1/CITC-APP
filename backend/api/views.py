@@ -42,7 +42,7 @@ from .serializers import (
 )
 
 from .services.procedure_service import get_full_procedure
-
+from datetime import timedelta
 
 # =========================
 # REGISTER
@@ -1790,23 +1790,26 @@ def admin_transaction_history(request):
     if not profile.office_id:
         return Response([])
 
-    # Same office-scoping pattern as active_requests: which documents
-    # belong to this admin's office
+    # Documents handled by this admin's office
     allowed_documents = ProcedureDocuments.objects.filter(
         office_id=profile.office_id
     ).values_list("document_id", flat=True)
 
     now = timezone.now()
+    cutoff = now - timedelta(days=7)
 
-    # Belongs in Transaction History if:
-    #  - it's already been moved to history (history_at is set) -> Approved case, OR
-    #  - it's Rejected and its 7-day follow-up window has passed
+    # Show:
+    # - Completed requests
+    # - Rejected requests whose 7-day follow-up period has expired
     req_docs = (
         RequestDocuments.objects
         .filter(document_id__in=allowed_documents)
         .filter(
-            Q(history_at__isnull=False) |
-            Q(status__iexact="rejected", follow_up_deadline__lte=now)
+            Q(status__iexact="completed") |
+            Q(
+                status__iexact="rejected",
+                rejected_at__lte=cutoff
+            )
         )
         .select_related("request", "request__user", "document")
         .order_by("-updated_at")
@@ -1821,14 +1824,14 @@ def admin_transaction_history(request):
         data.append({
             "req_doc_id": doc.req_doc_id,
             "document_name": (
-                doc.document.document_name if doc.document
+                doc.document.document_name
+                if doc.document
                 else doc.document_name_snapshot
             ),
             "reference_code": doc.reference_code,
             "tracking_number": doc.tracking_number,
             "status": doc.status,
             "updated_at": doc.updated_at,
-            "history_at": doc.history_at,
             "remarks": doc.remarks,
             "student_name": student.student_name if student else None,
             "student_id_number": student.id_number if student else None,
