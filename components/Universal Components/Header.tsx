@@ -5,6 +5,7 @@ import {
   Animated,
   Easing,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -30,45 +31,94 @@ type MenuItem = {
   label: string;
   route: string;
   icon: keyof typeof Ionicons.glyphMap;
-  studentOnly?: boolean;
+  description: string;
 };
 
-const MENU_ITEMS: MenuItem[] = [
+// ─── Student menu ───────────────────────────────────────────────────────────
+const STUDENT_MENU_ITEMS: MenuItem[] = [
   {
     label: "Dashboard",
     route: "/UserDashboard",
     icon: "home-outline",
+    description: "Go to your dashboard overview",
   },
   {
     label: "Notifications",
     route: "/Notifications",
     icon: "notifications-outline",
-    studentOnly: true,
+    description: "View your notifications",
   },
   {
     label: "Processes",
     route: "/ProcedurePage",
     icon: "document-text-outline",
+    description: "Browse academic procedures",
   },
   {
     label: "Frequently Asked Questions",
     route: "/FAQPage",
     icon: "help-circle-outline",
+    description: "Find answers to common questions",
   },
   {
     label: "Form Submission Progress",
     route: "/ActiveRequests",
     icon: "time-outline",
+    description: "Track requests currently in progress",
   },
   {
     label: "Submission History",
     route: "/SubmissionHistory",
     icon: "archive-outline",
+    description: "View completed and rejected submissions",
   },
   {
     label: "Profile",
     route: "/Profile",
     icon: "person-circle-outline",
+    description: "Manage your account details",
+  },
+];
+
+// ─── Admin menu ─────────────────────────────────────────────────────────────
+// Mirrors the student menu, minus Notifications, with two renamed/repointed items:
+// "Form Submission Progress" -> "Active Submissions", "Submission History" -> "Transaction History"
+const ADMIN_MENU_ITEMS: MenuItem[] = [
+  {
+    label: "Dashboard",
+    route: "/AdminDashboard", // adjust if your admin dashboard route is named differently
+    icon: "home-outline",
+    description: "Go to your dashboard overview",
+  },
+  {
+    label: "Processes",
+    route: "/ProcedurePage",
+    icon: "document-text-outline",
+    description: "Manage academic procedures",
+  },
+  {
+    label: "Frequently Asked Questions",
+    route: "/FAQPage",
+    icon: "help-circle-outline",
+    description: "Manage frequently asked questions",
+  },
+  {
+    label: "Active Submissions",
+    route: "/AdminActiveRequests", // adjust if named differently
+    icon: "time-outline",
+    description: "Review documents currently awaiting action",
+  },
+  {
+    label: "Transaction History",
+    route: "/AdminTransHis",
+    icon: "archive-outline",
+    description: "View completed and finalized transactions",
+  },
+  {
+    label: "Profile",
+    route: "/Profile",
+    icon: "person-circle-outline",
+    description: "Manage your account details",
   },
 ];
 
@@ -96,8 +146,12 @@ export default function Header({
     Number(roleId) === 2 ||
     adminMode === "true";
 
+  const menuItems = isAdmin ? ADMIN_MENU_ITEMS : STUDENT_MENU_ITEMS;
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  // Tracks which menu item (by route) is currently hovered, web only.
+  const [hoveredRoute, setHoveredRoute] = useState<string | null>(null);
 
   const [studentName, setStudentName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
@@ -209,6 +263,12 @@ export default function Header({
     ]).start();
   }, [menuOpen]);
 
+  // Reset hover state whenever the menu closes, so it doesn't show stale
+  // descriptions the next time it opens.
+  useEffect(() => {
+    if (!menuOpen) setHoveredRoute(null);
+  }, [menuOpen]);
+
   const handleNavigation = (route: string) => {
     setMenuOpen(false);
 
@@ -308,38 +368,48 @@ export default function Header({
               }
             ]}
           >
-            {MENU_ITEMS
-            .filter(item =>
-              !item.studentOnly || !isAdmin
-            )
-            .map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.menuItem}
-                activeOpacity={0.7}
-                onPress={() => handleNavigation(item.route)}
-              >
-                <View style={styles.menuIconContainer}>
-                  <Ionicons
-                    name={item.icon}
-                    size={20}
-                    color= "#4d57af"
-                  />
-                  {item.route === "/notifications" &&
-                    hasUnreadNotifications && (
-                      <View style={styles.notificationDot}/>
+            {menuItems.map((item) => {
+              const isHovered = hoveredRoute === item.route;
+
+              return (
+                <Pressable
+                  key={item.label}
+                  style={styles.menuItem}
+                  onPress={() => handleNavigation(item.route)}
+                  // Only fires on web (react-native-web); harmless no-op on native.
+                  onHoverIn={() => setHoveredRoute(item.route)}
+                  onHoverOut={() => setHoveredRoute(null)}
+                >
+                  <View style={styles.menuIconContainer}>
+                    <Ionicons
+                      name={item.icon}
+                      size={20}
+                      color="#4d57af"
+                    />
+                    {item.route === "/Notifications" &&
+                      hasUnreadNotifications && (
+                        <View style={styles.notificationDot}/>
+                      )}
+                  </View>
+                  <View style={styles.menuTextContainer}>
+                    <Text style={styles.menuText}>
+                      {item.label}
+                    </Text>
+                    {/* Description only appears on hover, web only */}
+                    {Platform.OS === "web" && isHovered && (
+                      <Text style={styles.menuDescription} numberOfLines={1}>
+                        {item.description}
+                      </Text>
                     )}
-                </View>
-                <Text style={styles.menuText}>
-                  {item.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={theme.icon}
-                />
-              </TouchableOpacity>
-            ))}
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={theme.icon}
+                  />
+                </Pressable>
+              );
+            })}
             <View style={styles.separator}/>
             <TouchableOpacity
               style={styles.logoutButton}
@@ -460,12 +530,20 @@ StyleSheet.create({
     borderWidth:1,
     borderColor:theme.background,
   },
-  menuText:{
+  menuTextContainer:{
     flex:1,
     marginLeft:8,
+    justifyContent:"center",
+  },
+  menuText:{
     fontSize:15,
     fontWeight:"600",
     color:theme.text,
+  },
+  menuDescription:{
+    fontSize:11,
+    color:theme.icon,
+    marginTop:2,
   },
   separator:{
     height:1,
