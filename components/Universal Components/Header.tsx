@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -144,6 +144,13 @@ export default function Header({
   const isAdmin =
     Number(roleId) === 2 ||
     adminMode === "true";
+
+    console.log("HEADER", {
+  title,
+  roleId,
+  adminMode,
+  isAdmin,
+});
 
   const menuItems = isAdmin ? ADMIN_MENU_ITEMS : STUDENT_MENU_ITEMS;
 
