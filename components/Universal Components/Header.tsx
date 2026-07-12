@@ -104,7 +104,7 @@ const ADMIN_MENU_ITEMS: MenuItem[] = [
   },
   {
     label: "Active Submissions",
-    route: "/AdminActiveRequests", // adjust if named differently
+    route: "/ActiveRequests", // adjust if named differently
     icon: "time-outline",
     description: "Review documents currently awaiting action",
   },
@@ -124,11 +124,17 @@ const ADMIN_MENU_ITEMS: MenuItem[] = [
 
 // Rotation of greetings shown to returning (non-new) users.
 // "Welcome, {name}!" is reserved for first-time/new users.
-const RETURNING_GREETINGS = [
+const RETURNING_GREETINGS_USER = [
   "Welcome back",
   "Hello",
   "Good to see you",
   "Great to have you back",
+];
+
+const RETURNING_GREETINGS_ADMIN = [
+  "Welcome back",
+  "Let's make today productive",
+  "Your workspace is ready",
 ];
 
 export default function Header({
@@ -147,6 +153,9 @@ export default function Header({
     adminMode === "true";
 
   const menuItems = isAdmin ? ADMIN_MENU_ITEMS : STUDENT_MENU_ITEMS;
+  const returningGreetings = isAdmin
+    ? RETURNING_GREETINGS_ADMIN
+    : RETURNING_GREETINGS_USER;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
@@ -155,9 +164,11 @@ export default function Header({
 
   const [studentName, setStudentName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
-  // Pick one returning-user greeting per mount so it doesn't change on re-render
+  // Pick one returning-user greeting per mount so it doesn't change on re-render.
+  // Based on returningGreetings (role-specific), so the index is always valid
+  // for whichever array is actually in use.
   const [greetingIndex] = useState(() =>
-    Math.floor(Math.random() * RETURNING_GREETINGS.length)
+    Math.floor(Math.random() * returningGreetings.length)
   );
 
   const slideAnim = useRef(new Animated.Value(-20)).current;
@@ -202,7 +213,7 @@ export default function Header({
   }, [isAdmin]);
 
   useEffect(() => {
-    if (isAdmin || !showGreeting) return;
+    if (!showGreeting) return;
 
     async function fetchProfile() {
       try {
@@ -232,12 +243,18 @@ export default function Header({
 
         setStudentName(firstName);
 
-        const isComplete =
-          !!data.id_number &&
-          !!data.program &&
-          !!data.year_level;
+        if (isAdmin) {
+          // Admins don't have program/year_level, so "new" just means
+          // no real name has been set on their profile yet
+          setIsNewUser(!hasRealName);
+        } else {
+          const isComplete =
+            !!data.id_number &&
+            !!data.program &&
+            !!data.year_level;
 
-        setIsNewUser(!isComplete);
+          setIsNewUser(!isComplete);
+        }
       } catch (error) {
         console.log("Profile fetch error:", error);
       }
@@ -297,7 +314,7 @@ export default function Header({
 
   const greeting = isNewUser
     ? "Welcome"
-    : RETURNING_GREETINGS[greetingIndex];
+    : returningGreetings[greetingIndex];
 
   const displayTitle = showGreeting
     ? `${greeting}, ${studentName || "User"}!`
