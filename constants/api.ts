@@ -17,7 +17,7 @@ export const ENDPOINTS = {
   notifications: `${API_BASE_URL}/notifications/`,
   markNotificationsRead:`${API_BASE_URL}/notifications/read/`,
   adminTransHistory: `${API_BASE_URL}/admin/transaction-history/`,
-  
+  userSubmissionHistory: `${API_BASE_URL}/user/submission-history/`,
 
   // ── OTP SECURE ENDPOINTS ───────────────────
   sendSignupOtp:   `${API_BASE_URL}/auth/send-signup-otp/`,

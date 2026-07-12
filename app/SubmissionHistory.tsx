@@ -3,13 +3,15 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from 'react';
 import {
-  KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
+  ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
   StyleSheet, Text, TextInput,
   TouchableOpacity, useColorScheme, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Universal Components/Header';
+import { ENDPOINTS } from '../constants/api';
 import { Colors } from '../constants/theme';
+import { getStoredToken } from '../lib/tokenStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,21 +28,6 @@ interface Submission {
   date: string;
   status: FinalizedStatus;
 }
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-// TODO(Florence): once document-submission logic is pushed, swap this
-// hardcoded array for a fetch (see previous version of this file for the
-// ENDPOINTS.submissionHistory + getStoredToken() scaffold) that only
-// returns Completed/Rejected records — Pending/active ones stay off this
-// screen entirely.
-const SUBMISSIONS: Submission[] = [
-  { id: '1', formName: 'INC Form',               refNo: '35169725031', date: '2026-07-11', status: 'Completed' },
-  { id: '2', formName: 'Medical Certificate',    refNo: '40139340587', date: '2026-07-03', status: 'Completed' },
-  { id: '3', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-07-09', status: 'Rejected' },
-  { id: '4', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2025-01-06', status: 'Rejected' },
-  { id: '5', formName: 'Good Moral Certificate', refNo: '29349018653', date: '2026-06-06', status: 'Completed' },
-
-];
 
 const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 'Custom Date'];
 
@@ -60,10 +47,14 @@ export default function SubmissionHistory() {
   }>();
 
   // Custom colors for the Filter button (independent of theme.ts)
-const filterColors = {
-  text: isDark ? "#ffffff" : "#141A73",      // dark mode, light mode
-  arrow: isDark ? "#ffffff" : "#141A73",     // dark mode, light mode
-};
+  const filterColors = {
+    text: isDark ? "#ffffff" : "#141A73",
+    arrow: isDark ? "#ffffff" : "#141A73",
+  };
+
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState<string | null>(null);
 
   const [search, setSearch]               = useState('');
   // null = no date filter applied, i.e. "All Submissions" (the default state).
@@ -75,12 +66,53 @@ const filterColors = {
   const [customDay,   setCustomDay]   = useState('');
   const [appliedCustomDate, setAppliedCustomDate] = useState('');
 
-  // Reset search + filters back to default whenever the user navigates away
-  // from this screen, so returning to it later always starts fresh showing
-  // all submissions.
+  // Fetch on focus, and reset search + filters back to default whenever the
+  // user navigates away, so returning to this screen always starts fresh.
   useFocusEffect(
     useCallback(() => {
+      let isActive = true;
+
+      async function loadSubmissions() {
+        try {
+          setLoading(true);
+          setError(null);
+
+          const token = await getStoredToken();
+
+          const res = await fetch(ENDPOINTS.userSubmissionHistory, {
+            headers: {
+              Authorization: `Token ${token}`,
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error(`Failed to load submission history (${res.status})`);
+          }
+
+          const json = await res.json();
+
+          if (!isActive) return;
+
+          const mapped: Submission[] = json.map((item: any) => ({
+            id: String(item.req_doc_id),
+            formName: item.document_name ?? item.procedure_name ?? 'Unknown Document',
+            refNo: item.reference_code ?? '—',
+            date: item.updated_at ? String(item.updated_at).split('T')[0] : '',
+            status: (item.status ?? '').toLowerCase() === 'completed' ? 'Completed' : 'Rejected',
+          }));
+
+          setSubmissions(mapped);
+        } catch (err: any) {
+          if (isActive) setError(err?.message ?? 'Something went wrong.');
+        } finally {
+          if (isActive) setLoading(false);
+        }
+      }
+
+      loadSubmissions();
+
       return () => {
+        isActive = false;
         setSearch('');
         setActiveFilter(null);
         setAppliedCustomDate('');
@@ -95,7 +127,7 @@ const filterColors = {
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    return SUBMISSIONS.filter((s) => {
+    return submissions.filter((s) => {
       const matchesSearch =
         s.formName.toLowerCase().includes(search.toLowerCase()) ||
         s.refNo.includes(search) ||
@@ -103,7 +135,6 @@ const filterColors = {
 
       if (!matchesSearch) return false;
 
-      // No filter selected — show every match regardless of date.
       if (!activeFilter) return true;
 
       const submissionDate = new Date(s.date);
@@ -128,7 +159,7 @@ const filterColors = {
       }
       return true;
     });
-  }, [search, activeFilter, appliedCustomDate]);
+  }, [submissions, search, activeFilter, appliedCustomDate]);
 
   function selectFilter(option: FilterOption) {
     setDropdownOpen(false);
@@ -165,15 +196,14 @@ const filterColors = {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
 
       <Header
-  title="Submission History"
-  roleId={roleId as string}
-  adminMode={admin_mode as string}
-/>
+        title="Submission History"
+        roleId={roleId as string}
+        adminMode={admin_mode as string}
+      />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Search Bar — colors/icon/shadow copied exactly from the
-             reusable SearchBar component ── */}
+        {/* ── Search Bar ── */}
         <View style={[
           styles.searchRow,
           {
@@ -215,22 +245,12 @@ const filterColors = {
             style={[styles.filterBtn, { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }]}
             onPress={() => setDropdownOpen((prev) => !prev)}
           >
-            <Text
-  style={[
-    styles.filterBtnText,
-    { color: filterColors.text },
-  ]}
->
-  Filter by Date
-</Text>
-
-<Text
-  style={[
-    styles.filterBtnText,
-    { color: filterColors.arrow },
-  ]}
->
-  {dropdownOpen ? "∧" : "∨"}</Text>
+            <Text style={[styles.filterBtnText, { color: filterColors.text }]}>
+              Filter by Date
+            </Text>
+            <Text style={[styles.filterBtnText, { color: filterColors.arrow }]}>
+              {dropdownOpen ? "∧" : "∨"}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -249,40 +269,55 @@ const filterColors = {
           )}
         </View>
 
-        {/* ── Table Header ── */}
-        <View style={styles.tableHeader}>
-          <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Form Name</Text>
-          <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Ref No.</Text>
-          <Text style={[styles.tableHeaderText, { flex: 1.5, color: theme.icon }]}>Date</Text>
-          <Text style={[styles.tableHeaderText, styles.statusHeaderText, { flex: 1.5, color: theme.icon }]}>Status</Text>
-        </View>
-
-        {/* ── Table Rows ── */}
-        {filtered.map((item) => (
-          <View key={item.id} style={[styles.tableRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
-            <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.formName}</Text>
-            <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.refNo}</Text>
-            <Text style={[styles.tableCell, { flex: 1.5, color: theme.text }]}>{item.date}</Text>
-            <View style={styles.statusCell}>
-              <View style={[
-                styles.statusBadge,
-                item.status === 'Completed' && styles.statusCompleted,
-                item.status === 'Rejected'  && styles.statusRejected,
-              ]}>
-                <Text style={[
-                  styles.statusText,
-                  item.status === 'Completed' && styles.statusTextCompleted,
-                  item.status === 'Rejected'  && styles.statusTextRejected,
-                ]}>
-                  {item.status}
-                </Text>
-              </View>
-            </View>
+        {/* ── Loading / Error states ── */}
+        {loading && (
+          <View style={{ paddingVertical: 30, alignItems: 'center' }}>
+            <ActivityIndicator color={theme.tint} />
           </View>
-        ))}
+        )}
 
-        {filtered.length === 0 && (
-          <Text style={[styles.empty, { color: theme.icon }]}>No submissions found.</Text>
+        {!loading && error && (
+          <Text style={[styles.empty, { color: '#991b1b' }]}>{error}</Text>
+        )}
+
+        {!loading && !error && (
+          <>
+            {/* ── Table Header ── */}
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Form Name</Text>
+              <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Ref No.</Text>
+              <Text style={[styles.tableHeaderText, { flex: 1.5, color: theme.icon }]}>Date</Text>
+              <Text style={[styles.tableHeaderText, styles.statusHeaderText, { flex: 1.5, color: theme.icon }]}>Status</Text>
+            </View>
+
+            {/* ── Table Rows ── */}
+            {filtered.map((item) => (
+              <View key={item.id} style={[styles.tableRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.formName}</Text>
+                <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.refNo}</Text>
+                <Text style={[styles.tableCell, { flex: 1.5, color: theme.text }]}>{item.date}</Text>
+                <View style={styles.statusCell}>
+                  <View style={[
+                    styles.statusBadge,
+                    item.status === 'Completed' && styles.statusCompleted,
+                    item.status === 'Rejected'  && styles.statusRejected,
+                  ]}>
+                    <Text style={[
+                      styles.statusText,
+                      item.status === 'Completed' && styles.statusTextCompleted,
+                      item.status === 'Rejected'  && styles.statusTextRejected,
+                    ]}>
+                      {item.status}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+
+            {filtered.length === 0 && (
+              <Text style={[styles.empty, { color: theme.icon }]}>No submissions found.</Text>
+            )}
+          </>
         )}
 
       </ScrollView>
@@ -300,7 +335,6 @@ const filterColors = {
                 <Text style={[
                   styles.dropdownText,
                   { color: isDark ? "#ffffff" : "#141A73" },
-
                   activeFilter === opt && { color: theme.tint2, fontWeight: '700' },
                 ]}>
                   {opt}
@@ -322,9 +356,6 @@ const filterColors = {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1 }}
         >
-          {/* Only THIS outer Pressable closes the modal. The card below stops
-              the press from bubbling up, so tapping any input inside it
-              (or anywhere on the card) no longer dismisses the modal. */}
           <Pressable style={styles.modalOverlay} onPress={() => setCustomDateModal(false)}>
             <Pressable
               style={[styles.modalCard, { backgroundColor: theme.background }]}
@@ -362,7 +393,6 @@ const filterColors = {
         </KeyboardAvoidingView>
       </Modal>
 
-
     </SafeAreaView>
   );
 }
@@ -370,17 +400,12 @@ const filterColors = {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-
   safeArea: { flex: 1 },
-
   scroll: {
     paddingHorizontal: 16,
     paddingBottom: 120,
     paddingTop: 16,
   },
-
-  // ── Search Bar — colors/shadow copied exactly from the reusable
-  // SearchBar component's `container`/`iconContainer` styles ─────────────────
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -390,7 +415,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     marginTop: 3,
     marginBottom: 12,
-
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 6,
@@ -407,8 +431,6 @@ const styles = StyleSheet.create({
   },
   searchInput:    { flex: 1, fontSize: 15, fontWeight: '500', paddingVertical: 0 },
   searchClearBtn: { marginLeft: 8 },
-
-  // ── Filter ─────────────────────────────────────────────────────────────────
   filterRow:     { alignItems: 'flex-end', marginBottom: 4 },
   filterBtn:     { flexDirection: 'row', alignItems: 'center', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, gap: 6 },
   filterBtnText: { fontSize: 14, fontWeight: '500' },
@@ -426,8 +448,6 @@ const styles = StyleSheet.create({
   },
   filterPillText:  { fontSize: 12, fontWeight: '700' },
   filterPillClose: { padding: 2 },
-
-  // ── Dropdown ───────────────────────────────────────────────────────────────
   dropdownOverlay: { position: 'absolute', top: 38, left: 0, right: 0, bottom: 0 },
   dropdown: {
     position: 'absolute',
@@ -444,12 +464,8 @@ const styles = StyleSheet.create({
   },
   dropdownItem:      { paddingVertical: 12, paddingHorizontal: 16 },
   dropdownText:      { fontSize: 13, fontWeight: '500' },
-
-  // ── Table ──────────────────────────────────────────────────────────────────
   tableHeader:     { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 12, marginBottom: 4 },
   tableHeaderText: { fontSize: 12, fontWeight: '600' },
-  // Status column content is centered (badge), so its header label is
-  // centered too, instead of the default left alignment.
   statusHeaderText: { textAlign: 'center' },
   tableRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -457,8 +473,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 12, marginBottom: 10,
   },
   tableCell: { fontSize: 12 },
-
-  // ── Status Badge — semantic colors, kept independent of the theme ──────────
   statusCell:          { flex: 1.5, alignItems: 'center', justifyContent: 'center' },
   statusBadge:         { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   statusCompleted:     { backgroundColor: '#d1fae5' },
@@ -466,10 +480,7 @@ const styles = StyleSheet.create({
   statusText:          { fontSize: 11, fontWeight: '600', textAlign: 'center' },
   statusTextCompleted: { color: '#065f46' },
   statusTextRejected:  { color: '#991b1b' },
-
   empty: { textAlign: 'center', marginTop: 30, fontSize: 13 },
-
-  // ── Custom Date Modal ──────────────────────────────────────────────────────
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },
   modalCard:    { borderRadius: 16, padding: 28, width: '80%', maxWidth: 360, alignItems: 'center', elevation: 8 },
   modalTitle:   { fontSize: 17, fontWeight: '600', marginBottom: 12 },
@@ -485,16 +496,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 4,
   },
-  // YYYY needs to hold 4 digits vs. 2 for MM/DD, so it gets more of the row's
-  // available space — but flexBasis: 0 + minWidth: 0 above is what actually
-  // lets every input shrink to fit the modal card instead of overflowing it.
   dateInputYear:  { flexGrow: 1.3 },
   dateInputShort: { flexGrow: 1 },
   dateSep:      { fontSize: 20, fontWeight: '300', flexShrink: 0 },
   modalBtn:     { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 40 },
   modalBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-
-  // ── Footer ─────────────────────────────────────────────────────────────────
   footer:       { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
-
 });

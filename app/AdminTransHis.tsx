@@ -11,8 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Universal Components/Header';
 import { ENDPOINTS } from '../constants/api'; // adjust path if different in your project
 import { Colors } from '../constants/theme';
-import { getStoredToken } from '../lib/tokenStore'; // swap for getToken from '@/lib/auth' if that's the one this screen should use
-
+import { getStoredToken } from '../lib/tokenStore';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FilterOption = 'This Week' | 'This Month' | 'This Year' | 'Custom Date';
