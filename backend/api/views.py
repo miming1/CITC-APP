@@ -1697,6 +1697,21 @@ class NotificationListView(APIView):
 
         return Response(serializer.data)
 
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def mark_notifications_read(request):
+
+    profile = request.user.profile
+
+    Notifications.objects.filter(
+        user=profile,
+        is_read=False
+    ).update(is_read=True)
+
+    return Response({
+        "message": "Notifications marked as read."
+    })
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admin_statistics(request):

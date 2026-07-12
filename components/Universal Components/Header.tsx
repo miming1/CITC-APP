@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -89,10 +89,7 @@ export default function Header({
   const middleLine = useRef(new Animated.Value(1)).current;
   const bottomLine = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (isAdmin) return;
-
-    async function checkNotifications() {
+  const checkNotifications = async () => {
       try {
         const token = await getToken();
 
@@ -123,9 +120,21 @@ export default function Header({
       }
     }
 
+  useFocusEffect(
+    useCallback(() => {
+      if (isAdmin) return;
+
+      checkNotifications();
+
+    }, [isAdmin])
+  );
+
+  useEffect(() => {
+    if (!menuOpen || isAdmin) return;
+
     checkNotifications();
 
-  }, [isAdmin]);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (menuOpen) {

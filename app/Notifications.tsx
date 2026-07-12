@@ -69,6 +69,17 @@ export default function NotificationScreen() {
           : data.results ?? []
       );
 
+      await fetch(
+        ENDPOINTS.markNotificationsRead,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
     } catch (err) {
       console.log("Notification error:", err);
       setError("Unable to load notifications.");
@@ -155,10 +166,21 @@ export default function NotificationScreen() {
               style={[
                 styles.card,
                 {
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
+                    backgroundColor: notification.is_read
+                        ? colors.background
+                        : colorScheme === "light"
+                            ? "#FFF9EC"
+                            : "#3A2D10",
+
+                    borderColor: notification.is_read
+                        ? colors.border
+                        : "#EBA937",
+
+                    borderWidth: notification.is_read
+                        ? 1
+                        : 2,
                 },
-              ]}
+            ]}
               onPress={() => {
                 router.push({
                   pathname: "/SubmissionHistory",
