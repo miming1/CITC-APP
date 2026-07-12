@@ -14,31 +14,22 @@ import StatusBadge from "../Universal Components/StatusBadge";
 type Props = {
     modalVisible: boolean;
     closeModal: () => void;
-
     selectedItem: any;
-
     isAdmin: boolean;
-
+    isHistory?: boolean;
     isMobile: boolean;
-
     colors: any;
     colorScheme: string;
-
     styles: any;
-
     remarks: string;
     setRemarks: (v: string) => void;
-
     remarksFocused: boolean;
     setRemarksFocused: (v: boolean) => void;
-
     selectedStatus: "Approved" | "Rejected" | null;
     setSelectedStatus: (
         value: "Approved" | "Rejected"
     ) => void;
-
     handleUpdateStatus: () => void;
-
     formatYearLevel: (year?: number) => string;
 };
 
@@ -47,6 +38,7 @@ export default function ActiveRequestModal({
     closeModal,
     selectedItem,
     isAdmin,
+    isHistory = false,
     isMobile,
     colors,
     colorScheme,
@@ -196,7 +188,7 @@ export default function ActiveRequestModal({
                                             { color: colors.text },
                                         ]}
                                     >
-                                        {selectedItem?.id_number}
+                                        {selectedItem?.student_id_number ?? selectedItem?.id_number}
                                     </Text>
                                 </View>
 
@@ -216,7 +208,7 @@ export default function ActiveRequestModal({
                                             { color: colors.text },
                                         ]}
                                     >
-                                        {selectedItem?.student_name}
+                                        {selectedItem?.student_name ?? "N/A"}
                                     </Text>
                                 </View>
 
@@ -304,7 +296,7 @@ export default function ActiveRequestModal({
                             </Text>
                         </View>
 
-                        {isAdmin && (
+                        {isAdmin && !isHistory && (
                             <View style={styles.infoGroup}>
                                 <Text
                                     style={[
@@ -373,7 +365,7 @@ export default function ActiveRequestModal({
                                 Remarks
                             </Text>
 
-                            {isAdmin ? (
+                            {isAdmin && !isHistory ? (
                                 <TextInput
                                     value={remarks}
                                     onChangeText={setRemarks}
@@ -417,8 +409,9 @@ export default function ActiveRequestModal({
                                         },
                                     ]}
                                 >
-                                    {selectedItem?.remarks ||
-                                        "No remarks yet."}
+                                    {selectedItem?.remarks
+                                        ? selectedItem.remarks
+                                        : "No remarks given."}
                                 </Text>
                             )}
                         </View>
@@ -465,9 +458,10 @@ export default function ActiveRequestModal({
                                 },
                             ]}
                             onPress={() => {
-                                if (isAdmin)
+                                if (isAdmin && !isHistory)
                                     handleUpdateStatus();
-                                else closeModal();
+                                else
+                                    closeModal();
                             }}
                         >
                             <Text
@@ -478,7 +472,7 @@ export default function ActiveRequestModal({
                                     },
                                 ]}
                             >
-                                {isAdmin
+                                {isAdmin && !isHistory
                                     ? "Update"
                                     : "Close"}
                             </Text>
