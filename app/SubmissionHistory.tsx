@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
@@ -47,8 +48,16 @@ const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 
 
 export default function SubmissionHistory() {
   const colorScheme = useColorScheme() ?? 'light';
-  const theme       = Colors[colorScheme];
-  const isDark      = colorScheme === 'dark';
+  const theme = Colors[colorScheme];
+  const isDark = colorScheme === 'dark';
+
+  const {
+    roleId,
+    admin_mode,
+  } = useLocalSearchParams<{
+    roleId?: string;
+    admin_mode?: string;
+  }>();
 
   // Custom colors for the Filter button (independent of theme.ts)
 const filterColors = {
@@ -155,7 +164,11 @@ const filterColors = {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
 
-      <Header title="Submission History" />
+      <Header
+  title="Submission History"
+  roleId={roleId as string}
+  adminMode={admin_mode as string}
+/>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 

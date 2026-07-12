@@ -1,10 +1,10 @@
-import Header from "@/components/Universal Components/Header";
 import ActiveRequestCard from "@/components/Universal Components/ActiveRequestCard";
 import ActiveRequestModal from "@/components/Universal Components/ActiveRequestModal";
+import Header from "@/components/Universal Components/Header";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, useColorScheme, useWindowDimensions, } from "react-native";
+import { ScrollView, StyleSheet, Text, View, useColorScheme, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 
@@ -209,7 +209,11 @@ export default function UserActiveReq() {
         },
       ]}
     >
-      <Header title="Active Requests" />
+      <Header
+    title="Active Requests"
+    roleId={roleId as string}
+    adminMode="true"
+    />
 
       {message !== "" && (
         <View
