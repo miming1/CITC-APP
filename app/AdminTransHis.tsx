@@ -299,12 +299,12 @@ export default function AdminTransHis() {
                 <View style={styles.statusCell}>
                   <View style={[
                     styles.statusBadge,
-                    item.status === 'approved' && styles.statusCompleted,
+                    item.status === 'approved' && styles.statusApproved,
                     item.status === 'rejected'  && styles.statusRejected,
                   ]}>
                     <Text style={[
                       styles.statusText,
-                      item.status === 'approved' && styles.statusTextCompleted,
+                      item.status === 'approved' && styles.statusTextApproved,
                       item.status === 'rejected'  && styles.statusTextRejected,
                     ]}>
                       {item.status === 'approved' ? 'Approved' : 'Rejected'}
