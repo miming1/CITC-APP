@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   Platform,
   ScrollView,
@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { API_BASE_URL } from "../constants/api";
 import { Colors } from "../constants/theme";
@@ -54,6 +54,16 @@ export default function UserDashboard() {
   const [processes, setProcesses] = useState<Process[]>([]);
   const [faqCategories, setFaqCategories] = useState<FAQCategory[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Reset the search box every time this screen gains focus — including
+  // when the user hits the back button from Search Results. Because the
+  // box is now controlled (value={search}), clearing this state actually
+  // clears what's visible instead of leaving stale typed text behind.
+  useFocusEffect(
+    useCallback(() => {
+      setSearch("");
+    }, [])
+  );
 
   // =========================
   // FETCH PROCEDURES
@@ -159,12 +169,28 @@ export default function UserDashboard() {
     loadAll();
   }, []);
 
+  // Feeds the SearchBar's autosuggest dropdown — this is what gives the
+  // Dashboard the same "live matching while typing" feel that the FAQ page
+  // already has (FAQ does it by filtering its own list; here there's no
+  // list under the search bar to filter, so a dropdown is the equivalent).
+  const suggestionPool = useMemo(
+    () => [
+      ...processes.map((p) => p.title),
+      ...faqCategories.map((c) => c.category_name),
+    ],
+    [processes, faqCategories]
+  );
+
   // =========================
   // UI
   // =========================
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
-      <Header title="Welcome!" showBack={false} roleId={1} />
+    <Header
+        title="Dashboard"
+        showBack={false}
+        showGreeting
+    />
 
       <ScrollView
         style={styles.scrollView}
@@ -173,16 +199,30 @@ export default function UserDashboard() {
       >
         <View style={[styles.container, isDesktop && styles.desktopContainer]}>
           {/* SEARCH */}
-          <SearchBar
-            placeholder="Search..."
-            onSearch={(query) => {
-              router.push({
-                pathname: "/SearchResults",
-                params: { query: search, roleId: 1, },
-              });
-            }}
-            onChangeText={setSearch}
-          />
+          <View style={styles.searchBarWrap}>
+            <SearchBar
+              placeholder="Search..."
+              value={search}
+              suggestions={suggestionPool}
+              onChangeText={setSearch}
+              onSearch={(searchQuery) => {
+                // Use the value the callback actually gives us instead of
+                // the closured `search` state, and guard against an empty
+                // string so nothing navigates on a blank submit.
+                if (!searchQuery.trim()) return;
+                router.push({
+                  pathname: "/SearchResults",
+                  params: { query: searchQuery, roleId: 1 },
+                });
+              }}
+              onSelectSuggestion={(item) => {
+                router.push({
+                  pathname: "/SearchResults",
+                  params: { query: item, roleId: 1 },
+                });
+              }}
+            />
+          </View>
 
           {/* POPULAR */}
           <PopularProcesses
@@ -250,6 +290,15 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     marginTop: 20,
+    // SearchBar no longer supplies its own horizontal margin, so this
+    // container now owns that spacing directly.
+    paddingHorizontal: 16,
+  },
+
+  searchBarWrap: {
+    marginBottom: 8,
+    position: "relative",
+    zIndex: 20,
   },
 
   desktopContainer: {

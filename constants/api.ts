@@ -16,6 +16,7 @@ export const ENDPOINTS = {
   verifyPassword: `${API_BASE_URL}/verify-password/`,
   notifications: `${API_BASE_URL}/notifications/`,
   markNotificationsRead:`${API_BASE_URL}/notifications/read/`,
+  adminTransHistory: `${API_BASE_URL}/admin/transaction-history/`,
   
 
   // ── OTP SECURE ENDPOINTS ───────────────────

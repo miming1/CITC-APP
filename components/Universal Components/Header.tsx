@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -22,47 +23,111 @@ interface HeaderProps {
   showBack?: boolean;
   roleId?: string | number;
   adminMode?: string;
+  /** When true, replaces the title with a personalized greeting (e.g. dashboard page). Student-side only. */
+  showGreeting?: boolean;
 }
 
 type MenuItem = {
   label: string;
   route: string;
   icon: keyof typeof Ionicons.glyphMap;
-  studentOnly?: boolean;
+  description: string;
 };
 
-const MENU_ITEMS: MenuItem[] = [
+// ─── Student menu ───────────────────────────────────────────────────────────
+const STUDENT_MENU_ITEMS: MenuItem[] = [
+  {
+    label: "Dashboard",
+    route: "/UserDashboard",
+    icon: "home-outline",
+    description: "Go to your dashboard overview",
+  },
   {
     label: "Notifications",
     route: "/Notifications",
     icon: "notifications-outline",
-    studentOnly: true,
+    description: "View your notifications",
   },
   {
     label: "Processes",
     route: "/ProcedurePage",
     icon: "document-text-outline",
+    description: "Browse academic procedures",
   },
   {
     label: "Frequently Asked Questions",
     route: "/FAQPage",
     icon: "help-circle-outline",
+    description: "Find answers to common questions",
   },
   {
     label: "Form Submission Progress",
     route: "/ActiveRequests",
     icon: "time-outline",
+    description: "Track requests currently in progress",
   },
   {
     label: "Submission History",
     route: "/SubmissionHistory",
     icon: "archive-outline",
+    description: "View completed and rejected submissions",
   },
   {
     label: "Profile",
     route: "/Profile",
     icon: "person-circle-outline",
+    description: "Manage your account details",
   },
+];
+
+// ─── Admin menu ─────────────────────────────────────────────────────────────
+// Mirrors the student menu, minus Notifications, with two renamed/repointed items:
+const ADMIN_MENU_ITEMS: MenuItem[] = [
+  {
+    label: "Dashboard",
+    route: "/AdminDashboard", // adjust if your admin dashboard route is named differently
+    icon: "home-outline",
+    description: "Go to your dashboard overview",
+  },
+  {
+    label: "Processes",
+    route: "/ProcedurePage",
+    icon: "document-text-outline",
+    description: "Manage academic procedures",
+  },
+  {
+    label: "Frequently Asked Questions",
+    route: "/FAQPage",
+    icon: "help-circle-outline",
+    description: "Manage frequently asked questions",
+  },
+  {
+    label: "Active Submissions",
+    route: "/ActiveRequests", // adjust if named differently
+    icon: "time-outline",
+    description: "Review documents currently awaiting action",
+  },
+  {
+    label: "Transaction History",
+    route: "/AdminTransHis",
+    icon: "archive-outline",
+    description: "View completed and finalized transactions",
+  },
+  {
+    label: "Profile",
+    route: "/Profile",
+    icon: "person-circle-outline",
+    description: "Manage your account details",
+  },
+];
+
+// Rotation of greetings shown to returning (non-new) students.
+// "Welcome, {name}!" is reserved for first-time/new students.
+const RETURNING_GREETINGS = [
+  "Welcome back",
+  "Hello",
+  "Good to see you",
+  "Great to have you back",
 ];
 
 export default function Header({
@@ -70,6 +135,7 @@ export default function Header({
   showBack = true,
   roleId,
   adminMode,
+  showGreeting = false,
 }: HeaderProps) {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? "light";
@@ -79,122 +145,133 @@ export default function Header({
     Number(roleId) === 2 ||
     adminMode === "true";
 
+    console.log("HEADER", {
+  title,
+  roleId,
+  adminMode,
+  isAdmin,
+});
+
+  const menuItems = isAdmin ? ADMIN_MENU_ITEMS : STUDENT_MENU_ITEMS;
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
+  // Tracks which menu item (by route) is currently hovered, web only.
+  const [hoveredRoute, setHoveredRoute] = useState<string | null>(null);
+
+  const [studentName, setStudentName] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
+  // Pick one returning-user greeting per mount so it doesn't change on re-render
+  const [greetingIndex] = useState(() =>
+    Math.floor(Math.random() * RETURNING_GREETINGS.length)
+  );
 
   const slideAnim = useRef(new Animated.Value(-20)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const topLine = useRef(new Animated.Value(0)).current;
-  const middleLine = useRef(new Animated.Value(1)).current;
-  const bottomLine = useRef(new Animated.Value(0)).current;
+  const checkNotifications = useCallback(async () => {
+    if (isAdmin) return;
 
-  const checkNotifications = async () => {
-      try {
-        const token = await getToken();
+    try {
+      const token = await getToken();
 
-        const response = await fetch(
-          ENDPOINTS.notifications,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-          }
-        );
+      const response = await fetch(
+        ENDPOINTS.notifications,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
 
-        if (!response.ok) return;
+      if (!response.ok) return;
 
-        const data = await response.json();
+      const data = await response.json();
 
-        const unread = data.some(
-          (item: any) => !item.is_read
-        );
+      const unread = data.some(
+        (item: any) => !item.is_read
+      );
 
-        setHasUnreadNotifications(unread);
-
-      } catch (error) {
-        console.log(
-          "Notification fetch error:",
-          error
-        );
-      }
+      setHasUnreadNotifications(unread);
+    } catch (error) {
+      console.log("Notification fetch error:", error);
     }
-
-  useFocusEffect(
-    useCallback(() => {
-      if (isAdmin) return;
-
-      checkNotifications();
-
-    }, [isAdmin])
-  );
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!menuOpen || isAdmin) return;
 
     checkNotifications();
+  }, [menuOpen, isAdmin, checkNotifications]);
 
-  }, [menuOpen]);
+  // Greeting/profile fetch is student-only. Admins never see a personalized
+  // greeting, so this skips entirely when isAdmin is true.
+  useEffect(() => {
+    if (isAdmin || !showGreeting) return;
+
+    async function fetchProfile() {
+      try {
+        const token = await getToken();
+
+        const response = await fetch(ENDPOINTS.me, {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        const rawName = String(data.student_name ?? "");
+        const idNumber = String(data.id_number ?? "");
+
+        // student_name defaults to id_number right after signup,
+        // so that doesn't count as a real name yet
+        const hasRealName =
+          rawName.trim() !== "" && rawName.trim() !== idNumber.trim();
+
+        const firstName = hasRealName
+          ? rawName.trim().split(" ")[0]
+          : "";
+
+        setStudentName(firstName);
+
+        const isComplete =
+          !!data.id_number &&
+          !!data.program &&
+          !!data.year_level;
+
+        setIsNewUser(!isComplete);
+      } catch (error) {
+        console.log("Profile fetch error:", error);
+      }
+    }
+
+    fetchProfile();
+  }, [isAdmin, showGreeting]);
 
   useEffect(() => {
-    if (menuOpen) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 220,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(topLine, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(bottomLine, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(middleLine, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: -20,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(topLine, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(bottomLine, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-        Animated.timing(middleLine, {
-          toValue: 1,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: menuOpen ? 1 : 0,
+        duration: menuOpen ? 220 : 180,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: menuOpen ? 0 : -20,
+        duration: menuOpen ? 220 : 180,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [menuOpen]);
+
+  // Reset hover state whenever the menu closes, so it doesn't show stale
+  // descriptions the next time it opens.
+  useEffect(() => {
+    if (!menuOpen) setHoveredRoute(null);
   }, [menuOpen]);
 
   const handleNavigation = (route: string) => {
@@ -218,7 +295,22 @@ export default function Header({
   };
 
   const styles = createStyles(theme);
-    return (
+
+  // Bound directly to state rather than an Animated value, so the color
+  // always matches menuOpen exactly and can never get stuck mid-transition.
+  const lineColor = menuOpen ? "#EBA937" : "#FFFFFF";
+
+  const greeting = isNewUser
+    ? "Welcome"
+    : RETURNING_GREETINGS[greetingIndex];
+
+  // Admins always see the plain title, regardless of showGreeting.
+  const displayTitle =
+    showGreeting && !isAdmin
+      ? `${greeting}, ${studentName || "User"}!`
+      : title;
+
+  return (
     <>
       <View style={styles.container}>
         {showBack ? (
@@ -240,71 +332,24 @@ export default function Header({
           style={styles.title}
           numberOfLines={1}
         >
-          {title}
+          {displayTitle}
         </Text>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => setMenuOpen(true)}
-          style={[
-            styles.menuButton,
-            menuOpen && styles.menuButtonActive
-          ]}
+          onPress={() => setMenuOpen(prev => !prev)}
+          style={styles.menuButton}
         >
-
-          {hasUnreadNotifications && (
-            <View style={styles.hamburgerNotificationDot} />
-          )}
-
-          <Animated.View
-            style={[
-              styles.menuLine,
-              {
-                transform:[
-                  {
-                    rotate:topLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:["0deg","45deg"]
-                    })
-                  },
-                  {
-                    translateY:topLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:[0,7]
-                    })
-                  }
-                ]
-              }
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.menuLine,
-              {
-                opacity:middleLine
-              }
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.menuLine,
-              {
-                transform:[
-                  {
-                    rotate:bottomLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:["0deg","-45deg"]
-                    })
-                  },
-                  {
-                    translateY:bottomLine.interpolate({
-                      inputRange:[0,1],
-                      outputRange:[0,-7]
-                    })
-                  }
-                ]
-              }
-            ]}
-          />
+          <View style={styles.menuIconWrapper}>
+            <View
+              style={[styles.menuLineFull, { backgroundColor: lineColor }]}
+            />
+            <View
+              style={[styles.menuLineShort, { backgroundColor: lineColor }]}
+            />
+            <View
+              style={[styles.menuLineFull, { backgroundColor: lineColor }]}
+            />
+          </View>
         </TouchableOpacity>
       </View>
       <Modal
@@ -330,38 +375,48 @@ export default function Header({
               }
             ]}
           >
-            {MENU_ITEMS
-            .filter(item =>
-              !item.studentOnly || !isAdmin
-            )
-            .map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.menuItem}
-                activeOpacity={0.7}
-                onPress={() => handleNavigation(item.route)}
-              >
-                <View style={styles.menuIconContainer}>
+            {menuItems.map((item) => {
+              const isHovered = hoveredRoute === item.route;
+
+              return (
+                <Pressable
+                  key={item.label}
+                  style={styles.menuItem}
+                  onPress={() => handleNavigation(item.route)}
+                  // Only fires on web (react-native-web); harmless no-op on native.
+                  onHoverIn={() => setHoveredRoute(item.route)}
+                  onHoverOut={() => setHoveredRoute(null)}
+                >
+                  <View style={styles.menuIconContainer}>
+                    <Ionicons
+                      name={item.icon}
+                      size={20}
+                      color="#4d57af"
+                    />
+                    {item.route === "/Notifications" &&
+                      hasUnreadNotifications && (
+                        <View style={styles.notificationDot}/>
+                      )}
+                  </View>
+                  <View style={styles.menuTextContainer}>
+                    <Text style={styles.menuText}>
+                      {item.label}
+                    </Text>
+                    {/* Description only appears on hover, web only */}
+                    {Platform.OS === "web" && isHovered && (
+                      <Text style={styles.menuDescription} numberOfLines={1}>
+                        {item.description}
+                      </Text>
+                    )}
+                  </View>
                   <Ionicons
-                    name={item.icon}
-                    size={20}
-                    color={theme.tint}
+                    name="chevron-forward"
+                    size={18}
+                    color={theme.icon}
                   />
-                  {item.label === "Notifications" &&
-                    hasUnreadNotifications && (
-                      <View style={styles.notificationDot}/>
-                  )}
-                </View>
-                <Text style={styles.menuText}>
-                  {item.label}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={theme.icon}
-                />
-              </TouchableOpacity>
-            ))}
+                </Pressable>
+              );
+            })}
             <View style={styles.separator}/>
             <TouchableOpacity
               style={styles.logoutButton}
@@ -427,15 +482,22 @@ StyleSheet.create({
     justifyContent:"center",
     alignItems:"center",
   },
-  menuButtonActive:{
-    backgroundColor:theme.tint2,
+  menuIconWrapper:{
+    width:20,
+    height:16,
+    justifyContent:"space-between",
   },
-  menuLine:{
-    position:"absolute",
+  menuLineFull:{
+    width:30,
+    height:2.8,
+    borderRadius:999,
+  },
+  menuLineShort:{
     width:20,
     height:2.8,
     borderRadius:999,
-    backgroundColor:"#FFFFFF",
+    alignSelf:"center",
+    marginLeft: 10,
   },
   overlay:{
     flex:1,
@@ -475,12 +537,20 @@ StyleSheet.create({
     borderWidth:1,
     borderColor:theme.background,
   },
-  menuText:{
+  menuTextContainer:{
     flex:1,
     marginLeft:8,
+    justifyContent:"center",
+  },
+  menuText:{
     fontSize:15,
     fontWeight:"600",
     color:theme.text,
+  },
+  menuDescription:{
+    fontSize:11,
+    color:theme.icon,
+    marginTop:2,
   },
   separator:{
     height:1,

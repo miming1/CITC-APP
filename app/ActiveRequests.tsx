@@ -209,7 +209,11 @@ export default function UserActiveReq() {
         },
       ]}
     >
-      <Header title="Active Requests" />
+      <Header
+    title="Active Requests"
+    roleId={roleId as string}
+    adminMode="true"
+    />
 
       {message !== "" && (
         <View

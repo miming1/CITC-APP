@@ -47,6 +47,11 @@ export default function FAQScreen() {
     Number(roleId) === 2 ||
     admin_mode === "true";
 
+  console.log("FAQ Params:", {
+  roleId,
+  admin_mode,
+});
+
   const [search, setSearch] = useState("");
   const [faqs, setFaqs] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -139,7 +144,9 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
       />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={true}>
         <View style={[styles.container, isDesktop && styles.desktopContainer]}>
-          <SearchBar placeholder="Search frequently asked questions..." onChangeText={setSearch} />
+          <View style={styles.searchBarWrap}>
+            <SearchBar placeholder="Search frequently asked questions..." onChangeText={setSearch} />
+          </View>
           <Text style={[styles.sectionTitle, { color: textPri }]}>Frequently Asked Questions</Text>
 
           {loading && (
@@ -238,7 +245,7 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
         onSuccess={async () => {
 
           if (!pendingFAQ)
-            return;
+            return true;
 
 
           await handleCreateFAQ(
@@ -250,6 +257,7 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
           setShowAuthModal(false);
           setPendingFAQ(null);
 
+          return true;
         }}
       />
     </SafeAreaView>
@@ -258,9 +266,10 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { paddingHorizontal: 16, paddingBottom: 160 },
+  scroll: { paddingBottom: 160 },
 
-  container: { width: "100%", marginTop: 20 },
+  container: { width: "100%", marginTop: 20, paddingHorizontal: 16 },
+  searchBarWrap: { marginBottom: 8 },
   desktopContainer: { width: "95%", maxWidth: 1600, alignSelf: "center" },
 
   sectionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 5, marginTop: 20 },
