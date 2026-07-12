@@ -1799,13 +1799,13 @@ def admin_transaction_history(request):
     cutoff = now - timedelta(days=7)
 
     # Show:
-    # - Completed requests
+    # - Approved requests
     # - Rejected requests whose 7-day follow-up period has expired
     req_docs = (
         RequestDocuments.objects
         .filter(document_id__in=allowed_documents)
         .filter(
-            Q(status__iexact="completed") |
+            Q(status__iexact="Approved") |
             Q(
                 status__iexact="rejected",
                 rejected_at__lte=cutoff

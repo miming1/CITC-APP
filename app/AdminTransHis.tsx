@@ -15,7 +15,7 @@ import { getStoredToken } from '../lib/tokenStore';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type FilterOption = 'This Week' | 'This Month' | 'This Year' | 'Custom Date';
-type FinalizedStatus = 'completed' | 'rejected';
+type FinalizedStatus = 'Approved' | 'rejected';
 
 interface AdminTransaction {
   req_doc_id: number;
@@ -274,15 +274,15 @@ export default function AdminTransHis() {
                 <View style={styles.statusCell}>
                   <View style={[
                     styles.statusBadge,
-                    item.status === 'completed' && styles.statusCompleted,
+                    item.status === 'Approved' && styles.statusApproved,
                     item.status === 'rejected'  && styles.statusRejected,
                   ]}>
                     <Text style={[
                       styles.statusText,
-                      item.status === 'completed' && styles.statusTextCompleted,
+                      item.status === 'Approved' && styles.statusTextApproved,
                       item.status === 'rejected'  && styles.statusTextRejected,
                     ]}>
-                      {item.status === 'completed' ? 'Completed' : 'Rejected'}
+                      {item.status === 'Approved' ? 'Approved' : 'Rejected'}
                     </Text>
                   </View>
                 </View>
@@ -394,10 +394,10 @@ const styles = StyleSheet.create({
   tableCell: { fontSize: 12 },
   statusCell:          { flex: 1.3, alignItems: 'center', justifyContent: 'center' },
   statusBadge:         { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  statusCompleted:     { backgroundColor: '#d1fae5' },
+  statusApproved:     { backgroundColor: '#d1fae5' },
   statusRejected:      { backgroundColor: '#fee2e2' },
   statusText:          { fontSize: 11, fontWeight: '600', textAlign: 'center' },
-  statusTextCompleted: { color: '#065f46' },
+  statusTextApproved: { color: '#065f46' },
   statusTextRejected:  { color: '#991b1b' },
   empty: { textAlign: 'center', marginTop: 12, fontSize: 13 },
   centerBlock: { alignItems: 'center', marginTop: 30, gap: 10 },

@@ -19,7 +19,7 @@ type FilterOption = 'This Week' | 'This Month' | 'This Year' | 'Custom Date';
 
 // Submission History only ever shows *finalized* documents. Pending / active
 // requests live on the "Form Submission Progress" page instead.
-type FinalizedStatus = 'Completed' | 'Rejected';
+type FinalizedStatus = 'Approved' | 'Rejected';
 
 interface Submission {
   id: string;
@@ -98,7 +98,7 @@ export default function SubmissionHistory() {
             formName: item.document_name ?? item.procedure_name ?? 'Unknown Document',
             refNo: item.reference_code ?? '—',
             date: item.updated_at ? String(item.updated_at).split('T')[0] : '',
-            status: (item.status ?? '').toLowerCase() === 'completed' ? 'Completed' : 'Rejected',
+            status: (item.status ?? '').toLowerCase() === 'Approved' ? 'Approved' : 'Rejected',
           }));
 
           setSubmissions(mapped);
@@ -299,12 +299,12 @@ export default function SubmissionHistory() {
                 <View style={styles.statusCell}>
                   <View style={[
                     styles.statusBadge,
-                    item.status === 'Completed' && styles.statusCompleted,
+                    item.status === 'Approved' && styles.statusApproved,
                     item.status === 'Rejected'  && styles.statusRejected,
                   ]}>
                     <Text style={[
                       styles.statusText,
-                      item.status === 'Completed' && styles.statusTextCompleted,
+                      item.status === 'Approved' && styles.statusTextApproved,
                       item.status === 'Rejected'  && styles.statusTextRejected,
                     ]}>
                       {item.status}
@@ -475,10 +475,10 @@ const styles = StyleSheet.create({
   tableCell: { fontSize: 12 },
   statusCell:          { flex: 1.5, alignItems: 'center', justifyContent: 'center' },
   statusBadge:         { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  statusCompleted:     { backgroundColor: '#d1fae5' },
+  statusApproved:     { backgroundColor: '#d1fae5' },
   statusRejected:      { backgroundColor: '#fee2e2' },
   statusText:          { fontSize: 11, fontWeight: '600', textAlign: 'center' },
-  statusTextCompleted: { color: '#065f46' },
+  statusTextApproved: { color: '#065f46' },
   statusTextRejected:  { color: '#991b1b' },
   empty: { textAlign: 'center', marginTop: 30, fontSize: 13 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' },

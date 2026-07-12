@@ -1,11 +1,11 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import {
-  Linking,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  useColorScheme,
+    Linking,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    useColorScheme,
 } from "react-native";
 
 import { Colors } from "../../constants/theme";
@@ -123,7 +123,7 @@ export default function StepItem({
       <View
         style={[
           styles.content,
-          !isAdmin && checked && styles.completed,
+          !isAdmin && checked && styles.Approved,
         ]}
       >
 
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
 
 
-  completed:{
+  Approved:{
     opacity:0.55,
   },
 

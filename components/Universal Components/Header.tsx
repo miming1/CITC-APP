@@ -70,7 +70,7 @@ const STUDENT_MENU_ITEMS: MenuItem[] = [
     label: "Submission History",
     route: "/SubmissionHistory",
     icon: "archive-outline",
-    description: "View completed and rejected submissions",
+    description: "View Approved and rejected submissions",
   },
   {
     label: "Profile",
@@ -111,7 +111,7 @@ const ADMIN_MENU_ITEMS: MenuItem[] = [
     label: "Transaction History",
     route: "/AdminTransHis",
     icon: "archive-outline",
-    description: "View completed and finalized transactions",
+    description: "View Approved and finalized transactions",
   },
   {
     label: "Profile",
