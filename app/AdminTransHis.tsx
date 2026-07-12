@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useState } from 'react';
 import {
-    ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
-    StyleSheet, Text, TextInput,
-    TouchableOpacity, useColorScheme, View,
+  ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
+  StyleSheet, Text, TextInput,
+  TouchableOpacity, useColorScheme, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Header from '../components/Universal Components/Header';
@@ -35,6 +36,9 @@ const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function AdminTransHis() {
+  const { roleId } = useLocalSearchParams<{
+  roleId?: string;
+}>();
   const colorScheme = useColorScheme() ?? 'light';
   const theme       = Colors[colorScheme];
   const isDark      = colorScheme === 'dark';
@@ -164,7 +168,11 @@ export default function AdminTransHis() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
 
-      <Header title="Transaction History" />
+      <Header
+          title="Transaction History"
+          roleId={roleId as string}
+          adminMode="true"
+          />
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
