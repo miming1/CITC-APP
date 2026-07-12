@@ -1265,16 +1265,22 @@ def update_request_status(request, request_id):
         elif status == "Rejected":
             req_doc.is_followed_up = False
             req_doc.followed_up_at = None
+        
+            # Start the 7-day follow-up period
+            req_doc.rejected_at = timezone.now()
 
     if status and status.lower() == "rejected":
         # Student has one week to follow up
-        req_doc.follow_up_deadline = timezone.now() + timedelta(days=7)
+        req_doc.follow_up_deadline = req_doc.rejected_at + timedelta(days=7)
         req_doc.history_at = None
 
     elif status and status.lower() == "approved":
         # Immediately move to history
         req_doc.history_at = timezone.now()
         req_doc.follow_up_deadline = None
+
+        # No longer rejected
+        req_doc.rejected_at = None
 
     if remarks is not None:
         req_doc.remarks = remarks
