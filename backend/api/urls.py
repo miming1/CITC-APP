@@ -103,4 +103,10 @@ urlpatterns = [
         'auth/reset-password/',
         views_otp.reset_password
     ),
+
+
+    path(
+        "notifications/read/",
+        views.mark_notifications_read,
+    ),
 ]

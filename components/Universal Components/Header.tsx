@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -89,10 +89,7 @@ export default function Header({
   const middleLine = useRef(new Animated.Value(1)).current;
   const bottomLine = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (isAdmin) return;
-
-    async function checkNotifications() {
+  const checkNotifications = async () => {
       try {
         const token = await getToken();
 
@@ -123,9 +120,21 @@ export default function Header({
       }
     }
 
+  useFocusEffect(
+    useCallback(() => {
+      if (isAdmin) return;
+
+      checkNotifications();
+
+    }, [isAdmin])
+  );
+
+  useEffect(() => {
+    if (!menuOpen || isAdmin) return;
+
     checkNotifications();
 
-  }, [isAdmin]);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (menuOpen) {
@@ -241,6 +250,11 @@ export default function Header({
             menuOpen && styles.menuButtonActive
           ]}
         >
+
+          {hasUnreadNotifications && (
+            <View style={styles.hamburgerNotificationDot} />
+          )}
+
           <Animated.View
             style={[
               styles.menuLine,
@@ -333,10 +347,10 @@ export default function Header({
                     size={20}
                     color={theme.tint}
                   />
-                  {item.route === "/notifications" &&
+                  {item.label === "Notifications" &&
                     hasUnreadNotifications && (
                       <View style={styles.notificationDot}/>
-                    )}
+                  )}
                 </View>
                 <Text style={styles.menuText}>
                   {item.label}
@@ -487,5 +501,18 @@ StyleSheet.create({
     color:"#FFFFFF",
     fontWeight:"700",
     fontSize:15,
+  },
+
+  hamburgerNotificationDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#EF4444",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    zIndex: 10,
   },
 });
