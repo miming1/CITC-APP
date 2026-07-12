@@ -241,6 +241,11 @@ export default function Header({
             menuOpen && styles.menuButtonActive
           ]}
         >
+
+          {hasUnreadNotifications && (
+            <View style={styles.hamburgerNotificationDot} />
+          )}
+
           <Animated.View
             style={[
               styles.menuLine,
@@ -333,10 +338,10 @@ export default function Header({
                     size={20}
                     color={theme.tint}
                   />
-                  {item.route === "/notifications" &&
+                  {item.label === "Notifications" &&
                     hasUnreadNotifications && (
                       <View style={styles.notificationDot}/>
-                    )}
+                  )}
                 </View>
                 <Text style={styles.menuText}>
                   {item.label}
@@ -487,5 +492,18 @@ StyleSheet.create({
     color:"#FFFFFF",
     fontWeight:"700",
     fontSize:15,
+  },
+
+  hamburgerNotificationDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#EF4444",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    zIndex: 10,
   },
 });

@@ -1,14 +1,14 @@
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -159,6 +159,16 @@ export default function NotificationScreen() {
                   borderColor: colors.border,
                 },
               ]}
+              onPress={() => {
+                router.push({
+                  pathname: "/SubmissionHistory",
+                  params: {
+                    roleId,
+                    requestId: notification.request,
+                    notificationId: notification.notification_id,
+                  },
+                });
+              }}
             >
 
               {!notification.is_read && (

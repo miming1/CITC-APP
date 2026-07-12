@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Modal, Pressable, ScrollView,
@@ -54,6 +54,7 @@ export default function SubmissionHistory() {
   const [customMonth, setCustomMonth] = useState('');
   const [customDay,   setCustomDay]   = useState('');
   const [appliedCustomDate, setAppliedCustomDate] = useState('');
+  const { requestId } = useLocalSearchParams();
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
