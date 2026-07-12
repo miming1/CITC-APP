@@ -240,7 +240,7 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
         onSuccess={async () => {
 
           if (!pendingFAQ)
-            return;
+            return true;
 
 
           await handleCreateFAQ(
@@ -252,6 +252,7 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
           setShowAuthModal(false);
           setPendingFAQ(null);
 
+          return true;
         }}
       />
     </SafeAreaView>
