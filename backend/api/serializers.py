@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from datetime import timedelta
+from django.utils import timezone
 
 from .models import (
     Notifications,
@@ -11,6 +13,7 @@ from .models import (
     FaqCategories,
     Requests,
     RequestDocuments,
+    OfficeProcedures,
     Roles,
     Users
 )
@@ -184,6 +187,8 @@ class ActiveRequestSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    office_name = serializers.SerializerMethodField()
+
     student_name = serializers.CharField(
     source="user.student_name",
     read_only=True,
@@ -213,12 +218,14 @@ class ActiveRequestSerializer(serializers.ModelSerializer):
     reference_code = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     remarks = serializers.SerializerMethodField()
+    days_remaining = serializers.SerializerMethodField()
 
     class Meta:
         model = Requests
         fields = [
             "request_id",
             "procedure_name",
+            "office_name",
 
             "student_name",
             "id_number",
@@ -230,8 +237,9 @@ class ActiveRequestSerializer(serializers.ModelSerializer):
             "reference_code",
             "status",
             "remarks",
+            "days_remaining",
             "created_at",
-]
+        ]
 
     def get_request_document(self, obj):
         return (
@@ -266,7 +274,33 @@ class ActiveRequestSerializer(serializers.ModelSerializer):
             'procedure_name_snapshot',
             'created_at'
         ]
+    def get_days_remaining(self, obj):
+        req_doc = self.get_request_document(obj)
 
+        if not req_doc:
+            return None
+
+        if req_doc.status != "Rejected":
+            return None
+
+        if not req_doc.rejected_at:
+            return None
+
+        expiry_date = req_doc.rejected_at + timedelta(days=7)
+
+        remaining = (expiry_date - timezone.now()).days
+
+        return max(remaining, 0)
+    
+    def get_office_name(self, obj):
+        office_proc = (
+            OfficeProcedures.objects
+            .select_related("office")
+            .filter(procedure=obj.procedure)
+            .first()
+        )
+
+        return office_proc.office.office_name if office_proc else None
 
 
 class RequestDocumentSerializer(serializers.ModelSerializer):

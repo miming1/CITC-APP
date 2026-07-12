@@ -1,14 +1,14 @@
-import { useFocusEffect, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    useColorScheme,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -67,6 +67,17 @@ export default function NotificationScreen() {
         Array.isArray(data)
           ? data
           : data.results ?? []
+      );
+
+      await fetch(
+        ENDPOINTS.markNotificationsRead,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Token ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
 
     } catch (err) {
@@ -155,10 +166,31 @@ export default function NotificationScreen() {
               style={[
                 styles.card,
                 {
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
+                    backgroundColor: notification.is_read
+                        ? colors.background
+                        : colorScheme === "light"
+                            ? "#FFF9EC"
+                            : "#3A2D10",
+
+                    borderColor: notification.is_read
+                        ? colors.border
+                        : "#EBA937",
+
+                    borderWidth: notification.is_read
+                        ? 1
+                        : 2,
                 },
-              ]}
+            ]}
+              onPress={() => {
+                router.push({
+                  pathname: "/SubmissionHistory",
+                  params: {
+                    roleId,
+                    requestId: notification.request,
+                    notificationId: notification.notification_id,
+                  },
+                });
+              }}
             >
 
               {!notification.is_read && (

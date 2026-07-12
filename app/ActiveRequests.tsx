@@ -1,4 +1,6 @@
 import Header from "@/components/Universal Components/Header";
+import ActiveRequestCard from "@/components/Universal Components/ActiveRequestCard";
+import ActiveRequestModal from "@/components/Universal Components/ActiveRequestModal";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
@@ -13,6 +15,7 @@ type ActiveRequest = {
   request_id: number;
 
   procedure_name: string;
+  office_name: string;
 
   student_name: string;
   id_number: string;
@@ -25,6 +28,7 @@ type ActiveRequest = {
 
   status: string;
   remarks: string | null;
+  days_remaining: number | null;
   created_at: string;
 };
 
@@ -49,6 +53,8 @@ export default function UserActiveReq() {
 
   const [remarks, setRemarks] = useState("");
 
+  const [remarksFocused, setRemarksFocused] = useState(false);
+
   const [selectedStatus, setSelectedStatus] = useState<
     "Approved" | "Rejected" | null
   >(null);
@@ -69,13 +75,13 @@ export default function UserActiveReq() {
       if (isAdmin && request) {
         const parsedRequest = JSON.parse(request as string);
 
-        setRequests([parsedRequest]);
+        // Load the normal active request list
+        loadActiveRequests();
 
+        // Then automatically open the searched request
         setTimeout(() => {
           openModal(parsedRequest);
-        }, 300);
-
-        setLoading(false);
+        }, 500);
 
         return;
       }
@@ -93,9 +99,13 @@ export default function UserActiveReq() {
     setModalVisible(true);
   };
 
-  const closeModal = () => {
-    setModalVisible(false);
+  const closeModal = async () => {
+    setSelectedStatus(null);
     setRemarks("");
+    setModalVisible(false);
+
+    await loadActiveRequests();
+
   };
 
   const handleUpdateStatus = async () => {
@@ -129,25 +139,6 @@ export default function UserActiveReq() {
       console.log(err);
       alert("Failed to update request.");
     }
-  };
-
-  const getStatusStyle = (status?: string) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-      case "confirmed":
-        return styles.approved;
-
-      case "rejected":
-        return styles.rejected;
-
-      default:
-        return styles.pending;
-    }
-  };
-
-  const formatStatus = (status?: string) => {
-    if (!status) return "";
-    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const formatYearLevel = (year?: number) => {
@@ -196,14 +187,12 @@ export default function UserActiveReq() {
         }, {})
       );
 
+      setRequests(grouped as any);
+
       console.log("Grouped Data:", grouped);
 
-      if(isAdmin){
-          setRequests(data);
-      }
-      else{
-          setRequests(grouped as any);
-      }
+      setRequests(grouped as any);
+
     } catch (err) {
       console.log("Active Request Error:", err);
     } finally {
@@ -262,86 +251,47 @@ export default function UserActiveReq() {
           isDesktop && styles.desktopContent,
         ]}
       >
+        <View
+          style={[
+            styles.disclaimerBox,
+            {
+              backgroundColor:
+                colorScheme === "dark"
+                  ? "#1F2937"
+                  : "#FEF3C7",
+
+              borderColor:
+                colorScheme === "dark"
+                  ? "#FACC15"
+                  : "#FACC15",
+            },
+          ]}
+        >
+          <MaterialIcons
+            name="info-outline"
+            size={20}
+            color={
+              colorScheme === "dark"
+                ? "#FCD34D"
+                : "#B45309"
+            }
+          />
+
+          <Text
+            style={[
+              styles.disclaimerText,
+              {
+                color:
+                  colorScheme === "dark"
+                    ? "#F9FAFB"
+                    : "#92400E",
+              },
+            ]}
+          >
+            Rejected requests remain active for 7 days to allow follow-up. If no follow-up is made within 7 days, the request is automatically moved to History.
+          </Text>
+        </View>
         {isAdmin ? (
-          requests.map((item: ActiveRequest) => (
-            <TouchableOpacity
-              key={item.request_id}
-              style={[
-                styles.card,
-                {
-                  backgroundColor: colors.background,
-                  borderColor:
-                    colorScheme === "dark" ? "#2c346b" : "#FFFFFF",
-                  boxShadow:
-                    colorScheme === "dark"
-                      ? "0px 4px 16px rgba(255,255,255,0.18)"
-                      : "0px 5px 17px rgba(0,0,0,0.12)",
-                },
-              ]}
-              onPress={() => openModal(item)}
-            >
-              <View
-                style={[
-                  styles.accentLine,
-                  {
-                    backgroundColor:
-                      colorScheme === "dark" ? "#EBA937" : "#141A73",
-                  },
-                ]}
-              />
-
-              <View style={styles.cardContent}>
-                <View style={styles.content}>
-                  <Text
-                    style={[
-                      styles.cardTitle,
-                      { color: colors.text },
-                    ]}
-                  >
-                    {item.document_name}
-                  </Text>
-
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      getStatusStyle(item.status),
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusText,
-                        {
-                          color:
-                            selectedItem?.status?.toLowerCase() === "approved"
-                              ? "#065F46"
-                              : selectedItem?.status?.toLowerCase() === "rejected"
-                                ? "#991B1B"
-                                : "#92400E",
-                        },
-                      ]}
-                    >
-                      {formatStatus(item.status)}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text
-                  style={[
-                    styles.openModalText,
-                    {
-                      color:
-                        colorScheme === "dark"
-                          ? "#EBA937"
-                          : "#141A73",
-                    },
-                  ]}
-                >
-                  View
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))
-        ) : (
           requests.map((group: any) => (
             <View key={group.procedure}>
               <Text
@@ -354,87 +304,41 @@ export default function UserActiveReq() {
               </Text>
 
               {group.requests.map((item: ActiveRequest) => (
-                <TouchableOpacity
+                <ActiveRequestCard
                   key={item.request_id}
-                  style={[
-                    styles.card,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor:
-                        colorScheme === "dark"
-                          ? "#2c346b"
-                          : "#FFFFFF",
+                  item={item}
+                  colors={colors}
+                  colorScheme={colorScheme}
+                  styles={styles}
+                  openModal={openModal}
+                  isAdmin={isAdmin}
+                />
+              ))}
+            </View>
+          ))
+        ) : (
 
-                      boxShadow:
-                        colorScheme === "dark"
-                          ? "0px 4px 16px rgba(255,255,255,0.18)"
-                          : "0px 5px 17px rgba(0,0,0,0.12)",
-                    },
-                  ]}
-                  onPress={() => openModal(item)}
-                >
-                  <View
-                    style={[
-                      styles.accentLine,
-                      {
-                        backgroundColor:
-                          colorScheme === "dark"
-                            ? "#EBA937"
-                            : "#141A73",
-                      },
-                    ]}
-                  />
+          requests.map((group: any) => (
+            <View key={group.procedure}>
+              <Text
+                style={[
+                  styles.procedureTitle,
+                  { color: colors.text },
+                ]}
+              >
+                {group.procedure}
+              </Text>
 
-                  <View style={styles.cardContent}>
-                    <View style={styles.content}>
-                      <Text
-                        style={[
-                          styles.cardTitle,
-                          { color: colors.text },
-                        ]}
-                      >
-                        {item.document_name}
-                      </Text>
-
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          getStatusStyle(item.status),
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusText,
-                            {
-                              color:
-                                selectedItem?.status?.toLowerCase() === "approved"
-                                  ? "#065F46"
-                                  : selectedItem?.status?.toLowerCase() === "rejected"
-                                    ? "#991B1B"
-                                    : "#92400E",
-                            },
-                          ]}
-                        >
-                          {formatStatus(item.status)}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text
-                      style={[
-                        styles.openModalText,
-                        {
-                          color:
-                            colorScheme === "dark"
-                              ? "#EBA937"
-                              : "#141A73",
-                        },
-                      ]}
-                    >
-                      View
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+              {group.requests.map((item: ActiveRequest) => (
+                <ActiveRequestCard
+                  key={item.request_id}
+                  item={item}
+                  colors={colors}
+                  colorScheme={colorScheme}
+                  styles={styles}
+                  openModal={openModal}
+                  isAdmin={isAdmin}
+                />
               ))}
             </View>
           ))
@@ -442,403 +346,24 @@ export default function UserActiveReq() {
       </ScrollView>
 
       {/* MODAL */}
-      < Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={closeModal}
-        onDismiss={() => setSelectedItem(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalCard,
-              {
-                width: isMobile ? "90%" : "38%",
-                maxWidth: 650,
-                backgroundColor: colors.background,
-                borderColor:
-                  colorScheme === "dark"
-                    ? "#2c346b"
-                    : "#FFFFFF",
-              },
-            ]}
-          >
-            <ScrollView
-              showsVerticalScrollIndicator={true}
-              contentContainerStyle={styles.modalScrollContent}
-              style={styles.modalScroll}
-            >
-              <View style={styles.modalHeader}>
-                <Text
-                  style={[
-                    styles.modalTitle,
-                    {
-                      color: colors.text,
-                    },
-                  ]}
-                >
-                  {selectedItem?.document_name}
-                </Text>
-              </View>
-
-              {!isAdmin && (
-                <>
-                  {/* Status */}
-                  <View style={styles.infoGroup}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.text },
-                      ]}
-                    >
-                      Status
-                    </Text>
-
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        getStatusStyle(selectedItem?.status),
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusText,
-                          {
-                            color:
-                              selectedItem?.status?.toLowerCase() === "approved"
-                                ? "#065F46"
-                                : selectedItem?.status?.toLowerCase() === "rejected"
-                                  ? "#991B1B"
-                                  : "#92400E",
-                          },
-                        ]}
-                      >
-                        {formatStatus(selectedItem?.status)}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Reference Number */}
-                  <View style={styles.infoGroup}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.text },
-                      ]}
-                    >
-                      Reference Number
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.infoValue,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {selectedItem?.reference_code}
-                    </Text>
-                  </View>
-                </>
-              )}
-              {isAdmin && (
-                <>
-                  <View style={styles.infoGroup}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.text },
-                      ]}
-                    >
-                      ID Number
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.infoValue,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {selectedItem?.id_number}
-                    </Text>
-                  </View>
-
-                  <View style={styles.infoGroup}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.text },
-                      ]}
-                    >
-                      Student Name
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.infoValue,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {selectedItem?.student_name}
-                    </Text>
-                  </View>
-
-                  <View style={styles.infoGroup}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.text },
-                      ]}
-                    >
-                      Program
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.infoValue,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {selectedItem?.program}
-                    </Text>
-                  </View>
-
-                  <View style={styles.infoGroup}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.text },
-                      ]}
-                    >
-                      Year Level
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.infoValue,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {formatYearLevel(selectedItem?.year_level)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.infoGroup}>
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        { color: colors.text },
-                      ]}
-                    >
-                      Email
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.infoValue,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {selectedItem?.email}
-                    </Text>
-                  </View>
-                </>
-              )}
-
-              <View style={styles.infoGroup}>
-                <Text
-                  style={[
-                    styles.infoLabel,
-                    {
-                      color: colors.text,
-                    },
-                  ]}
-                >
-                  Date Submitted
-                </Text>
-                <Text
-                  style={[
-                    styles.infoValue,
-                    {
-                      color: colors.text,
-                    },
-                  ]}
-                >
-                  {selectedItem?.created_at?.split("T")[0]}
-                </Text>
-              </View>
-
-              {isAdmin && (
-                <View style={styles.infoGroup}>
-                  <Text
-                    style={[
-                      styles.infoLabel,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    Update Status
-                  </Text>
-
-                  <View
-                    style={[
-                      styles.statusActions,
-                      isMobile && styles.statusActionsMobile,
-                    ]}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton,
-                        styles.approveButton,
-                        isMobile && styles.mobileActionButton,
-                      ]}
-                      onPress={() => setSelectedStatus("Approved")}
-                    >
-                      <Text style={styles.actionButtonText}>
-                        Approve
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton,
-                        styles.rejectButton,
-                        isMobile && styles.mobileActionButton,
-                      ]}
-                      onPress={() => setSelectedStatus("Rejected")}
-                    >
-                      <Text style={styles.actionButtonText}>
-                        Reject
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-
-              {/* Remarks */}
-              <View style={styles.infoGroup}>
-                <Text
-                  style={[
-                    styles.noteLabel,
-                    {
-                      color: colors.text,
-                    },
-                  ]}
-                >
-                  Remarks
-                </Text>
-
-                <View
-                  style={[
-                    styles.remarksBox,
-                    {
-                      backgroundColor:
-                        colorScheme === "dark"
-                          ? "#111827"
-                          : "#F8FAFC",
-
-                      borderColor:
-                        colorScheme === "dark"
-                          ? "#2c346b"
-                          : "#E2E8F0",
-                    },
-                  ]}
-                >
-                  {isAdmin ? (
-                    <TextInput
-                      value={remarks}
-                      onChangeText={setRemarks}
-                      multiline
-                      placeholder="Enter remarks..."
-                      placeholderTextColor="#9CA3AF"
-                      style={[
-                        styles.noteText,
-                        {
-                          color: colors.text,
-                          minHeight: 80,
-                          textAlignVertical: "top",
-                        },
-                      ]}
-                    />
-                  ) : (
-                    <Text
-                      style={[
-                        styles.noteText,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                    >
-                      {selectedItem?.remarks || "No remarks yet."}
-                    </Text>
-                  )}
-                </View>
-
-                {isAdmin && (
-                  <View
-                    style={[
-                      styles.infoGroup,
-                      styles.sectionSpacing,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.infoLabel,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                    >
-                      Reference Number
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.infoValue,
-                        {
-                          color: colors.text,
-                        },
-                      ]}
-                    >
-                      {selectedItem?.reference_code}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-
-              {/* Close */}
-              <TouchableOpacity style={[
-                styles.closeBtn,
-                {
-                  backgroundColor:
-                    colorScheme === "dark"
-                      ? "#EBA937"
-                      : "#141A73",
-                },
-              ]} onPress={() => {
-                if (isAdmin) {
-                  handleUpdateStatus();
-                } else {
-                  closeModal();
-                }
-              }}>
-                <Text
-                  style={[
-                    styles.closeText,
-                    {
-                      color: colors.background,
-                    },
-                  ]}
-                >
-                  {isAdmin ? "Update" : "Close"}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <ActiveRequestModal
+        modalVisible={modalVisible}
+        closeModal={closeModal}
+        selectedItem={selectedItem}
+        isAdmin={isAdmin}
+        isMobile={isMobile}
+        colors={colors}
+        colorScheme={colorScheme}
+        styles={styles}
+        remarks={remarks}
+        setRemarks={setRemarks}
+        remarksFocused={remarksFocused}
+        setRemarksFocused={setRemarksFocused}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        handleUpdateStatus={handleUpdateStatus}
+        formatYearLevel={formatYearLevel}
+      />
     </SafeAreaView >
   );
 }
@@ -879,6 +404,27 @@ const styles = StyleSheet.create({
   toastText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+
+  disclaimerBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+
+    marginHorizontal: 30,
+    marginBottom: 18,
+
+    padding: 10,
+
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+
+  disclaimerText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: "500",
   },
 
   procedureSection: {
@@ -927,15 +473,8 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
 
-  statusBadge: {
-    alignSelf: "flex-start",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    marginTop: 2,
-  },
-
-  statusText: {
+  countdownText: {
+    marginTop: 6,
     fontSize: 12,
     fontWeight: "600",
   },
@@ -943,18 +482,6 @@ const styles = StyleSheet.create({
   openModalText: {
     fontSize: 14,
     fontWeight: "600",
-  },
-
-  approved: {
-    backgroundColor: "#D1FAE5",
-  },
-
-  pending: {
-    backgroundColor: "#FEF3C7",
-  },
-
-  rejected: {
-    backgroundColor: "#FEE2E2",
   },
 
   text: {
@@ -974,8 +501,8 @@ const styles = StyleSheet.create({
 
   modalCard: {
     maxHeight: "80%",
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 14,
+    padding: 22,
     elevation: 5,
   },
 
@@ -986,6 +513,19 @@ const styles = StyleSheet.create({
 
   modalScroll: {
     marginRight: -8,
+  },
+
+  closeIcon: {
+    position: "absolute",
+    top: 18,
+    right: 40,
+    zIndex: 100,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
   },
 
   modalHeader: {
@@ -1032,9 +572,12 @@ const styles = StyleSheet.create({
 
   actionButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 8,
+    borderRadius: 15,
     alignItems: "center",
+
+    borderWidth: 5,
+    borderColor: "transparent",
   },
 
   mobileActionButton: {
@@ -1042,30 +585,49 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  selectedApproveButton: {
+    borderColor: "#21ff72",
+  },
+
+  selectedRejectButton: {
+    borderColor: "#ff1b27",
+  },
+
   approveButton: {
-    backgroundColor: "#21b155",
-    borderRadius: 20,
+    backgroundColor: "#16df5f",
+    borderRadius: 15,
   },
 
   rejectButton: {
-    backgroundColor: "#da3d3d",
-    borderRadius: 20,
+    backgroundColor: "#d8212a",
+    borderRadius: 15,
   },
 
   actionButtonText: {
     color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 15,
+    letterSpacing: 0.3,
   },
 
-  remarksBox: {
-    borderRadius: 7,
-    padding: 10,
+  remarksInput: {
     borderWidth: 1,
+    borderRadius: 12,
+
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+
+    fontSize: 14,
+    lineHeight: 22,
+
+    minHeight: 80,
+
+    textAlignVertical: "top",
+    marginHorizontal: 3,
   },
 
   sectionSpacing: {
-    marginTop: 18,
+    marginTop: 4,
   },
 
   noteLabel: {

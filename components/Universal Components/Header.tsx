@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -195,6 +195,18 @@ export default function Header({
         );
       }
     }
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isAdmin) return;
+
+      checkNotifications();
+
+    }, [isAdmin])
+  );
+
+  useEffect(() => {
+    if (!menuOpen || isAdmin) return;
 
     checkNotifications();
 
@@ -567,5 +579,18 @@ StyleSheet.create({
     color:"#FFFFFF",
     fontWeight:"700",
     fontSize:15,
+  },
+
+  hamburgerNotificationDot: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#EF4444",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    zIndex: 10,
   },
 });
