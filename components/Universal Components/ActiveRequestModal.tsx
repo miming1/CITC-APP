@@ -1,3 +1,4 @@
+import { MaterialIcons } from "@expo/vector-icons";
 import React from "react";
 import {
     Modal,
@@ -7,7 +8,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
 
 import StatusBadge from "../Universal Components/StatusBadge";
 
