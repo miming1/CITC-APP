@@ -1,10 +1,10 @@
-import StatusBadge from "@/components/Universal Components/StatusBadge";
 import React from "react";
 import {
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
+import StatusBadge from "../Universal Components/StatusBadge";
 
 interface Props {
     item: any;

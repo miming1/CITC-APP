@@ -586,11 +586,11 @@ const styles = StyleSheet.create({
   },
 
   selectedApproveButton: {
-    borderColor: "#21ff72",
+    borderColor: "#aeff00",
   },
 
   selectedRejectButton: {
-    borderColor: "#ff1b27",
+    borderColor: "#ff6200",
   },
 
   approveButton: {
