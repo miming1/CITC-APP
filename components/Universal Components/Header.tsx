@@ -162,55 +162,40 @@ export default function Header({
   const slideAnim = useRef(new Animated.Value(-20)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
+  const checkNotifications = useCallback(async () => {
     if (isAdmin) return;
 
-    async function checkNotifications() {
-      try {
-        const token = await getToken();
+    try {
+      const token = await getToken();
 
-        const response = await fetch(
-          ENDPOINTS.notifications,
-          {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-          }
-        );
+      const response = await fetch(
+        ENDPOINTS.notifications,
+        {
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        }
+      );
 
-        if (!response.ok) return;
+      if (!response.ok) return;
 
-        const data = await response.json();
+      const data = await response.json();
 
-        const unread = data.some(
-          (item: any) => !item.is_read
-        );
+      const unread = data.some(
+        (item: any) => !item.is_read
+      );
 
-        setHasUnreadNotifications(unread);
-
-      } catch (error) {
-        console.log(
-          "Notification fetch error:",
-          error
-        );
-      }
+      setHasUnreadNotifications(unread);
+    } catch (error) {
+      console.log("Notification fetch error:", error);
     }
-
-  useFocusEffect(
-    useCallback(() => {
-      if (isAdmin) return;
-
-      checkNotifications();
-
-    }, [isAdmin])
-  );
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!menuOpen || isAdmin) return;
 
     checkNotifications();
-
-  }, [isAdmin]);
+  }, [menuOpen, isAdmin, checkNotifications]);
 
   // Greeting/profile fetch is student-only. Admins never see a personalized
   // greeting, so this skips entirely when isAdmin is true.
