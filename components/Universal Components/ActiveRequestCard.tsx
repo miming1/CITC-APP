@@ -1,10 +1,10 @@
-import StatusBadge from "@/components/Universal Components/StatusBadge";
 import React from "react";
 import {
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
+import StatusBadge from "../Universal Components/StatusBadge";
 
 interface Props {
     item: any;
@@ -13,6 +13,7 @@ interface Props {
     styles: any;
     openModal: (item: any) => void;
     isAdmin: boolean;
+    type?: "active" | "history";
 }
 
 export default function ActiveRequestCard({
@@ -22,10 +23,15 @@ export default function ActiveRequestCard({
     styles,
     openModal,
     isAdmin,
+    type = "active",
 }: Props) {
     return (
         <TouchableOpacity
-            key={item.request_id}
+            key={
+                type === "history"
+                ? item.req_doc_id
+                : item.request_id
+            }
             style={[
                 styles.card,
                 {
@@ -68,8 +74,31 @@ export default function ActiveRequestCard({
                     </Text>
 
                     <StatusBadge status={item.status} />
+                    {type === "history" && (
+                    <>
+                        <Text
+                            style={{
+                                color: colors.icon,
+                                fontSize: 12,
+                                marginTop: 5
+                            }}
+                        >
+                            {item.student_name}
+                        </Text>
 
-                    {item.status === "Rejected" &&
+                        <Text
+                            style={{
+                                color: colors.icon,
+                                fontSize: 12
+                            }}
+                        >
+                            Ref: {item.reference_code}
+                        </Text>
+                    </>
+                )}
+
+                    {type === "active" &&
+                        item.status === "Rejected" &&
                         item.days_remaining !== null && (
                             <Text
                                 style={[
