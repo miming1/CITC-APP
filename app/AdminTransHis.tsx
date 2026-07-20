@@ -388,6 +388,7 @@ export default function AdminTransHis() {
         closeModal={closeModal}
         selectedItem={selectedItem}
         isAdmin={true}
+        isHistory={true}
         isMobile={false}
         colors={theme}
         colorScheme={colorScheme}

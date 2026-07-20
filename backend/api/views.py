@@ -1844,47 +1844,6 @@ def admin_transaction_history(request):
         office_id=profile.office_id
     ).values_list("document_id", flat=True)
 
-    print("\n========== ADMIN TRANSACTION HISTORY ==========")
-    print("Admin:", profile.student_name)
-    print("Office ID:", profile.office_id)
-    print("Allowed document IDs:", list(allowed_documents))
-
-    print(
-        "Total RequestDocuments:",
-        RequestDocuments.objects.count()
-    )
-
-    print(
-        "With allowed documents:",
-        RequestDocuments.objects.filter(
-            document_id__in=allowed_documents
-        ).count()
-    )
-
-    print(
-        "Completed:",
-        RequestDocuments.objects.filter(
-            status__iexact="approved"
-        ).count()
-    )
-
-    print(
-        "Rejected:",
-        RequestDocuments.objects.filter(
-            status__iexact="rejected"
-        ).count()
-    )
-
-    print("\nAll Request Documents:")
-
-    for d in RequestDocuments.objects.all():
-        print(
-            f"ID={d.req_doc_id}, "
-            f"Doc={d.document_id}, "
-            f"Status={d.status}, "
-            f"Rejected={d.rejected_at}"
-        )
-
     now = timezone.now()
     cutoff = now - timedelta(days=7)
 
@@ -1904,25 +1863,10 @@ def admin_transaction_history(request):
         .select_related("request", "request__user", "document")
         .order_by("-updated_at")
     )
-    print("Matching request documents:", req_docs.count())
 
     data = []
 
     for doc in req_docs:
-
-        print(
-            f"Doc {doc.req_doc_id} | "
-            f"Status={doc.status} | "
-            f"Document={doc.document_id} | "
-            f"Reference={doc.reference_code}"
-        )
-
-        print(
-            "Request:",
-            doc.request_id,
-            "| User:",
-            doc.request.user_id if doc.request else None,
-        )
 
         req = doc.request
         student = req.user if req else None
@@ -1952,8 +1896,6 @@ def admin_transaction_history(request):
             "program": student.program if student else None,
             "year_level": student.year_level if student else None,
             "email": student.email if student else None,
+            "created_at": req.created_at if req else None,
         })
-
-    print("Returned records:", len(data))
-    print("=============================================\n")
     return Response(data)
