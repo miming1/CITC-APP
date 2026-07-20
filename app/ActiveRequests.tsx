@@ -41,7 +41,7 @@ export default function UserActiveReq() {
   const isMobile = width < 768;
   const isDesktop = width >= 1024;
 
-  const { roleId, request } = useLocalSearchParams();
+  const { roleId, request, admin_mode } = useLocalSearchParams();
 
   const isAdmin = roleId === "2";
 
@@ -210,10 +210,10 @@ export default function UserActiveReq() {
       ]}
     >
       <Header
-    title="Active Requests"
-    roleId={roleId as string}
-    adminMode="true"
-    />
+  title="Active Requestss"
+  roleId={roleId as string}
+  adminMode={admin_mode as string}
+/>
 
       {message !== "" && (
         <View
