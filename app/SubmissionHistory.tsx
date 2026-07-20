@@ -5,13 +5,18 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
   StyleSheet, Text, TextInput,
-  TouchableOpacity, useColorScheme, View,
+  TouchableOpacity, useColorScheme,
+  useWindowDimensions,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ActiveRequestModal from '../components/Universal Components/ActiveRequestModal';
 import Header from '../components/Universal Components/Header';
 import { ENDPOINTS } from '../constants/api';
 import { Colors } from '../constants/theme';
 import { getStoredToken } from '../lib/tokenStore';
+import { rstyles } from "./ActiveRequests";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,6 +42,8 @@ export default function SubmissionHistory() {
   const colorScheme = useColorScheme() ?? 'light';
   const theme = Colors[colorScheme];
   const isDark = colorScheme === 'dark';
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const {
     roleId,
@@ -65,6 +72,19 @@ export default function SubmissionHistory() {
   const [customMonth, setCustomMonth] = useState('');
   const [customDay,   setCustomDay]   = useState('');
   const [appliedCustomDate, setAppliedCustomDate] = useState('');
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  function openModal(item:any){
+    setSelectedItem(item);
+    setModalVisible(true);
+  }
+
+  function closeModal(){
+    setSelectedItem(null);
+    setModalVisible(false);
+  }
+
 
   // Fetch on focus, and reset search + filters back to default whenever the
   // user navigates away, so returning to this screen always starts fresh.
@@ -392,6 +412,29 @@ export default function SubmissionHistory() {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
+
+      <ActiveRequestModal
+        modalVisible={modalVisible}
+        closeModal={closeModal}
+        selectedItem={selectedItem}
+        isAdmin={true}
+        isHistory={true}
+        isMobile={isMobile}
+        colors={theme}
+        colorScheme={colorScheme}
+        styles={rstyles}
+        remarks={selectedItem?.remarks ?? ""}
+        setRemarks={() => {}}
+        remarksFocused={false}
+        setRemarksFocused={() => {}}
+        selectedStatus={null}
+        setSelectedStatus={() => {}}
+        handleUpdateStatus={() => {}}
+        formatYearLevel={(year)=>{
+            return year ? `Year ${year}` : "N/A";
+        }}
+
+      />
 
     </SafeAreaView>
   );
