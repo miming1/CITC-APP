@@ -5,7 +5,9 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView,
   StyleSheet, Text, TextInput,
-  TouchableOpacity, useColorScheme, View,
+  TouchableOpacity, useColorScheme,
+  useWindowDimensions,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ActiveRequestModal from '../components/Universal Components/ActiveRequestModal';
@@ -37,6 +39,10 @@ const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function AdminTransHis() {
+  const { width } = useWindowDimensions();
+
+  const isMobile = width < 768;
+
   const { roleId } = useLocalSearchParams<{
   roleId?: string;
 }>();
@@ -199,7 +205,7 @@ export default function AdminTransHis() {
           adminMode="true"
           />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={true}>
 
         {/* ── Search Bar ── */}
         <View style={[
@@ -389,7 +395,7 @@ export default function AdminTransHis() {
         selectedItem={selectedItem}
         isAdmin={true}
         isHistory={true}
-        isMobile={false}
+        isMobile={isMobile}
         colors={theme}
         colorScheme={colorScheme}
         styles={rstyles}

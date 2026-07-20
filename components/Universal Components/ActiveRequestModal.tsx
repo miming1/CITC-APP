@@ -64,7 +64,7 @@ export default function ActiveRequestModal({
                     style={[
                         styles.modalCard,
                         {
-                            width: isMobile ? "90%" : "38%",
+                            width: isMobile ? "90%" : "45%",
                             maxWidth: 650,
                             backgroundColor: colors.background,
                             borderColor:
