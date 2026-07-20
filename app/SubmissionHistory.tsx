@@ -312,26 +312,69 @@ export default function SubmissionHistory() {
 
             {/* ── Table Rows ── */}
             {filtered.map((item) => (
-              <View key={item.id} style={[styles.tableRow, { backgroundColor: theme.background, borderColor: theme.border }]}>
-                <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.formName}</Text>
-                <Text style={[styles.tableCell, { flex: 2, color: theme.text }]}>{item.refNo}</Text>
-                <Text style={[styles.tableCell, { flex: 1.5, color: theme.text }]}>{item.date}</Text>
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.7}
+                onPress={() => openModal(item)}
+                style={[
+                  styles.tableRow,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.tableCell,
+                    { flex: 2, color: theme.text },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {item.formName}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.tableCell,
+                    { flex: 2, color: theme.text },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {item.refNo}
+                </Text>
+
+                <Text
+                  style={[
+                    styles.tableCell,
+                    { flex: 1.5, color: theme.text },
+                  ]}
+                >
+                  {item.date}
+                </Text>
+
                 <View style={styles.statusCell}>
-                  <View style={[
-                    styles.statusBadge,
-                    item.status === 'Approved' && styles.statusApproved,
-                    item.status === 'Rejected'  && styles.statusRejected,
-                  ]}>
-                    <Text style={[
-                      styles.statusText,
-                      item.status === 'Approved' && styles.statusTextApproved,
-                      item.status === 'Rejected'  && styles.statusTextRejected,
-                    ]}>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      item.status === "Approved" && styles.statusApproved,
+                      item.status === "Rejected" && styles.statusRejected,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusText,
+                        item.status === "Approved" &&
+                          styles.statusTextApproved,
+                        item.status === "Rejected" &&
+                          styles.statusTextRejected,
+                      ]}
+                    >
                       {item.status}
                     </Text>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))}
 
             {filtered.length === 0 && (
