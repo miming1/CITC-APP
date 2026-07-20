@@ -85,9 +85,19 @@ export default function AdminTransHis() {
         headers: { Authorization: `Token ${token}` },
       });
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const json: AdminTransaction[] = await res.json();
-      console.log("Transaction History Response:", json);
-      setData(json);
+      const json: any[] = await res.json();
+
+      // Normalize status casing coming from the backend ("Approved" /
+      // "Rejected") down to the lowercase literal type this screen expects,
+      // so the badge style + label checks below (which compare against
+      // 'approved' / 'rejected') actually match.
+      const normalized: AdminTransaction[] = json.map((item) => ({
+        ...item,
+        status: (item.status ?? '').toLowerCase() as FinalizedStatus,
+      }));
+
+      console.log("Transaction History Response:", normalized);
+      setData(normalized);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load transaction history.');
     } finally {
