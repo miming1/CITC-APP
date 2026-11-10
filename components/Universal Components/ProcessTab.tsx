@@ -12,6 +12,8 @@ import AdminMenu from "../Admin Components/Edit&Delete";
 import StepItem from "./ProcessSteps";
 
 interface Props {
+  canManageProcedure: boolean;
+
   procedure: any;
   setProcedure: (p: any) => void;
 
@@ -41,6 +43,7 @@ interface Props {
 }
 
 export default function ProcessTab({
+  canManageProcedure,
   procedure,
   setProcedure,
   steps,
@@ -463,7 +466,7 @@ export default function ProcessTab({
               text={step.step_description}
               sub={step.office_location}
               link={step.reference_link}
-              isAdmin={isAdmin}
+              isAdmin={canManageProcedure}
               checked={checkedSteps.includes(step.step_number)}
               onToggle={() => {
                 if (checkedSteps.includes(step.step_number)) {

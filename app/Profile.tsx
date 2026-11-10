@@ -22,7 +22,8 @@ import { getStoredToken } from "../lib/tokenStore";
 interface Profile {
   id_number: string;
   email: string;
-  student_name: string;
+  first_name: string;
+  last_name: string;
   program: string;
   year_level: string;
 }
@@ -60,12 +61,13 @@ export default function EditProfile() {
   const isLargeScreen = width >= 768;
 
   const [form, setForm] = useState<Profile>({
-    id_number: "",
-    email: "",
-    student_name: "",
-    program: "",
-    year_level: "",
-  });
+  id_number: "",
+  email: "",
+  first_name: "",
+  last_name: "",
+  program: "",
+  year_level: "",
+});
 
   const [roleId, setRoleId] = useState<number | null>(null);
 
@@ -124,7 +126,8 @@ export default function EditProfile() {
         setForm({
           id_number: data.id_number ?? "",
           email: data.email ?? "",
-          student_name: data.student_name ?? "",
+          first_name: data.first_name ?? "",
+          last_name: data.last_name ?? "",
           program: data.program ?? "",
           year_level: data.year_level
             ? String(data.year_level)
@@ -166,6 +169,18 @@ export default function EditProfile() {
     setSaving(true);
     setMessage("");
 
+    if (isStudent) {
+      if (
+        !form.first_name.trim() ||
+        !form.last_name.trim()
+      ) {
+        setMessage(
+          "First Name and Last Name are required."
+        );
+        return;
+      }
+    }
+
     try {
       const res = await fetch(
         ENDPOINTS.updateProfile,
@@ -179,7 +194,8 @@ export default function EditProfile() {
             id_number: form.id_number,
             email: form.email,
             password: password || undefined,
-            student_name: form.student_name,
+            first_name: form.first_name.trim(),
+            last_name: form.last_name.trim(),
             program: form.program,
             year_level: form.year_level
               ? Number(form.year_level)
@@ -370,30 +386,49 @@ export default function EditProfile() {
               <Text
                 style={[
                   styles.label,
-                  {
-                    color:
-                      colors.text,
-                  },
+                  { color: colors.text },
                 ]}
               >
-                Student Name
+                First Name *
               </Text>
 
               <TextInput
-                value={form.student_name}
+                value={form.first_name}
                 onChangeText={(text) =>
-                  handleChange(
-                    "student_name",
-                    text
-                  )
+                  handleChange("first_name", text)
                 }
+                placeholder="Enter your first name"
+                placeholderTextColor={colors.icon}
                 style={[
                   styles.input,
                   {
-                    color:
-                      colors.text,
-                    borderColor:
-                      colors.icon,
+                    color: colors.text,
+                    borderColor: colors.icon,
+                  },
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.label,
+                  { color: colors.text },
+                ]}
+              >
+                Last Name *
+              </Text>
+
+              <TextInput
+                value={form.last_name}
+                onChangeText={(text) =>
+                  handleChange("last_name", text)
+                }
+                placeholder="Enter your last name"
+                placeholderTextColor={colors.icon}
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    borderColor: colors.icon,
                   },
                 ]}
               />

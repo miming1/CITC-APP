@@ -1,13 +1,14 @@
+
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import timezone
 
-import uuid
-
-from .forms import CustomUserChangeForm
+from .forms import (
+    CustomUserChangeForm,
+    CustomUserCreationForm,
+)
 
 from .models import (
     Procedures,
@@ -18,6 +19,7 @@ from .models import (
     Offices,
     Roles,
 )
+
 
 # ======================================
 # NORMAL TABLES
@@ -33,6 +35,7 @@ admin.site.register(Roles)
 
 @admin.register(Users)
 class UsersAdmin(admin.ModelAdmin):
+
     list_display = (
         "id_number",
         "email",
@@ -60,10 +63,12 @@ class UsersAdmin(admin.ModelAdmin):
 class CustomUserAdmin(UserAdmin):
 
     form = CustomUserChangeForm
+    add_form = CustomUserCreationForm
 
+    # Fields displayed when editing an existing user.
     fieldsets = UserAdmin.fieldsets + (
         (
-            "Profile",
+            "CITC-APP Profile",
             {
                 "fields": (
                     "profile_email",
@@ -74,25 +79,52 @@ class CustomUserAdmin(UserAdmin):
         ),
     )
 
+    # Fields displayed when creating a new user through Django Admin.
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": (
+                    "username",
+                    "password1",
+                    "password2",
+                    "profile_email",
+                    "profile_role",
+                    "profile_office",
+                ),
+            },
+        ),
+    )
+
     def save_model(self, request, obj, form, change):
 
-        is_new = obj.pk is None
+        # Keep the Django account email synchronized
+        # with the CITC-APP profile email.
+        if not obj.is_superuser:
+            profile_email = form.cleaned_data.get("profile_email")
+            obj.email = (profile_email or "").strip()
 
+        # Save the Django User first.
+        # The post_save signal will create the Users profile.
         super().save_model(request, obj, form, change)
 
-        if is_new:
+        # Superadmins do not need a CITC-APP Users profile.
+        if obj.is_superuser:
+            return
 
-            admin_role = Roles.objects.filter(
-                role_id=2
-            ).first()
+        # Retrieve the profile created by the signal.
+        profile = Users.objects.get(auth_user=obj)
 
-            Users.objects.filter(
-                auth_user=obj
-            ).update(
-                role=admin_role
-            )
+        # Assign the selected CITC-APP role and office.
+        profile.email = obj.email or None
+        profile.role = form.cleaned_data.get("profile_role")
+        profile.office = form.cleaned_data.get("profile_office")
+
+        profile.save()
 
 
+# Replace Django's default User administration.
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 
@@ -104,34 +136,46 @@ admin.site.register(User, CustomUserAdmin)
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
 
+    # 1. Skip Django Superadmin accounts.
+    # They do not require a CITC-APP Users profile.
+    if instance.is_superuser:
+        return
+
+    # 2. Normalize the username and email.
+    username = instance.username.strip()
     email = instance.email.strip() if instance.email else None
 
     if email == "":
         email = None
 
-    if created:
-
-        Users.objects.get_or_create(
-            auth_user=instance,
-            defaults={
-                "user_id": uuid.uuid4(),
-                "id_number": instance.username,
-                "email": email,
-                "created_at": timezone.now(),
-            },
+    # 3. Normal CITC-APP accounts must use numeric usernames.
+    # The username serves as the personnel/student ID number.
+    if not username.isdigit():
+        raise ValueError(
+            "CITC-APP application users must have a numeric username "
+            "matching their ID number. Django Superadmins are exempt."
         )
 
-    else:
+    id_number = int(username)
 
-        try:
-            profile = instance.profile
+    # 4. Create the profile if it does not exist.
+    # Otherwise, update its ID number and email.
+    profile, profile_created = Users.objects.get_or_create(
+        auth_user=instance,
+        defaults={
+            "id_number": id_number,
+            "email": email,
+        },
+    )
 
-            profile.id_number = instance.username
+    if not profile_created:
 
-            if email:
-                profile.email = email
+        profile.id_number = id_number
+        profile.email = email
 
-            profile.save()
-
-        except Users.DoesNotExist:
-            pass
+        profile.save(
+            update_fields=[
+                "id_number",
+                "email",
+            ]
+        )

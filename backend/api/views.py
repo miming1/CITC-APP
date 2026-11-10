@@ -205,7 +205,8 @@ def me(request):
         "user_id": str(profile.user_id),
         "id_number": profile.id_number,
         "email": profile.email,
-        "student_name": profile.student_name,
+        "first_name": profile.first_name,
+        "last_name": profile.last_name,
         "program": profile.program,
         "year_level": profile.year_level,
         "role_id": profile.role.role_id if profile.role else None,
@@ -1502,7 +1503,8 @@ def update_profile(request):
     new_email = data.get("email")
     new_id_number = data.get("id_number")
     new_password = data.get("password")
-    new_student_name = data.get("student_name")
+    new_first_name = data.get("first_name")
+    new_last_name = data.get("last_name")
     new_program = data.get("program")
     new_year_level = data.get("year_level")
 
@@ -1533,10 +1535,16 @@ def update_profile(request):
         auth_user.password = make_password(new_password)
 
     # =========================
-    # STUDENT NAME
+    # FIRST NAME
     # =========================
-    if new_student_name is not None:
-        profile.student_name = new_student_name
+    if new_first_name is not None:
+        profile.first_name = new_first_name
+
+    # =========================
+    # LAST NAME
+    # =========================
+    if new_last_name is not None:
+        profile.last_name = new_last_name
 
     # =========================
     # PROGRAM
@@ -1562,7 +1570,8 @@ def update_profile(request):
         "user_id": str(profile.user_id),
         "email": profile.email,
         "id_number": profile.id_number,
-        "student_name": profile.student_name,
+        "first_name": profile.first_name,
+        "last_name": profile.last_name,
         "program": profile.program,
         "year_level": profile.year_level,
     })
@@ -1873,8 +1882,10 @@ def admin_transaction_history(request):
         print(
             "Student object:",
             student,
-            "| Name:",
-            getattr(student, "student_name", "NO FIELD"),
+            "| FirstName:",
+            getattr(student, "first_name", "NO FIELD"),
+            "| LastName:",
+            getattr(student, "last_name", "NO FIELD"),
             "| ID:",
             getattr(student, "id_number", "NO FIELD")
         )
@@ -1891,7 +1902,8 @@ def admin_transaction_history(request):
             "status": doc.status,
             "updated_at": doc.updated_at,
             "remarks": doc.remarks,
-            "student_name": student.student_name if student else None,
+            "first_name": student.first_name if student else None,
+            "last_name": student.last_name if student else None,
             "student_id_number": student.id_number if student else None,
             "program": student.program if student else None,
             "year_level": student.year_level if student else None,

@@ -117,7 +117,8 @@ class Users(models.Model):
         related_name="profile",
     )
 
-    student_name = models.TextField(blank=True, null=True)
+    first_name = models.TextField(blank=False, null=False, default="(no first name yet)")
+    last_name = models.TextField(blank=False, null=False, default="(no last name yet)")
     year_level = models.SmallIntegerField(blank=True, null=True)
     program = models.TextField(blank=True, null=True)
 
@@ -236,7 +237,8 @@ class OtpTokens(models.Model):
 class ProcedureDocuments(models.Model):
     pk = models.CompositePrimaryKey(
         'procedure_id',
-        'document_id'
+        'document_id',
+        'office_id'
     )
 
     procedure = models.ForeignKey(
@@ -256,9 +258,9 @@ class ProcedureDocuments(models.Model):
 
     office = models.ForeignKey(
         Offices,
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True
+        on_delete=models.PROTECT,
+        blank=False,
+        null=False
     )
 
     class Meta:

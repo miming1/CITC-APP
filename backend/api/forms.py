@@ -1,27 +1,65 @@
+
 from django import forms
-from django.contrib.auth.forms import UserChangeForm
+from django.contrib.auth.forms import (
+    UserChangeForm,
+    UserCreationForm,
+)
 from django.contrib.auth.models import User
 
 from .models import Users, Roles, Offices
 
 
-class CustomUserChangeForm(UserChangeForm):
+# ======================================
+# USER CREATION FORM
+# ======================================
+
+class CustomUserCreationForm(UserCreationForm):
 
     profile_email = forms.EmailField(
         required=False,
-        label="Email"
+        label="CITC-APP Email"
     )
 
     profile_role = forms.ModelChoiceField(
         queryset=Roles.objects.all(),
         required=False,
-        label="Role"
+        label="CITC-APP Role"
     )
 
     profile_office = forms.ModelChoiceField(
         queryset=Offices.objects.all(),
         required=False,
-        label="Office"
+        label="CITC-APP Office"
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = (
+            "username",
+        )
+
+
+# ======================================
+# USER CHANGE FORM
+# ======================================
+
+class CustomUserChangeForm(UserChangeForm):
+
+    profile_email = forms.EmailField(
+        required=False,
+        label="CITC-APP Email"
+    )
+
+    profile_role = forms.ModelChoiceField(
+        queryset=Roles.objects.all(),
+        required=False,
+        label="CITC-APP Role"
+    )
+
+    profile_office = forms.ModelChoiceField(
+        queryset=Offices.objects.all(),
+        required=False,
+        label="CITC-APP Office"
     )
 
     class Meta(UserChangeForm.Meta):
@@ -29,6 +67,7 @@ class CustomUserChangeForm(UserChangeForm):
         fields = "__all__"
 
     def __init__(self, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
 
         try:
@@ -40,24 +79,3 @@ class CustomUserChangeForm(UserChangeForm):
 
         except Users.DoesNotExist:
             pass
-
-    def save(self, commit=True):
-
-        user = super().save(commit)
-
-        profile, _ = Users.objects.get_or_create(
-            auth_user=user,
-            defaults={
-                "user_id": __import__("uuid").uuid4(),
-                "id_number": user.username,
-            }
-        )
-
-        profile.email = self.cleaned_data["profile_email"]
-        profile.role = self.cleaned_data["profile_role"]
-        profile.office = self.cleaned_data["profile_office"]
-        profile.id_number = user.username
-
-        profile.save()
-
-        return user

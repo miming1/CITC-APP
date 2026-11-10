@@ -31,8 +31,32 @@ export default function ProcessScreen() {
   const params = useLocalSearchParams();
 
   const procedureId = Number(params.procedure_id ?? params.id);
-  const roleId = params.roleId;
-  const isAdmin = Number(roleId) === 2;
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [procedureOfficeIds, setProcedureOfficeIds] = useState<number[]>([]);
+
+  // Get user role and office
+  const roleId = Number(userProfile?.role_id);
+  const officeId = Number(userProfile?.office_id);
+
+  // Role identification
+  const isOperationalAdmin = roleId === 2;
+  const isDean = roleId === 3;
+  const isChairperson = roleId === 4;
+  const isStaff = roleId === 5;
+  const isFaculty = roleId === 6;
+
+  // General administrative access
+  const isAdmin = [2, 3, 4, 5].includes(roleId);
+
+  // Office personnel
+  const isOfficePersonnel = [3, 4, 5].includes(roleId);
+
+  const canManageProcedure =
+    isOperationalAdmin ||
+    (
+      isOfficePersonnel &&
+      procedureOfficeIds.includes(officeId)
+    );
 
   const [activeTab, setActiveTab] = useState<"procedure" | "faq">("procedure");
 
@@ -86,34 +110,64 @@ export default function ProcessScreen() {
   const fetchAll = async () => {
     try {
       const token = await getToken();
+
       if (!token || !procedureId) return;
 
-      const res = await fetch(`${API_BASE_URL}/process/${procedureId}/`, {
-        cache: "no-store",
-        headers: {
-          Authorization: `Token ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const headers = {
+        Authorization: `Token ${token}`,
+        "Content-Type": "application/json",
+      };
 
-      console.log("STATUS:", res.status);
+      // GET AUTHENTICATED USER PROFILE
+      const profileResponse = await fetch(
+        `${API_BASE_URL}/me/`,
+        { headers }
+      );
+
+      if (!profileResponse.ok) {
+        throw new Error("Unable to retrieve user profile");
+      }
+
+      const profile = await profileResponse.json();
+
+      setUserProfile(profile);
+
+      // GET OFFICES ASSOCIATED WITH THIS PROCEDURE
+      const officeResponse = await fetch(
+        `${API_BASE_URL}/process/${procedureId}/offices/`,
+        { headers }
+      );
+
+      if (!officeResponse.ok) {
+        throw new Error("Unable to retrieve procedure offices");
+      }
+
+      const officeData = await officeResponse.json();
+
+      setProcedureOfficeIds(
+        officeData.map((item: any) => Number(item.office_id))
+      );
+
+      // GET PROCEDURE DETAILS
+      const res = await fetch(
+        `${API_BASE_URL}/process/${procedureId}/`,
+        {
+          cache: "no-store",
+          headers,
+        }
+      );
 
       const contentType = res.headers.get("content-type");
 
-      let data: any = null;
-
-      if (contentType?.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        console.log("NON-JSON RESPONSE:", text);
+      if (!contentType?.includes("application/json")) {
+        console.log("Invalid response format");
         return;
       }
 
+      const data = await res.json();
+
       if (!res.ok) {
         console.log("ERROR RESPONSE:", data);
-        console.log("FULL RESPONSE", JSON.stringify(data, null, 2));
-        console.log("Requirements:", JSON.stringify(data.requirements, null, 2));
         return;
       }
 
@@ -121,6 +175,7 @@ export default function ProcessScreen() {
       setSteps(data?.steps ?? []);
       setRequirements(data?.requirements ?? []);
       setFaqCategories(data?.faq_categories ?? []);
+
     } catch (err) {
       console.error("FAILED FETCH:", err);
     }
@@ -138,7 +193,7 @@ export default function ProcessScreen() {
   // =========================
   // SAVE PROCESS
   // =========================
-  const handleAuthSuccess = async () => {
+  const handleAuthSuccess = async (): Promise<boolean> => {
   try {
     const token = await getToken();
 
@@ -200,9 +255,11 @@ export default function ProcessScreen() {
       setSuccessMessage("");
     }, 3000);
 
+    return true;
 
   } catch (error) {
     console.log("SAVE ERROR:", error);
+    return false;
   }
 };
 
@@ -278,7 +335,7 @@ export default function ProcessScreen() {
   // =========================
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header title="Process" roleId={roleId as string} />
+      <Header title="Process" roleId={String(roleId)} />
 
       {successMessage && (
         <View
@@ -318,6 +375,7 @@ export default function ProcessScreen() {
             requirements={requirements}
             setRequirements={setRequirements}
             isAdmin={isAdmin}
+            canManageProcedure={canManageProcedure}
             isEditing={isEditingProcedure}
             colors={colors}
             checkedSteps={checkedSteps}
@@ -434,7 +492,7 @@ export default function ProcessScreen() {
         }}
       />
 
-      {isAdmin && (
+      {canManageProcedure && (
         <AdminAuthModal
           visible={showAdminAuthModal}
           onClose={() => setShowAdminAuthModal(false)}
@@ -442,49 +500,36 @@ export default function ProcessScreen() {
         />
       )}
 
-      {isAdmin && (
+      {canManageProcedure && (
         <AdminAuthModal
           visible={showAdminDeleteAuthModal}
           onClose={() => setShowAdminDeleteAuthModal(false)}
           onSuccess={async () => {
-
             try {
-
               if (deleteType === "procedure") {
                 await handleDeleteProcedure();
               }
-
 
               if (deleteType === "faq" && selectedFAQ) {
                 await handleDeleteFAQ(selectedFAQ.faq_id);
               }
 
-
               setShowAdminDeleteAuthModal(false);
-
               setSelectedFAQ(null);
               setDeleteType(null);
 
-
-              setSuccessMessage(
-                "Deleted successfully"
-              );
-
+              setSuccessMessage("Deleted successfully");
 
               setTimeout(() => {
                 setSuccessMessage("");
-              },3000);
+              }, 3000);
 
+              return true;
 
-            } catch(error){
-
-              console.log(
-                "DELETE ERROR:",
-                error
-              );
-
+            } catch (error) {
+              console.log("DELETE ERROR:", error);
+              return false;
             }
-
           }}
         />
       )}

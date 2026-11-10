@@ -131,7 +131,10 @@ export default function ProcessListScreen() {
   function goToProcess(item: Procedure) {
     router.push({
       pathname: "/ProcedureTab",
-      params: { id: item.procedure_id, roleId: isAdmin ? 2 : 1 },
+      params: {
+        id: item.procedure_id,
+        roleId: String(roleId),
+      },
     });
   }
 
