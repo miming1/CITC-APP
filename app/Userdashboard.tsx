@@ -1,32 +1,26 @@
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import {
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  useColorScheme,
-  useWindowDimensions,
-  View
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-
-import { useCallback, useEffect, useMemo, useState } from "react";
-
-import { API_BASE_URL } from "../constants/api";
+import { useRouter } from 'expo-router';
+import { Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { Colors } from "../constants/theme";
 
-import UserQuestionCategories from "@/components/User Components/UserFAQCategories";
-import FloatingButtons from "../components/Universal Components/FloatingButtons";
-import Header from "../components/Universal Components/Header";
-import SearchBar from "../components/Universal Components/SearchBar";
-import PopularProcesses from "../components/User Components/ProcedureCard";
+// ─── Components ───────────────────────────────────────────────────────────────
+import FAQCard from '../components/FAQCard';
+import FloatingButtons from '../components/FloatingButtons';
+import Header from '../components/Header';
+import PopularProcesses from '../components/PopularProcesses';
+import SearchBar from '../components/SearchBar';
 
-import { getToken } from "../lib/auth";
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface FAQCategory {
+interface HelpCategory {
   id: string;
-  category_name: string;
-  procedure_id: string;
+  label: string;
+  route: string;
+}
+
+interface FAQItem {
+  id: string;
+  question: string;
+  answer: string;
 }
 
 interface Process {
@@ -34,292 +28,156 @@ interface Process {
   title: string;
 }
 
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
+const HELP_CATEGORIES: HelpCategory[] = [
+  { id: '1', label: 'INC',          route: '/process' },
+  { id: '2', label: 'Med Cert',     route: '/process' },
+  { id: '3', label: 'Special Exam', route: '/process' },
+  { id: '4', label: 'Drop',         route: '/process' },
+];
+
+const FAQ_ITEMS: FAQItem[] = [
+  {
+    id: '1',
+    question: 'Where do I submit my medical certificate?',
+    answer: 'You may submit your medical certificate at the Office of the University Registrar (OUR) or through the designated submission portal on the student portal.',
+  },
+  {
+    id: '2',
+    question: 'Is there a payment for the medical certificate?',
+    answer: "Yes, there is a minimal processing fee. Please check the cashier's office or the official fee schedule for the exact amount.",
+  },
+  {
+    id: '3',
+    question: 'How do I get a medical certificate?',
+    answer: 'You can obtain a medical certificate from the University Health Services (UHS) or from a licensed physician. Make sure it is signed and bears the official clinic stamp.',
+  },
+];
+
+const POPULAR_PROCESSES: Process[] = [
+  { id: '1', title: 'Special Exam' },
+  { id: '2', title: 'Petition for C..' },
+  { id: '3', title: 'Leave of Absence' },
+  { id: '4', title: 'INC' },
+  { id: '5', title: 'Medical Certificate Sub..' },
+  { id: '6', title: 'Process 6' },
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function HelpCategoryItem({ item, isDark }: { item: HelpCategory; isDark: boolean }) {
+  const router = useRouter();
+  return (
+    <TouchableOpacity
+      style={styles.helpItem}
+      onPress={() => router.push(item.route as any)}
+      activeOpacity={0.75}
+    >
+      <View style={[styles.helpCircle, { backgroundColor: isDark ? '#2A2040' : '#D8D3E8' }]} />
+      <Text style={[styles.helpLabel, { color: isDark ? '#9BA1A6' : '#6B6485' }]}>
+        {item.label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function UserDashboard() {
   const router = useRouter();
 
   const colorScheme = useColorScheme() ?? "light";
-  const isDark = colorScheme === "dark";
-  const colors = Colors[colorScheme as "light" | "dark"];
+  const isDark      = colorScheme === 'dark';
+  const colors      = Colors[colorScheme as "light" | "dark"];
 
-  const { query } = useLocalSearchParams<{ query: string }>();
-  const [search, setSearch] = useState(query ?? "");
-  
+  const bg      = colors.background;
+  const textPri = isDark ? '#ECEDEE' : '#1E1340';
 
-  const { width } = useWindowDimensions();
-  const isDesktop = width >= 1024;
-
-  const bg = colors.background;
-  const textPri = isDark ? "#ECEDEE" : "#1E1340";
-
-  const [processes, setProcesses] = useState<Process[]>([]);
-  const [faqCategories, setFaqCategories] = useState<FAQCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Reset the search box every time this screen gains focus — including
-  // when the user hits the back button from Search Results. Because the
-  // box is now controlled (value={search}), clearing this state actually
-  // clears what's visible instead of leaving stale typed text behind.
-  useFocusEffect(
-    useCallback(() => {
-      setSearch("");
-    }, [])
-  );
-
-  // =========================
-  // FETCH PROCEDURES
-  // =========================
-  const fetchProcesses = async () => {
-  try {
-    const token = await getToken();
-
-    if (!token) {
-      console.log("NO TOKEN FOUND - user not authenticated");
-      return;
-    }
-
-    const res = await fetch(`${API_BASE_URL}/procedures/`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Token ${token}`,
-      },
-    });
-
-    const data = await res.json();
-
-    console.log("PROCEDURES:", res.status, data);
-
-    if (!res.ok) return;
-
-    if (!Array.isArray(data)) {
-      setProcesses([]); 
-      return;
-    }
-
-    setProcesses(
-      data.map((item: any) => ({
-        id: String(item.procedure_id),
-        title: item.procedure_name,
-      }))
-    );
-  } catch (err) {
-    console.log("fetchProcesses error:", err);
-    setProcesses([]);
-  }
-};
-
-  // =========================
-  // FETCH FAQ CATEGORIES
-  // =========================
-  const fetchFaqCategories = async () => {
-  try {
-    const token = await getToken();
-
-    if (!token) {
-      console.log("NO TOKEN FOUND - skipping FAQ fetch");
-      setFaqCategories([]);
-      return;
-    }
-
-    const res = await fetch(`${API_BASE_URL}/faq-categories/`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Token ${token}`,
-      },
-    });
-
-    const data = await res.json();
-
-    console.log("FAQ:", res.status, data);
-
-    if (!res.ok) {
-      setFaqCategories([]);
-      return;
-    }
-
-    if (!Array.isArray(data)) {
-      setFaqCategories([]); 
-      return;
-    }
-
-    setFaqCategories(
-      data.map((item: any) => ({
-        id: String(item.category_id),
-        category_name: item.category_name,
-        procedure_id: String(item.procedure),
-      }))
-    );
-  } catch (err) {
-    console.log("fetchFaqCategories error:", err);
-    setFaqCategories([]); 
-  }
-};
-
-  // =========================
-  // INIT LOAD
-  // =========================
-  useEffect(() => {
-    const loadAll = async () => {
-      setLoading(true);
-
-      await Promise.all([fetchProcesses(), fetchFaqCategories()]);
-
-      setLoading(false);
-    };
-
-    loadAll();
-  }, []);
-
-  // Feeds the SearchBar's autosuggest dropdown — this is what gives the
-  // Dashboard the same "live matching while typing" feel that the FAQ page
-  // already has (FAQ does it by filtering its own list; here there's no
-  // list under the search bar to filter, so a dropdown is the equivalent).
-  const suggestionPool = useMemo(
-    () => [
-      ...processes.map((p) => p.title),
-      ...faqCategories.map((c) => c.category_name),
-    ],
-    [processes, faqCategories]
-  );
-
-  // =========================
-  // UI
-  // =========================
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
-    <Header
-        title="Dashboard"
-        showBack={false}
-        showGreeting
-    />
+
+      <Header title="Welcome!" showBack={false} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.container, isDesktop && styles.desktopContainer]}>
-          {/* SEARCH */}
-          <View style={styles.searchBarWrap}>
-            <SearchBar
-              placeholder="Search..."
-              value={search}
-              suggestions={suggestionPool}
-              onChangeText={setSearch}
-              onSearch={(searchQuery) => {
-                // Use the value the callback actually gives us instead of
-                // the closured `search` state, and guard against an empty
-                // string so nothing navigates on a blank submit.
-                if (!searchQuery.trim()) return;
-                router.push({
-                  pathname: "/SearchResults",
-                  params: { query: searchQuery, roleId: 1 },
-                });
-              }}
-              onSelectSuggestion={(item) => {
-                router.push({
-                  pathname: "/SearchResults",
-                  params: { query: item, roleId: 1 },
-                });
-              }}
-            />
+        {/* Search Bar */}
+        <SearchBar
+          placeholder="Search..."
+          onSearch={(query) => {
+            router.push({ pathname: '/SearchResults', params: { query } });
+          }}
+        />
+
+        {/* Need Help */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: textPri }]}>Need Help?</Text>
+          <View style={styles.helpRow}>
+            {HELP_CATEGORIES.map((item) => (
+              <HelpCategoryItem key={item.id} item={item} isDark={isDark} />
+            ))}
           </View>
-
-          {/* POPULAR */}
-          <PopularProcesses
-            processes={processes}
-            onPressProcess={(process) => {
-              router.push({
-                pathname: "/ProcedureTab",
-                params: {
-                  id: process.id,
-                  roleId: 1,
-                },
-              });
-            }}
-            onSeeAll={() => {
-              router.push({
-                pathname: "/ProcedurePage",
-                params: {
-                  roleId: "1",
-                },
-              });
-            }}
-          />
-
-          {/* QUESTION CATEGORIES */}
-          <UserQuestionCategories
-            categories={faqCategories}
-            onPressCategory={(category) =>
-              router.push({
-                pathname: "/FAQPage",
-                params: {
-                  categoryId: category.id,
-                  procedureId: category.procedure_id,
-                  roleId: "1",
-                },
-              })
-            }
-            onSeeAll={() => {
-              router.push({
-                pathname: "/FAQPage",
-                params: {
-                  roleId: "1",
-                },
-              });
-            }}
-          />
         </View>
+
+        {/* Popular Processes */}
+        <PopularProcesses
+          processes={POPULAR_PROCESSES}
+          onPressProcess={() => router.push('/process')}
+        />
+
+        {/* FAQs */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: textPri }]}>FAQs</Text>
+          {FAQ_ITEMS.map((item) => (
+            <FAQCard key={item.id} question={item.question} answer={item.answer} />
+          ))}
+        </View>
+
       </ScrollView>
 
-      <FloatingButtons
-        activeTab="faq"
-      />
+      <FloatingButtons activeTab="faq" />
+
     </SafeAreaView>
   );
 }
 
-// =========================
-// STYLES
-// =========================
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
+
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
+  scrollView:    { flex: 1 },
+  scrollContent: { paddingBottom: 160 },
 
-  container: {
-    width: "100%",
-    marginTop: 20,
-    // SearchBar no longer supplies its own horizontal margin, so this
-    // container now owns that spacing directly.
+  section: {
+    marginTop: 24,
     paddingHorizontal: 16,
   },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
 
-  searchBarWrap: {
+  // ── Need Help ──────────────────────────────────────────────────────────────
+  helpRow:   { flexDirection: 'row', justifyContent: 'space-between' },
+  helpItem:  { alignItems: 'center', flex: 1 },
+  helpCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginBottom: 8,
-    position: "relative",
-    zIndex: 20,
+  },
+  helpLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 
-  desktopContainer: {
-    width: "95%",
-    maxWidth: 1600,
-    alignSelf: "center",
-  },
-
-  categoryCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-  },
-
-
-  scrollView: {
-    flex: 1,
-  },
-
-  scrollContent: {
-    paddingBottom: 160,
-  },
 });
