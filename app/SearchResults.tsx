@@ -1,187 +1,647 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import FAQCard from '../components/FAQCard';
-import FloatingButtons from '../components/FloatingButtons';
-import Header from '../components/Header';
-import SearchBar from '../components/SearchBar';
+import { MaterialIcons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useColorScheme,
+    useWindowDimensions,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import FloatingButtons from "../components/Universal Components/FloatingButtons";
+import Header from "../components/Universal Components/Header";
+import SearchBar from "../components/Universal Components/SearchBar";
 
-interface Process { id: string; title: string; }
-interface FAQItem  { id: string; question: string; answer: string; }
-interface Office   { id: string; name: string; }
+import { Colors } from "../constants/theme";
+import { fetchFAQCategories, fetchProcedures } from "../lib/api";
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+interface Procedure {
+  procedure_id: number;
+  procedure_name: string;
+  description?: string;
+}
 
-const ALL_PROCESSES: Process[] = [
-  { id: '1', title: 'Special Exam' },
-  { id: '2', title: 'Petition for Completion' },
-  { id: '3', title: 'Leave of Absence' },
-  { id: '4', title: 'INC' },
-  { id: '5', title: 'Medical Certificate Submission' },
-  { id: '6', title: 'Grade Appeal' },
-];
-
-const ALL_FAQS: FAQItem[] = [
-  { id: '1', question: 'Where do I submit my medical certificate?',          answer: 'Submit it to the faculty office.' },
-  { id: '2', question: 'Is there a payment for the medical certificate?',    answer: 'There is no payment when getting a medical certificate.' },
-  { id: '3', question: 'How do I get a medical certificate?',                answer: 'Visit the health center.' },
-  { id: '4', question: 'What are the accepted health issues for issuing a medical certificate?', answer: 'Consult the University Health Services for a full list of accepted conditions.' },
-];
-
-const ALL_OFFICES: Office[] = [
-  { id: '1', name: "Dean's Office" },
-  { id: '2', name: 'Faculty Office' },
-  { id: '3', name: 'TCM Office' },
-  { id: '4', name: 'Data Science Office' },
-  { id: '5', name: 'Computer Science Office' },
-  { id: '6', name: 'IT Office' },
-];
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
+interface FAQCategory {
+  id: string;
+  category_name: string;
+  procedure_id: string;
+}
 
 export default function SearchResults() {
-  const { query } = useLocalSearchParams<{ query: string }>();
-  const [search, setSearch] = useState(query ?? '');
+  const { query, roleId } = useLocalSearchParams<{ 
+    query: string;
+    roleId: string;
+  }>();
 
-  const colorScheme = useColorScheme() ?? 'light';
-  const isDark = colorScheme === 'dark';
+  const isStudent = roleId === "1";
 
-  const bg      = isDark ? '#151718' : '#fff';
-  const textPri = isDark ? '#ECEDEE' : '#1E1340';
-  const textSec = isDark ? '#9BA1A6' : '#6B6485';
-  const accent  = '#9B7FD4';
+  const [search, setSearch] = useState(query ?? "");
 
-  // ── Filter all data sources by search query ────────────────────────────────
+  const colorScheme = useColorScheme() ?? "light";
+  const colors = Colors[colorScheme];
+  const isDark = colorScheme === "dark";
+
+  const { width } = useWindowDimensions();
+
+  const isDesktop = width >= 1024;
+
+  const [procedures, setProcedures] = useState<Procedure[]>([]);
+  const [categories, setCategories] = useState<FAQCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [procData, categoryData] = await Promise.all([
+          fetchProcedures(),
+          fetchFAQCategories(),
+        ]);
+
+        setProcedures(procData);
+
+        setCategories(
+          categoryData.map((item: any) => ({
+            id: String(item.category_id),
+            category_name: item.category_name,
+            procedure_id: String(item.procedure),
+          }))
+        );
+      } catch {
+        setError("Failed to load search results.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
+
   const q = search.toLowerCase();
 
-  const matchedProcesses = useMemo(() =>
-    ALL_PROCESSES.filter((p) => p.title.toLowerCase().includes(q)), [q]);
+  const matchedProcesses = useMemo(
+    () =>
+      procedures.filter((p) =>
+        p.procedure_name.toLowerCase().includes(q)
+      ),
+    [q, procedures]
+  );
 
-  const matchedFAQs = useMemo(() =>
-    ALL_FAQS.filter((f) =>
-      f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q)
-    ), [q]);
+  const matchedCategories = useMemo(
+    () =>
+      categories.filter((c) =>
+        c.category_name.toLowerCase().includes(q)
+      ),
+    [q, categories]
+  );
 
-  const matchedOffices = useMemo(() =>
-    ALL_OFFICES.filter((o) => o.name.toLowerCase().includes(q)), [q]);
+  // Feeds the SearchBar's autosuggest dropdown from data already loaded on
+  // this page, matching the behavior added on the Dashboard.
+  const suggestionPool = useMemo(
+    () => [
+      ...procedures.map((p) => p.procedure_name),
+      ...categories.map((c) => c.category_name),
+    ],
+    [procedures, categories]
+  );
 
-  const hasResults = matchedProcesses.length > 0 || matchedFAQs.length > 0 || matchedOffices.length > 0;
+  const hasResults =
+    matchedProcesses.length > 0 ||
+    matchedCategories.length > 0;
+
+  // ===========================
+  // LOADING
+  // ===========================
+
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          {
+            backgroundColor: colors.background,
+          },
+        ]}
+      >
+        <Header title="Search Results" />
+
+        <View style={styles.centered}>
+          <ActivityIndicator
+            size="large"
+            color={colors.tint}
+          />
+
+          <Text
+            style={[
+              styles.loadingTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
+            Searching...
+          </Text>
+
+          <Text
+            style={{
+              color: colors.icon,
+            }}
+          >
+            Looking for matching procedures and FAQs.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ===========================
+  // ERROR
+  // ===========================
+
+  if (error) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.safeArea,
+          {
+            backgroundColor: colors.background,
+          },
+        ]}
+      >
+        <Header title="Search Results" />
+
+        <View style={styles.centered}>
+          <MaterialIcons
+            name="error-outline"
+            size={52}
+            color="#EF4444"
+          />
+
+          <Text
+            style={{
+              color: colors.text,
+              fontWeight: "600",
+              marginTop: 12,
+            }}
+          >
+            {error}
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: bg }]}>
-
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
       <Header title="Search Results" />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={true}
+      >
+        <View
+          style={[
+            styles.pageContainer,
+            isDesktop && styles.desktopContainer,
+          ]}
+        >
+          <View style={styles.searchBarWrap}>
+            <SearchBar
+              placeholder="Search procedures or FAQs..."
+              value={search}
+              suggestions={suggestionPool}
+              onSearch={(newQuery) => {
+                setSearch(newQuery);
+                router.setParams({ query: newQuery });
+              }}
+              onChangeText={setSearch}
+              onSelectSuggestion={(item) => {
+                setSearch(item);
+                router.setParams({ query: item });
+              }}
+            />
+          </View>
 
-        {/* Reusable SearchBar — marginHorizontal:16 already built in, aligns with header */}
-        <SearchBar
-          placeholder="Search..."
-          onSearch={(newQuery) => {
-            setSearch(newQuery);
-            router.setParams({ query: newQuery });
-          }}
-          onChangeText={(text) => setSearch(text)}
-        />
+          {/* SEARCH SUMMARY */}
 
-        {/* Results label */}
-        <Text style={[styles.resultsLabel, { color: textSec }]}>
-          Results for: <Text style={[styles.resultsQuery, { color: accent }]}>"{search}"</Text>
-        </Text>
+          <View
+            style={[
+              styles.summaryCard,
+              {
+                backgroundColor: isDark
+                  ? "#1F2937"
+                  : "#F8FAFC",
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.summaryTitle,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              Search Results
+            </Text>
 
-        {!hasResults && search.length > 0 && (
-          <Text style={[styles.empty, { color: textSec }]}>No results found.</Text>
-        )}
+            <Text
+              style={[
+                styles.summaryQuery,
+                {
+                  color: colors.tint2,
+                },
+              ]}
+            >
+              "{search}"
+            </Text>
 
-        {/* ── Matched Processes ── */}
-        {matchedProcesses.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: textPri }]}>Popular Processes</Text>
-            <View style={styles.pillGrid}>
+            <Text
+              style={[
+                styles.summaryCount,
+                {
+                  color: colors.icon,
+                },
+              ]}
+            >
+              {matchedProcesses.length} Procedure
+              {matchedProcesses.length !== 1 ? "s" : ""}
+              {" • "}
+              {matchedCategories.length} FAQ Categor{matchedCategories.length === 1 ? "y" : "ies"}
+            </Text>
+          </View>
+
+          {!hasResults && search.length > 0 && (
+            <View style={styles.emptyContainer}>
+              <MaterialIcons
+                name="search-off"
+                size={70}
+                color={colors.icon}
+              />
+
+              <Text
+                style={[
+                  styles.emptyTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                No results found
+              </Text>
+
+              <Text
+                style={[
+                  styles.emptySubtitle,
+                  {
+                    color: colors.icon,
+                  },
+                ]}
+              >
+                Try searching with another keyword.
+              </Text>
+            </View>
+          )}
+
+          {/* PROCEDURES */}
+
+          {matchedProcesses.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons
+                  name="description"
+                  size={22}
+                  color={colors.tint}
+                />
+
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  Procedures
+                </Text>
+              </View>
+
               {matchedProcesses.map((item) => (
                 <TouchableOpacity
-                  key={item.id}
-                  style={[styles.pill, { backgroundColor: isDark ? '#2A2040' : '#EBEBEB' }]}
-                  activeOpacity={0.75}
+                  key={item.procedure_id}
+                  style={[
+                    styles.processCard,
+                    {
+                      backgroundColor:
+                        colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/ProcedureTab",
+                      params: {
+                        id: item.procedure_id,
+                        roleId: 1,
+                      },
+                    })
+                  }
                 >
-                  <Text style={[styles.pillText, { color: textPri }]} numberOfLines={1}>
-                    {item.title}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.processTitle,
+                        {
+                          color: colors.text,
+                        },
+                      ]}
+                    >
+                      {item.procedure_name}
+                    </Text>
+
+                    {!!item.description && (
+                      <Text
+                        numberOfLines={2}
+                        style={[
+                          styles.processDescription,
+                          {
+                            color: colors.icon,
+                          },
+                        ]}
+                      >
+                        {item.description}
+                      </Text>
+                    )}
+                  </View>
+
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={28}
+                    color={colors.tint}
+                  />
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-        )}
+          )}
 
-        {/* ── Matched Offices ── */}
-        {matchedOffices.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: textPri }]}>Offices</Text>
-            <View style={styles.pillGrid}>
-              {matchedOffices.map((item) => (
+          {/* FAQ */}
+
+          {matchedCategories.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons
+                  name="help-outline"
+                  size={22}
+                  color={colors.tint2}
+                />
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  FAQ Categories
+                </Text>
+              </View>
+              {matchedCategories.map((category) => (
                 <TouchableOpacity
-                  key={item.id}
-                  style={[styles.pill, { backgroundColor: isDark ? '#2A2040' : '#EBEBEB' }]}
-                  activeOpacity={0.75}
+                  key={category.id}
+                  style={[
+                    styles.processCard,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/FAQPage",
+                      params: {
+                        categoryId: category.id,
+                      },
+                    })
+                  }
                 >
-                  <Text style={[styles.pillText, { color: textPri }]} numberOfLines={1}>
-                    {item.name}
-                  </Text>
+                  <View
+                    style={{
+                      flex: 1,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.processTitle,
+                        {
+                          color: colors.text,
+                        },
+                      ]}
+                    >
+                      {category.category_name}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.processDescription,
+                        {
+                          color: colors.icon,
+                        },
+                      ]}
+                    >
+                      View FAQs in this category
+                    </Text>
+                  </View>
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={28}
+                    color={colors.tint2}
+                  />
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
-        )}
-
-        {/* ── Matched FAQs ── */}
-        {matchedFAQs.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: textPri }]}>FAQs</Text>
-            {matchedFAQs.map((item) => (
-              <FAQCard key={item.id} question={item.question} answer={item.answer} />
-            ))}
-          </View>
-        )}
-
+          )}
+        </View>
       </ScrollView>
-
-      <FloatingButtons activeTab="faq" />
-
+      {isStudent && (
+        <FloatingButtons chatbotOnly/>
+      )}
     </SafeAreaView>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
 
-  safeArea: { flex: 1 },
-
-  // paddingHorizontal: 0 — searchbar has its own marginHorizontal:16 matching header
   scroll: {
-    paddingBottom: 160,
-    paddingTop: 0,
+    paddingBottom: 140,
   },
 
-  resultsLabel:  { fontSize: 13, marginBottom: 20, paddingHorizontal: 20 },
-  resultsQuery:  { fontStyle: 'italic', fontWeight: '600' },
-  empty:         { textAlign: 'center', marginTop: 40, fontSize: 14 },
-
-  section:       { marginBottom: 24, paddingHorizontal: 16 },
-  sectionTitle:  { fontSize: 17, fontWeight: '700', marginBottom: 12 },
-
-  pillGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  pill: {
-    height: 30,
-    maxWidth: 166,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
+  pageContainer: {
+    width: "100%",
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
-  pillText:      { fontSize: 12, fontWeight: '500' },
 
+  searchBarWrap: {
+    marginBottom: 8,
+  },
+
+
+  desktopContainer: {
+    width: "95%",
+    maxWidth: 1600,
+    alignSelf: "center",
+  },
+
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 30,
+  },
+
+  loadingTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 18,
+    marginBottom: 6,
+  },
+
+  // ==========================
+  // SEARCH SUMMARY
+  // ==========================
+
+  summaryCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 20,
+    marginTop: 18,
+    marginBottom: 40,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+
+    elevation: 3,
+  },
+
+  summaryTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+
+  summaryQuery: {
+    fontSize: 17,
+    fontWeight: "600",
+    marginTop: 8,
+  },
+
+  summaryCount: {
+    marginTop: 10,
+    fontSize: 14,
+  },
+
+  // ==========================
+  // SECTION
+  // ==========================
+
+  section: {
+    marginBottom: 34,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginLeft: 10,
+  },
+
+  // ==========================
+  // PROCEDURE CARD
+  // ==========================
+
+  processCard: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    borderWidth: 1,
+    borderRadius: 18,
+
+    padding: 18,
+
+    marginBottom: 14,
+
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+
+    elevation: 2,
+  },
+
+  processTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+
+  processDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    paddingRight: 12,
+  },
+
+  // ==========================
+  // EMPTY STATE
+  // ==========================
+
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+
+    paddingVertical: 70,
+    paddingHorizontal: 24,
+  },
+
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginTop: 18,
+  },
+
+  emptySubtitle: {
+    fontSize: 15,
+    textAlign: "center",
+    marginTop: 10,
+    lineHeight: 22,
+  },
 });
