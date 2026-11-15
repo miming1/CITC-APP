@@ -4,6 +4,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   useColorScheme,
   View,
 } from "react-native";
@@ -231,6 +232,15 @@ export default function AdminDashboard() {
           />
 
 
+          {/* MANAGE ACCOUNTS */}
+          <TouchableOpacity
+            style={styles.manageBtn}
+            onPress={() => router.push("/manage-accounts")}
+          >
+            <Text style={styles.manageBtnText}>Manage Accounts</Text>
+          </TouchableOpacity>
+
+
           {/* STATISTICS */}
           <AdminStatistics
             procedures={stats.procedures}
@@ -253,7 +263,7 @@ export default function AdminDashboard() {
             }}
             onSeeAll={() => {
               router.push({
-                pathname:"/ProcedurePage",
+                pathname: "/ProcedurePage",
                 params:{
                   roleId:"2",
                 },
@@ -353,6 +363,21 @@ const styles = StyleSheet.create({
 
   scroll: {
     paddingBottom: 120,
+  },
+
+
+  manageBtn: {
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 14,
+    backgroundColor: "#EEE7FF",
+    alignItems: "center",
+  },
+
+
+  manageBtnText: {
+    fontWeight: "700",
+    color: "#422780",
   },
 
 

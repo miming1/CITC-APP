@@ -59,6 +59,7 @@ export default function TrackScreen() {
     useState<number | null>(null);
 
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const [errors, setErrors] = useState<string[]>([]);
 
@@ -98,18 +99,11 @@ export default function TrackScreen() {
     return missing;
   };
 
-  const generateReference = () => {
-    return Math.floor(
-      10000000000 +
-      Math.random() * 90000000000
-    ).toString();
-  };
+  const missingFields = getMissingFields();
+  const hasStudentInfo = missingFields.length === 0;
 
   const validateForm = () => {
-    if (
-      selectedDocumentId === null &&
-      missingFields.length > 0
-    ) {
+    if (selectedDocumentId === null && missingFields.length > 0) {
       setErrors([
         "Please select a document and complete your profile before proceeding.",
       ]);
@@ -117,16 +111,12 @@ export default function TrackScreen() {
     }
 
     if (selectedDocumentId === null) {
-      setErrors([
-        "Please select a document before proceeding.",
-      ]);
+      setErrors(["Please select a document before proceeding."]);
       return false;
     }
 
     if (missingFields.length > 0) {
-      setErrors([
-        "Please complete your profile before proceeding.",
-      ]);
+      setErrors(["Please complete your profile before proceeding."]);
       return false;
     }
 
@@ -156,10 +146,18 @@ export default function TrackScreen() {
       const data = await res.json();
 
       if (res.ok) {
+        const clean = (v: any) => {
+          const s = String(v ?? "").trim();
+          return s.startsWith("(no ") ? "" : s;
+        };
+
+        const fullName =
+          `${clean(data.first_name)} ${clean(data.last_name)}`.trim();
+
         const updatedStudentInfo = {
           studentId: String(data.id_number || ""),
           email: data.email || "",
-          name: data.student_name || "",
+          name: fullName,
           program: data.program || "",
           yearLevel: formatYearLevel(data.year_level),
         };
@@ -178,10 +176,7 @@ export default function TrackScreen() {
         }
       }
     } catch (error) {
-      console.error(
-        "Profile fetch error:",
-        error
-      );
+      console.error("Profile fetch error:", error);
     } finally {
       setLoadingProfile(false);
     }
@@ -205,7 +200,7 @@ export default function TrackScreen() {
         );
 
         const data = await res.json();
-        setDocuments(data);
+        setDocuments(Array.isArray(data) ? data : []);
 
       } catch (err) {
         console.error("Failed to fetch documents", err);
@@ -215,79 +210,92 @@ export default function TrackScreen() {
     if (!isNaN(procedureId)) {
       fetchDocuments();
     }
-
   }, [procedureId]);
 
-  const missingFields = getMissingFields();
-
-  const hasStudentInfo = missingFields.length === 0;
-
-  const canProceed = hasStudentInfo && selectedDocumentId !== null;
+  // =========================
+  // SUBMIT
+  // =========================
 
   const handleProceed = async () => {
+    if (submitting) return;
     if (!validateForm()) return;
 
-    const token = await getStoredToken();
+    try {
+      setSubmitting(true);
 
-    if (!token) {
-      showAlert("Error", "You are not logged in.");
-      return;
+      const token = await getStoredToken();
+
+      if (!token) {
+        showAlert("Error", "You are not logged in.");
+        return;
+      }
+
+      const response = await fetch(ENDPOINTS.submitReq, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify({
+          procedure: procedureId,
+          document: selectedDocumentId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showAlert("Error", data.error || "Failed to submit request.");
+        return;
+      }
+
+      const selectedDocument = documents.find(
+        (doc) => doc.document_id === selectedDocumentId
+      );
+
+      const today = new Date().toLocaleDateString();
+
+      router.push({
+        pathname: "/ConfirmationPage",
+        params: {
+          reference: data.reference_code,
+
+          studentId: studentInfo.studentId,
+          name: studentInfo.name,
+          program: studentInfo.program,
+          yearLevel: studentInfo.yearLevel,
+
+          procedureId: String(procedureId),
+
+          documentId: String(selectedDocument?.document_id ?? ""),
+          documentName: selectedDocument?.document_name ?? "",
+
+          date: today,
+        },
+      });
+
+    } catch (err) {
+      console.error("Submit error:", err);
+      showAlert("Error", "Cannot reach server. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-
-    const response = await fetch(ENDPOINTS.submitReq, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Token ${token}`,
-      },
-      body: JSON.stringify({
-        procedure: procedureId,
-        document: selectedDocumentId,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      showAlert("Error", data.error || "Failed to submit request.");
-      return;
-    }
-
-    const selectedDocument = documents.find(
-      (doc) => doc.document_id === selectedDocumentId
-    );
-
-    const today = new Date().toLocaleDateString();
-
-    router.push({
-      pathname: "/ConfirmationPage",
-      params: {
-        reference: data.reference_code,
-
-        studentId: studentInfo.studentId,
-        name: studentInfo.name,
-        program: studentInfo.program,
-        yearLevel: studentInfo.yearLevel,
-
-        procedureId: String(procedureId),
-
-        documentId: String(selectedDocument?.document_id ?? ""),
-        documentName: selectedDocument?.document_name ?? "",
-
-        date: today,
-      },
-    });
   };
+
+  const infoRows: { label: string; value: string }[] = [
+    { label: "Student ID", value: studentInfo.studentId },
+    { label: "Name", value: studentInfo.name },
+    { label: "Program", value: studentInfo.program },
+    { label: "Year Level", value: studentInfo.yearLevel },
+    { label: "Email", value: studentInfo.email },
+  ];
+
+  const dividerColor = colorScheme === "dark" ? "#2c346b" : "#E2E8F0";
+  const iconColor = colorScheme === "dark" ? "#ffffff" : "#141A73";
 
   return (
     <SafeAreaView
-      style={[
-        styles.container,
-        {
-          backgroundColor:
-            colors.background,
-        },
-      ]}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Header title="Document Tracker" />
 
@@ -297,27 +305,14 @@ export default function TrackScreen() {
           isDesktop && styles.desktopContent,
         ]}
       >
-        <Text
-          style={[
-            styles.title,
-            {
-              color: colors.text,
-            },
-          ]}
-        >
+        <Text style={[styles.title, { color: colors.text }]}>
           Track Document
         </Text>
 
-        <Text
-          style={[
-            styles.description,
-            {
-              color: colors.icon,
-            },
-          ]}
-        >
+        <Text style={[styles.description, { color: colors.icon }]}>
           Select the type of document you need to track and provide your student information.
         </Text>
+
         {errors.length > 0 && (
           <View
             style={[
@@ -327,27 +322,17 @@ export default function TrackScreen() {
                   colorScheme === "dark"
                     ? "rgba(239,68,68,0.18)"
                     : "rgba(220,38,38,0.12)",
-
                 borderColor:
-                  colorScheme === "dark"
-                    ? "#EF4444"
-                    : "#DC2626",
+                  colorScheme === "dark" ? "#EF4444" : "#DC2626",
               },
             ]}
           >
             {errors.map((error, index) => (
-              <View
-                key={index}
-                style={styles.errorRow}
-              >
+              <View key={index} style={styles.errorRow}>
                 <MaterialIcons
                   name="error-outline"
                   size={18}
-                  color={
-                    colorScheme === "dark"
-                      ? "#F87171"
-                      : "#DC2626"
-                  }
+                  color={colorScheme === "dark" ? "#F87171" : "#DC2626"}
                 />
 
                 <Text
@@ -355,9 +340,7 @@ export default function TrackScreen() {
                     styles.errorText,
                     {
                       color:
-                        colorScheme === "dark"
-                          ? "#FCA5A5"
-                          : "#DC2626",
+                        colorScheme === "dark" ? "#FCA5A5" : "#DC2626",
                     },
                   ]}
                 >
@@ -368,14 +351,7 @@ export default function TrackScreen() {
           </View>
         )}
 
-        <Text
-          style={[
-            styles.sectionTitle,
-            {
-              color: colors.text,
-            },
-          ]}
-        >
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Available Documents
         </Text>
 
@@ -399,29 +375,15 @@ export default function TrackScreen() {
           ))}
         </View>
 
-        <Text
-          style={[
-            styles.sectionTitle,
-            {
-              color: colors.text,
-            },
-          ]}
-        >
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Student Information
         </Text>
 
-        <View
-          style={styles.detailsContainer}
-        >
-
+        <View style={styles.detailsContainer}>
           <InfoCard
             marginHorizontal={horizontalMargin}
             backgroundColor={colors.background}
-            borderColor={
-              colorScheme === "dark"
-                ? "#2c346b"
-                : "#FFFFFF"
-            }
+            borderColor={colorScheme === "dark" ? "#2c346b" : "#FFFFFF"}
             shadow={
               colorScheme === "dark"
                 ? "0px 4px 16px rgba(255, 255, 255, 0.1)"
@@ -429,242 +391,54 @@ export default function TrackScreen() {
             }
           >
             {loadingProfile ? (
-              <Text
-                style={[
-                  styles.loadingText,
-                  {
-                    color: colors.text,
-                  },
-                ]}
-              >
-                Loading student
-                information...
+              <Text style={[styles.loadingText, { color: colors.text }]}>
+                Loading student information...
               </Text>
             ) : hasStudentInfo ? (
               <>
-                <View
-                  style={
-                    styles.cardHeader
-                  }
-                >
+                <View style={styles.cardHeader}>
                   <View style={styles.profileIcon}>
-                    <MaterialIcons
-                      name="person"
-                      size={30}
-                      color={
-                        colorScheme ===
-                          "dark"
-                          ? "#ffffff"
-                          : "#141A73"
-                      }
-                    />
+                    <MaterialIcons name="person" size={30} color={iconColor} />
                   </View>
 
-                  <View>
-                    <Text
-                      style={[
-                        styles.cardTitle,
-                        {
-                          color:
-                            colors.text,
-                        },
-                      ]}
-                    >
-                      Student Profile
-                    </Text>
-                  </View>
+                  <Text style={[styles.cardTitle, { color: colors.text }]}>
+                    Student Profile
+                  </Text>
                 </View>
 
                 <View
-                  style={[
-                    styles.divider,
-                    {
-                      backgroundColor:
-                        colorScheme === "dark"
-                          ? "#2c346b"
-                          : "#E2E8F0",
-                    },
-                  ]}
+                  style={[styles.divider, { backgroundColor: dividerColor }]}
                 />
 
-                <View style={styles.infoGroup}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    Student ID
-                  </Text>
+                {infoRows.map((row) => (
+                  <View key={row.label} style={styles.infoGroup}>
+                    <Text style={[styles.label, { color: colors.text }]}>
+                      {row.label}
+                    </Text>
 
-                  <Text
-                    style={[
-                      styles.infoValue,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    {studentInfo.studentId}
-                  </Text>
-                </View>
-
-                <View style={styles.infoGroup}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    Name
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.infoValue,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    {studentInfo.name}
-                  </Text>
-                </View>
-
-                <View style={styles.infoGroup}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    Program
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.infoValue,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    {studentInfo.program}
-                  </Text>
-                </View>
-
-                <View style={styles.infoGroup}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    Year Level
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.infoValue,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    {studentInfo.yearLevel}
-                  </Text>
-                </View>
-
-                <View style={styles.infoGroup}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    Email
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.infoValue,
-                      {
-                        color: colors.text,
-                      },
-                    ]}
-                  >
-                    {studentInfo.email}
-                  </Text>
-                </View>
+                    <Text style={[styles.infoValue, { color: colors.text }]}>
+                      {row.value}
+                    </Text>
+                  </View>
+                ))}
               </>
             ) : (
               <>
-                <View
-                  style={
-                    styles.cardHeader
-                  }
-                >
-                  <View
-                    style={
-                      styles.warningIcon
-                    }
-                  >
-                    <MaterialIcons
-                      name="warning"
-                      size={18}
-                      color={
-                        colorScheme ===
-                          "dark"
-                          ? "#ffffff"
-                          : "#141A73"
-                      }
-                    />
+                <View style={styles.cardHeader}>
+                  <View style={styles.warningIcon}>
+                    <MaterialIcons name="warning" size={18} color={iconColor} />
                   </View>
 
-                  <View>
-                    <Text
-                      style={[
-                        styles.cardTitle,
-                        {
-                          color:
-                            colors.text,
-                        },
-                      ]}
-                    >
-                      Profile
-                      Incomplete
-                    </Text>
-                  </View>
+                  <Text style={[styles.cardTitle, { color: colors.text }]}>
+                    Profile Incomplete
+                  </Text>
                 </View>
 
                 <View
-                  style={[
-                    styles.divider,
-                    {
-                      backgroundColor:
-                        colorScheme === "dark"
-                          ? "#2c346b"
-                          : "#E2E8F0",
-                    },
-                  ]}
+                  style={[styles.divider, { backgroundColor: dividerColor }]}
                 />
 
-                <Text
-                  style={[
-                    styles.messageText,
-                    { color: colors.text },
-                  ]}
-                >
+                <Text style={[styles.messageText, { color: colors.text }]}>
                   Missing fields :
                   {"\n"}
                   • {missingFields.join("\n• ")}
@@ -675,17 +449,9 @@ export default function TrackScreen() {
                     styles.profileButton,
                     { backgroundColor: colors.tint },
                   ]}
-                  onPress={() =>
-                    router.push(
-                      "/Profile"
-                    )
-                  }
+                  onPress={() => router.push("/Profile")}
                 >
-                  <Text
-                    style={
-                      styles.profileButtonText
-                    }
-                  >
+                  <Text style={styles.profileButtonText}>
                     Complete Profile
                   </Text>
                 </TouchableOpacity>
@@ -694,30 +460,25 @@ export default function TrackScreen() {
           </InfoCard>
         </View>
       </ScrollView>
+
       <View
-        style={[
-          styles.footer,
-          {
-            backgroundColor:
-              colors.background,
-          },]}
+        style={[styles.footer, { backgroundColor: colors.background }]}
       >
         <TouchableOpacity
           onPress={handleProceed}
+          disabled={submitting}
           style={[
             styles.ProceedBtn,
             {
               backgroundColor: colors.tint2,
+              opacity: submitting ? 0.6 : 1,
             },
           ]}
         >
           <Text
-            style={[
-              styles.ProceedBtnText,
-              { color: colors.background },
-            ]}
+            style={[styles.ProceedBtnText, { color: colors.background }]}
           >
-            Proceed
+            {submitting ? "Submitting..." : "Proceed"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -812,11 +573,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
-  },
-
-  incompleteText: {
-    fontSize: 13,
-    marginTop: 2,
   },
 
   divider: {

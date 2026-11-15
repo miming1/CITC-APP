@@ -189,7 +189,7 @@ class ActiveRequestSerializer(serializers.ModelSerializer):
 
     office_name = serializers.SerializerMethodField()
 
-    student_name = serializers.CharField(
+    student_name = serializers.SerializerMethodField(
     source="user.student_name",
     read_only=True,
     )
@@ -291,7 +291,14 @@ class ActiveRequestSerializer(serializers.ModelSerializer):
         remaining = (expiry_date - timezone.now()).days
 
         return max(remaining, 0)
+
     
+    def get_student_name(self, obj):
+        u = obj.user
+        if not u:
+            return None
+        return f"{u.first_name} {u.last_name}".strip()
+
     def get_office_name(self, obj):
         office_proc = (
             OfficeProcedures.objects

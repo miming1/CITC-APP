@@ -32,6 +32,8 @@ interface Submission {
   refNo: string;
   date: string;
   status: FinalizedStatus;
+  studentName: string;
+  studentId: string;
 }
 
 const FILTER_OPTIONS: FilterOption[] = ['This Week', 'This Month', 'This Year', 'Custom Date'];
@@ -63,6 +65,9 @@ export default function SubmissionHistory() {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState<string | null>(null);
 
+  // Decided from the logged-in profile (role_id), not from route params.
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const [search, setSearch]               = useState('');
   // null = no date filter applied, i.e. "All Submissions" (the default state).
   const [activeFilter, setActiveFilter]   = useState<FilterOption | null>(null);
@@ -74,7 +79,7 @@ export default function SubmissionHistory() {
   const [appliedCustomDate, setAppliedCustomDate] = useState('');
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState(false);
-  
+
   function openModal(item:any){
     setSelectedItem(item);
     setModalVisible(true);
@@ -84,7 +89,6 @@ export default function SubmissionHistory() {
     setSelectedItem(null);
     setModalVisible(false);
   }
-
 
   // Fetch on focus, and reset search + filters back to default whenever the
   // user navigates away, so returning to this screen always starts fresh.
@@ -98,12 +102,22 @@ export default function SubmissionHistory() {
           setError(null);
 
           const token = await getStoredToken();
+          const headers = { Authorization: `Token ${token}` };
 
-          const res = await fetch(ENDPOINTS.userSubmissionHistory, {
-            headers: {
-              Authorization: `Token ${token}`,
-            },
-          });
+          // 1. Who is logged in?
+          const meRes = await fetch(ENDPOINTS.me, { headers });
+          if (!meRes.ok) {
+            throw new Error(`Failed to load profile (${meRes.status})`);
+          }
+          const me = await meRes.json();
+          const admin = me.role_id !== 1;
+
+          // 2. Students get their own history; office users get the office's.
+          const url = admin
+            ? ENDPOINTS.adminTransactionHistory
+            : ENDPOINTS.userSubmissionHistory;
+
+          const res = await fetch(url, { headers });
 
           if (!res.ok) {
             throw new Error(`Failed to load submission history (${res.status})`);
@@ -113,14 +127,20 @@ export default function SubmissionHistory() {
 
           if (!isActive) return;
 
-          const mapped: Submission[] = json.map((item: any) => ({
+          const mapped: Submission[] = (Array.isArray(json) ? json : []).map((item: any) => ({
+            ...item,
+            // aliases the details modal reads
+            id_number: item.student_id_number ?? item.id_number,
             id: String(item.req_doc_id),
             formName: item.document_name ?? item.procedure_name ?? 'Unknown Document',
             refNo: item.reference_code ?? '—',
             date: item.updated_at ? String(item.updated_at).split('T')[0] : '',
-            status: (item.status ?? '').toLowerCase() === 'Approved' ? 'Approved' : 'Rejected',
+            status: (item.status ?? '').toLowerCase() === 'approved' ? 'Approved' : 'Rejected',
+            studentName: item.student_name ?? '',
+            studentId: item.student_id_number ? String(item.student_id_number) : '',
           }));
 
+          setIsAdmin(admin);
           setSubmissions(mapped);
         } catch (err: any) {
           if (isActive) setError(err?.message ?? 'Something went wrong.');
@@ -147,11 +167,15 @@ export default function SubmissionHistory() {
 
   // ── Filtering ─────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+
     return submissions.filter((s) => {
       const matchesSearch =
-        s.formName.toLowerCase().includes(search.toLowerCase()) ||
-        s.refNo.includes(search) ||
-        s.date.includes(search);
+        s.formName.toLowerCase().includes(q) ||
+        s.refNo.toLowerCase().includes(q) ||
+        s.date.includes(search) ||
+        s.studentName.toLowerCase().includes(q) ||
+        s.studentId.includes(search);
 
       if (!matchesSearch) return false;
 
@@ -216,7 +240,7 @@ export default function SubmissionHistory() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
 
       <Header
-        title="Submission History"
+        title={isAdmin ? "Transaction History" : "Submission History"}
         roleId={roleId as string}
         adminMode={admin_mode as string}
       />
@@ -243,7 +267,11 @@ export default function SubmissionHistory() {
               { color: theme.text },
               Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
             ]}
-            placeholder="Search by name, ref no, or date…"
+            placeholder={
+              isAdmin
+                ? "Search by document, student, ref no, or date…"
+                : "Search by name, ref no, or date…"
+            }
             placeholderTextColor={theme.icon}
             value={search}
             onChangeText={setSearch}
@@ -305,7 +333,9 @@ export default function SubmissionHistory() {
             {/* ── Table Header ── */}
             <View style={styles.tableHeader}>
               <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Form Name</Text>
-              <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>Ref No.</Text>
+              <Text style={[styles.tableHeaderText, { flex: 2, color: theme.icon }]}>
+                {isAdmin ? 'Student' : 'Ref No.'}
+              </Text>
               <Text style={[styles.tableHeaderText, { flex: 1.5, color: theme.icon }]}>Date</Text>
               <Text style={[styles.tableHeaderText, styles.statusHeaderText, { flex: 1.5, color: theme.icon }]}>Status</Text>
             </View>
@@ -325,30 +355,21 @@ export default function SubmissionHistory() {
                 ]}
               >
                 <Text
-                  style={[
-                    styles.tableCell,
-                    { flex: 2, color: theme.text },
-                  ]}
+                  style={[styles.tableCell, { flex: 2, color: theme.text }]}
                   numberOfLines={2}
                 >
                   {item.formName}
                 </Text>
 
                 <Text
-                  style={[
-                    styles.tableCell,
-                    { flex: 2, color: theme.text },
-                  ]}
-                  numberOfLines={1}
+                  style={[styles.tableCell, { flex: 2, color: theme.text }]}
+                  numberOfLines={isAdmin ? 2 : 1}
                 >
-                  {item.refNo}
+                  {isAdmin ? (item.studentName || item.studentId || '—') : item.refNo}
                 </Text>
 
                 <Text
-                  style={[
-                    styles.tableCell,
-                    { flex: 1.5, color: theme.text },
-                  ]}
+                  style={[styles.tableCell, { flex: 1.5, color: theme.text }]}
                 >
                   {item.date}
                 </Text>
@@ -364,10 +385,8 @@ export default function SubmissionHistory() {
                     <Text
                       style={[
                         styles.statusText,
-                        item.status === "Approved" &&
-                          styles.statusTextApproved,
-                        item.status === "Rejected" &&
-                          styles.statusTextRejected,
+                        item.status === "Approved" && styles.statusTextApproved,
+                        item.status === "Rejected" && styles.statusTextRejected,
                       ]}
                     >
                       {item.status}
@@ -460,7 +479,7 @@ export default function SubmissionHistory() {
         modalVisible={modalVisible}
         closeModal={closeModal}
         selectedItem={selectedItem}
-        isAdmin={true}
+        isAdmin={isAdmin}
         isHistory={true}
         isMobile={isMobile}
         colors={theme}
@@ -473,10 +492,7 @@ export default function SubmissionHistory() {
         selectedStatus={null}
         setSelectedStatus={() => {}}
         handleUpdateStatus={() => {}}
-        formatYearLevel={(year)=>{
-            return year ? `Year ${year}` : "N/A";
-        }}
-
+        formatYearLevel={(year: any) => (year ? `Year ${year}` : "N/A")}
       />
 
     </SafeAreaView>
@@ -587,5 +603,4 @@ const styles = StyleSheet.create({
   dateSep:      { fontSize: 20, fontWeight: '300', flexShrink: 0 },
   modalBtn:     { borderRadius: 12, paddingVertical: 12, paddingHorizontal: 40 },
   modalBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  footer:       { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20 },
 });

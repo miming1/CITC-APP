@@ -94,19 +94,27 @@ class Users(models.Model):
 
     role = models.ForeignKey(
         Roles,
-        on_delete=models.PROTECT,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
     )
 
     office = models.ForeignKey(
         Offices,
-        on_delete=models.PROTECT,
+        on_delete=models.DO_NOTHING,
         blank=True,
         null=True,
     )
+    
+    created_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_accounts",
+    )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(blank=True, null=True)
 
     auth_user = models.OneToOneField(
         User,
@@ -123,6 +131,7 @@ class Users(models.Model):
     program = models.TextField(blank=True, null=True)
 
     class Meta:
+        managed = True
         db_table = "users"
 
 
@@ -306,6 +315,11 @@ class ProcedureSteps(models.Model):
 
 
 class RequestDocuments(models.Model):
+    is_followed_up = models.BooleanField(default=False)
+    followed_up_at = models.DateTimeField(blank=True, null=True)
+    follow_up_deadline = models.DateTimeField(blank=True, null=True)
+    history_at = models.DateTimeField(blank=True, null=True)
+
     req_doc_id = models.AutoField(primary_key=True)
 
     request = models.ForeignKey(

@@ -17,12 +17,17 @@ export const ENDPOINTS = {
   notifications: `${API_BASE_URL}/notifications/`,
   markNotificationsRead:`${API_BASE_URL}/notifications/read/`,
   adminTransHistory: `${API_BASE_URL}/admin/transaction-history/`,
-  userSubmissionHistory: `${API_BASE_URL}/user/submission-history/`,
-
+  userSubmissionHistory:   `${API_BASE_URL}/submission-history/`,
+  adminTransactionHistory: `${API_BASE_URL}/admin/transaction-history/`,
   // ── OTP SECURE ENDPOINTS ───────────────────
   sendSignupOtp:   `${API_BASE_URL}/auth/send-signup-otp/`,
   verifySignupOtp: `${API_BASE_URL}/auth/verify-signup-otp/`,
   forgotPassword:  `${API_BASE_URL}/auth/forgot-password/`,
   verifyResetOtp:  `${API_BASE_URL}/auth/verify-otp/`,
   resetPassword:   `${API_BASE_URL}/auth/reset-password/`,
+
+    // ── ACCOUNT MANAGEMENT ─────────────────────
+  offices:       `${API_BASE_URL}/offices/`,
+  accounts:      `${API_BASE_URL}/accounts/`,
+  createAccount: `${API_BASE_URL}/accounts/create/`,
 };

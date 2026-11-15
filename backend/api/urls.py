@@ -15,6 +15,9 @@ urlpatterns = [
     #path('auth/admin', views.admin_dashboard),
     path("admin/statistics/",views.admin_statistics),
 
+    path("offices/", views.list_offices),
+    path("accounts/", views.list_accounts),
+    path("accounts/create/", views.create_account),
 
     # =========================
     # PROCEDURES
@@ -23,6 +26,9 @@ urlpatterns = [
     path('procedures/<int:pk>/', views.update_procedure),
     path('procedures/<int:pk>/delete/', views.delete_procedure),
     path("process/<int:procedure_id>/save/",update_full_process,name="update_full_process"),
+    path("process/<int:procedure_id>/offices/", views.get_procedure_offices),
+    path("submission-history/", views.user_submission_history),
+    path("admin/transaction-history/", views.admin_transaction_history),    
     path('process/create/', views.create_full_process),
 
 
@@ -124,3 +130,6 @@ urlpatterns = [
         views.mark_notifications_read,
     ),
 ]
+
+
+

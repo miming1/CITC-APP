@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { API_BASE_URL } from "../constants/api";
+import { API_BASE_URL, ENDPOINTS } from "../constants/api";
 import { Colors } from "../constants/theme";
 
 import AdminAuthModal from "../components/Admin Components/ActionAuthentication";
@@ -34,16 +34,15 @@ export default function ProcessScreen() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [procedureOfficeIds, setProcedureOfficeIds] = useState<number[]>([]);
 
+  // Profile must be loaded before we know which UI to show
+  const profileLoaded = userProfile !== null;
+
   // Get user role and office
   const roleId = Number(userProfile?.role_id);
   const officeId = Number(userProfile?.office_id);
 
   // Role identification
   const isOperationalAdmin = roleId === 2;
-  const isDean = roleId === 3;
-  const isChairperson = roleId === 4;
-  const isStaff = roleId === 5;
-  const isFaculty = roleId === 6;
 
   // General administrative access
   const isAdmin = [2, 3, 4, 5].includes(roleId);
@@ -65,7 +64,7 @@ export default function ProcessScreen() {
   const [requirements, setRequirements] = useState<any[]>([]);
   const [faqCategories, setFaqCategories] = useState<any[]>([]);
   const [checkedSteps, setCheckedSteps] = useState<number[]>([]);
-  
+
   const [isEditingProcedure, setIsEditingProcedure] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showAdminAuthModal, setShowAdminAuthModal] = useState(false);
@@ -119,34 +118,35 @@ export default function ProcessScreen() {
       };
 
       // GET AUTHENTICATED USER PROFILE
-      const profileResponse = await fetch(
-        `${API_BASE_URL}/me/`,
-        { headers }
-      );
+      const profileResponse = await fetch(ENDPOINTS.me, { headers });
 
       if (!profileResponse.ok) {
         throw new Error("Unable to retrieve user profile");
       }
 
-      const profile = await profileResponse.json();
-
-      setUserProfile(profile);
+      setUserProfile(await profileResponse.json());
 
       // GET OFFICES ASSOCIATED WITH THIS PROCEDURE
-      const officeResponse = await fetch(
-        `${API_BASE_URL}/process/${procedureId}/offices/`,
-        { headers }
-      );
+      // Not fatal: if this fails the user simply can't manage the procedure.
+      try {
+        const officeResponse = await fetch(
+          `${API_BASE_URL}/process/${procedureId}/offices/`,
+          { headers }
+        );
 
-      if (!officeResponse.ok) {
-        throw new Error("Unable to retrieve procedure offices");
+        if (officeResponse.ok) {
+          const officeData = await officeResponse.json();
+          setProcedureOfficeIds(
+            officeData.map((item: any) => Number(item.office_id))
+          );
+        } else {
+          console.log("Offices request failed:", officeResponse.status);
+          setProcedureOfficeIds([]);
+        }
+      } catch (e) {
+        console.log("Offices request error:", e);
+        setProcedureOfficeIds([]);
       }
-
-      const officeData = await officeResponse.json();
-
-      setProcedureOfficeIds(
-        officeData.map((item: any) => Number(item.office_id))
-      );
 
       // GET PROCEDURE DETAILS
       const res = await fetch(
@@ -181,9 +181,6 @@ export default function ProcessScreen() {
     }
   };
 
-  // =========================
-  // AUTO REFRESH ON FOCUS (FIX)
-  // =========================
   useFocusEffect(
     useCallback(() => {
       fetchAll();
@@ -194,140 +191,114 @@ export default function ProcessScreen() {
   // SAVE PROCESS
   // =========================
   const handleAuthSuccess = async (): Promise<boolean> => {
-  try {
-    const token = await getToken();
+    try {
+      const token = await getToken();
 
-    const response = await fetch(
-      `${API_BASE_URL}/process/${procedureId}/save/`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${token}`,
-        },
-        body: JSON.stringify({
-          procedure_name: procedure.procedure_name,
-          description: procedure.description,
+      const response = await fetch(
+        `${API_BASE_URL}/process/${procedureId}/save/`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+          body: JSON.stringify({
+            procedure_name: procedure.procedure_name,
+            description: procedure.description,
 
-          steps,
+            steps,
 
-          requirements: requirements.map((req: any) => ({
-            requirement_id: req.requirement_id,
-            requirement_name:
-              req.requirement_name ??
-              req.requirement_text ??
-              req.name ??
-              "",
-            is_document: req.is_document ?? false,
-          })),
-        }),
+            requirements: requirements.map((req: any) => ({
+              requirement_id: req.requirement_id,
+              requirement_name:
+                req.requirement_name ??
+                req.requirement_text ??
+                req.name ??
+                "",
+              is_document: req.is_document ?? false,
+            })),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Save failed");
       }
-    );
 
+      setDeletedSteps([]);
+      setDeletedRequirements([]);
+      setIsEditingProcedure(false);
+      setShowAdminAuthModal(false);
 
-    if (!response.ok) {
-      throw new Error("Save failed");
+      await fetchAll();
+
+      setSuccessMessage("Changes saved successfully");
+
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+
+      return true;
+
+    } catch (error) {
+      console.log("SAVE ERROR:", error);
+      return false;
     }
-
-
-    // reset deleted items
-    setDeletedSteps([]);
-    setDeletedRequirements([]);
-
-
-    // leave edit mode
-    setIsEditingProcedure(false);
-
-
-    // close authentication modal
-    setShowAdminAuthModal(false);
-
-
-    // refresh data
-    await fetchAll();
-
-
-    // show temporary confirmation
-    setSuccessMessage("Changes saved successfully");
-
-
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 3000);
-
-    return true;
-
-  } catch (error) {
-    console.log("SAVE ERROR:", error);
-    return false;
-  }
-};
+  };
 
   // =========================
   // DELETE PROCEDURE
   // =========================
   const handleDeleteProcedure = async () => {
-
     const token = await getToken();
-
 
     const response = await fetch(
       `${API_BASE_URL}/procedures/${procedureId}/delete/`,
       {
-        method:"DELETE",
-        headers:{
-          Authorization:`Token ${token}`,
+        method: "DELETE",
+        headers: {
+          Authorization: `Token ${token}`,
         },
       }
     );
 
-
-    if(!response.ok){
+    if (!response.ok) {
       throw new Error("Delete failed");
     }
 
-
-    localStorage.removeItem(
-      `${CHECKLIST_PREFIX}${procedureId}`
-    );
-
+    localStorage.removeItem(`${CHECKLIST_PREFIX}${procedureId}`);
 
     router.replace({
       pathname: "/ProcedurePage",
       params: {
-        roleId: "2",
+        roleId: String(roleId),
+        admin_mode: isAdmin ? "true" : "false",
         message: "Procedure deleted successfully.",
       },
     });
-
   };
 
   // =========================
   // DELETE FAQ
   // =========================
-  const handleDeleteFAQ = async (id:number)=>{
-
+  const handleDeleteFAQ = async (id: number) => {
     const token = await getToken();
-
 
     const response = await fetch(
       `${API_BASE_URL}/faqs/${id}/delete/`,
       {
-        method:"DELETE",
-        headers:{
-          Authorization:`Token ${token}`,
+        method: "DELETE",
+        headers: {
+          Authorization: `Token ${token}`,
         },
       }
     );
 
-
-    if(!response.ok){
+    if (!response.ok) {
       throw new Error("FAQ delete failed");
     }
 
-
     await fetchAll();
-
   };
 
   // =========================
@@ -335,7 +306,10 @@ export default function ProcessScreen() {
   // =========================
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <Header title="Process" roleId={String(roleId)} />
+      <Header
+        title="Process"
+        roleId={profileLoaded ? String(roleId) : undefined}
+      />
 
       {successMessage && (
         <View
@@ -385,10 +359,7 @@ export default function ProcessScreen() {
               await fetchAll();
               setIsEditingProcedure(false);
             }}
-            onSave={() => {
-              console.log("Opening admin auth");
-              setShowAdminAuthModal(true);
-            }}
+            onSave={() => setShowAdminAuthModal(true)}
             onDelete={() => {
               setDeleteType("procedure");
               setShowDeleteModal(true);
@@ -407,46 +378,37 @@ export default function ProcessScreen() {
             }
 
             setFaqs={(updatedFaqs) => {
-
               setFaqCategories((prev) =>
                 prev.map((category) => ({
                   ...category,
-
                   faqs:
                     category.faqs?.map((faq: any) => {
-
-                      const updated =
-                        updatedFaqs.find(
-                          (item:any) =>
-                            item.faq_id === faq.faq_id
-                        );
-
+                      const updated = updatedFaqs.find(
+                        (item: any) => item.faq_id === faq.faq_id
+                      );
                       return updated ?? faq;
-
                     }) ?? [],
-
                 }))
               );
-
             }}
 
             procedure={procedure}
 
-            isAdmin={isAdmin}
+            isAdmin={canManageProcedure}
 
             colors={colors}
 
             onSaveFAQInline={async (faq) => {
+              const token = await getToken();
 
               await fetch(
                 `${API_BASE_URL}/faqs/${faq.faq_id}/`,
                 {
                   method: "PATCH",
-
                   headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Token ${token}`,
                   },
-
                   body: JSON.stringify({
                     question: faq.question,
                     answer: faq.answer,
@@ -455,23 +417,18 @@ export default function ProcessScreen() {
               );
 
               await fetchAll();
-
             }}
 
             onRequestDelete={(faq) => {
-
               setSelectedFAQ(faq);
-
               setDeleteType("faq");
-
               setShowDeleteModal(true);
-
             }}
           />
         )}
       </ScrollView>
 
-      {!isAdmin && (
+      {profileLoaded && !isAdmin && (
         <FloatingButtons
           activeTab={activeTab}
           onTrackPress={() =>

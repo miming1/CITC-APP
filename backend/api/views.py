@@ -12,6 +12,7 @@ from .models  import Requests
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Q
+from django.db import transaction
 import uuid
 import random
 
@@ -20,6 +21,7 @@ from django.conf import settings
 
 from .models import (
     OfficeProcedures,
+    Offices,
     Procedures,
     ProcedureSteps,
     Requirements,
@@ -45,6 +47,11 @@ from .serializers import (
 
 from .services.procedure_service import get_full_procedure
 from datetime import timedelta
+
+def is_office_user(profile):
+    """Any role except Student (1): Admin, Dean, Chairperson, Staff, Faculty."""
+    role_id = getattr(profile.role, "role_id", None)
+    return role_id is not None and role_id != 1
 
 # =========================
 # REGISTER
@@ -226,7 +233,7 @@ def get_procedures(request):
     role_id = getattr(profile.role, "role_id", None)
 
     # STUDENT
-    if role_id == 1:
+    if role_id in (1, 2):
         procedures = Procedures.objects.all()
 
     # ADMIN
@@ -330,7 +337,7 @@ def create_full_process(request):
     )
 
 
-    if role_id != 2:
+    if not is_office_user(profile):
         return Response(
             {"error": "Only admins can create processes"},
             status=403
@@ -535,7 +542,7 @@ def update_full_process(request, procedure_id):
     except Users.DoesNotExist:
         return Response({"error": "Profile not found"}, status=404)
 
-    if getattr(profile.role, "role_id", None) != 2:
+    if not is_office_user(profile):
         return Response({"error": "Only admins can update processes"}, status=403)
 
     try:
@@ -721,7 +728,7 @@ def delete_full_process(request, procedure_id):
     except Users.DoesNotExist:
         return Response({"error": "Profile not found"}, status=404)
 
-    if getattr(profile.role, "role_id", None) != 2:
+    if not is_office_user(profile):
         return Response({"error": "Only admins can delete processes"}, status=403)
 
     try:
@@ -802,11 +809,11 @@ def get_faq_categories(request):
     profile = Users.objects.get(auth_user_id=request.user.id)
     role_id = getattr(profile.role, "role_id", None)
 
-    if role_id != 1 and not profile.office_id:
+    if role_id not in (1, 2) and not profile.office_id:
         return Response([])
 
-    # STUDENT
-    if role_id == 1:
+    # STUDENT / OPERATIONAL ADMIN
+    if role_id in (1, 2):
         categories = FaqCategories.objects.all()
 
     # ADMIN
@@ -849,7 +856,7 @@ def get_faqs(request):
     profile = Users.objects.get(auth_user_id=request.user.id)
     role_id = getattr(profile.role, "role_id", None)
 
-    if role_id != 1 and not profile.office_id:
+    if role_id not in (1, 2) and not profile.office_id:
         return Response([])
 
     category_id = request.query_params.get("category_id")
@@ -858,7 +865,7 @@ def get_faqs(request):
     faqs = Faqs.objects.all()
 
     # ADMIN FILTER
-    if role_id != 1:
+    if role_id not in (1, 2):
         if profile.office_id:
             allowed_procedures = OfficeProcedures.objects.filter(
                 office_id=profile.office_id
@@ -1048,7 +1055,7 @@ def track_requests(request):
     # user requests only
     requests = Requests.objects.filter(user=profile)
 
-    if profile.role.role_id == 2:
+    if is_office_user(profile):
 
         allowed = OfficeProcedures.objects.filter(
             office_id=profile.office_id
@@ -1236,7 +1243,7 @@ def update_request_status(request, request_id):
         )
 
     # only admins
-    if getattr(profile.role, "role_id", None) != 2:
+    if not is_office_user(profile):
         return Response(
             {"error": "Unauthorized"},
             status=403
@@ -1343,7 +1350,7 @@ def get_process_screen(request, procedure_id):
     role_id = getattr(profile.role, "role_id", None)
 
     # OFFICE ACCESS CHECK
-    if role_id == 2:
+    if is_office_user(profile) and role_id != 2:
         allowed = OfficeProcedures.objects.filter(
             office_id=profile.office_id,
             procedure_id=procedure_id
@@ -1466,21 +1473,18 @@ def get_process_screen(request, procedure_id):
 
 @api_view(["GET"])
 def get_procedure_documents(request, procedure_id):
-
-    documents = (
+    docs = {}
+    rows = (
         ProcedureDocuments.objects
         .filter(procedure_id=procedure_id)
         .select_related("document")
     )
+    for item in rows:
+        docs[item.document.document_id] = item.document.document_name
 
     return Response([
-        {
-            "document_id": item.document.document_id,
-            "document_name": item.document.document_name,
-        }
-        for item in documents
+        {"document_id": k, "document_name": v} for k, v in docs.items()
     ])
-
 # =========================
 # PROFILE
 # =========================
@@ -1598,11 +1602,18 @@ def create_procedure(request):
         auth_user_id=request.user.id
     )
 
-    if getattr(profile.role, "role_id", None) != 2:
+    if not is_office_user(profile):
         return Response(
             {"error": "Only office admins can create a process."},
             status=403
         )
+    
+    if getattr(profile.role, "role_id", None) == 2:
+        return Response({
+        "procedures": Procedures.objects.count(),
+        "faqs": Faqs.objects.count(),
+        "requests": Requests.objects.count(),
+    })
 
 
     data = request.data
@@ -1745,7 +1756,7 @@ def admin_statistics(request):
         )
 
 
-    if profile.role.role_id != 2:
+    if not is_office_user(profile):
         return Response(
             {"error": "Unauthorized"},
             status=403
@@ -1842,23 +1853,21 @@ def admin_transaction_history(request):
     except Users.DoesNotExist:
         return Response({"error": "Profile not found"}, status=404)
 
-    if getattr(profile.role, "role_id", None) != 2:
+    if not is_office_user(profile):
         return Response({"error": "Unauthorized"}, status=403)
 
-    if not profile.office_id:
+    if profile.role.role_id != 2 and not profile.office_id:
         return Response([])
 
-    # Documents handled by this admin's office
-    allowed_documents = ProcedureDocuments.objects.filter(
-        office_id=profile.office_id
-    ).values_list("document_id", flat=True)
+    # Documents handled by this admin's office (role 2 sees all)
+    docs = ProcedureDocuments.objects.all()
+    if profile.role.role_id != 2:
+        docs = docs.filter(office_id=profile.office_id)
+    allowed_documents = docs.values_list("document_id", flat=True)
 
     now = timezone.now()
     cutoff = now - timedelta(days=7)
 
-    # Show:
-    # - Approved requests
-    # - Rejected requests whose 7-day follow-up period has expired
     req_docs = (
         RequestDocuments.objects
         .filter(document_id__in=allowed_documents)
@@ -1876,19 +1885,8 @@ def admin_transaction_history(request):
     data = []
 
     for doc in req_docs:
-
         req = doc.request
         student = req.user if req else None
-        print(
-            "Student object:",
-            student,
-            "| FirstName:",
-            getattr(student, "first_name", "NO FIELD"),
-            "| LastName:",
-            getattr(student, "last_name", "NO FIELD"),
-            "| ID:",
-            getattr(student, "id_number", "NO FIELD")
-        )
 
         data.append({
             "req_doc_id": doc.req_doc_id,
@@ -1904,10 +1902,203 @@ def admin_transaction_history(request):
             "remarks": doc.remarks,
             "first_name": student.first_name if student else None,
             "last_name": student.last_name if student else None,
+            "student_name": (
+                f"{student.first_name} {student.last_name}".strip()
+                if student else None
+            ),
             "student_id_number": student.id_number if student else None,
             "program": student.program if student else None,
             "year_level": student.year_level if student else None,
             "email": student.email if student else None,
             "created_at": req.created_at if req else None,
         })
+
     return Response(data)
+
+# =========================
+# MANAGE ACCOUNTS
+# =========================
+
+# who may create which role (backend enforces this)
+# 2 Operational, 3 Dean, 4 Chairperson, 5 and 6 Staff/Faculty
+CAN_CREATE = {
+    2: [3],
+    3: [4],
+    4: [5, 6],
+}
+
+
+def _full_name(u):
+    return f"{u.first_name} {u.last_name}".strip()
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_offices(request):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
+
+    role_id = getattr(profile.role, "role_id", None)
+
+    if role_id not in CAN_CREATE:
+        return Response({"error": "Unauthorized"}, status=403)
+
+    offices = Offices.objects.all().order_by("office_name")
+
+    # only Operational Admin can pick any office
+    if role_id != 2:
+        offices = offices.filter(office_id=profile.office_id)
+
+    return Response([
+        {"office_id": o.office_id, "office_name": o.office_name}
+        for o in offices
+    ])
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_accounts(request):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
+
+    role_id = getattr(profile.role, "role_id", None)
+
+    if role_id not in CAN_CREATE:
+        return Response({"error": "Unauthorized"}, status=403)
+
+    accounts = (
+        Users.objects
+        .filter(created_by=profile)
+        .select_related("role", "office")
+        .order_by("-created_at")
+    )
+
+    return Response([
+        {
+            "id_number": a.id_number,
+            "student_name": _full_name(a),
+            "email": a.email,
+            "role_id": a.role.role_id if a.role else None,
+            "office_name": a.office.office_name if a.office else None,
+        }
+        for a in accounts
+    ])
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def create_account(request):
+
+    try:
+        profile = Users.objects.get(auth_user_id=request.user.id)
+    except Users.DoesNotExist:
+        return Response({"error": "Profile not found"}, status=404)
+
+    my_role = getattr(profile.role, "role_id", None)
+    allowed = CAN_CREATE.get(my_role, [])
+
+    if not allowed:
+        return Response(
+            {"error": "Your account type cannot create other accounts."},
+            status=403,
+        )
+
+    data = request.data
+
+    try:
+        new_role_id = int(data.get("role_id"))
+    except (TypeError, ValueError):
+        return Response({"error": "Account type is required."}, status=400)
+
+    id_number = str(data.get("id_number") or "").strip()
+    full_name = (data.get("student_name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    try:
+        office_id = int(data.get("office_id"))
+    except (TypeError, ValueError):
+        return Response({"error": "Office is required."}, status=400)
+
+    if new_role_id not in allowed:
+        return Response(
+            {"error": "You are not allowed to create this account type."},
+            status=403,
+        )
+
+    if not id_number or not full_name or not email or not password:
+        return Response({"error": "All fields are required."}, status=400)
+
+    if not id_number.isdigit() or not (8 <= len(id_number) <= 20):
+        return Response({"error": "Invalid ID Number."}, status=400)
+
+    if len(password) < 8:
+        return Response(
+            {"error": "Password must be at least 8 characters."},
+            status=400,
+        )
+
+    # non-operational creators can only use their own office
+    if my_role != 2 and office_id != profile.office_id:
+        return Response(
+            {"error": "You can only create accounts for your own office."},
+            status=403,
+        )
+
+    try:
+        office = Offices.objects.get(office_id=office_id)
+        role = Roles.objects.get(role_id=new_role_id)
+    except (Offices.DoesNotExist, Roles.DoesNotExist):
+        return Response({"error": "Invalid office or account type."}, status=400)
+
+    if User.objects.filter(username=id_number).exists() \
+            or Users.objects.filter(id_number=int(id_number)).exists():
+        return Response({"error": "ID Number already exists."}, status=400)
+
+    if Users.objects.filter(email__iexact=email).exists():
+        return Response({"error": "Email already exists."}, status=400)
+
+    parts = full_name.rsplit(None, 1)
+    first_name = parts[0]
+    last_name = parts[1] if len(parts) > 1 else ""
+
+    try:
+        with transaction.atomic():
+            auth_user = User.objects.create_user(
+                username=id_number,
+                email=email,
+                password=password,
+            )
+
+            # the post_save signal in admin.py normally creates this row
+            new_profile, _ = Users.objects.get_or_create(
+                auth_user=auth_user,
+                defaults={"id_number": int(id_number)},
+            )
+
+            new_profile.id_number = int(id_number)
+            new_profile.email = email
+            new_profile.first_name = first_name
+            new_profile.last_name = last_name
+            new_profile.role = role
+            new_profile.office = office
+            new_profile.created_by = profile
+            new_profile.created_at = timezone.now()
+            new_profile.save()
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
+    return Response(
+        {
+            "message": "Account created successfully.",
+            "user_id": str(new_profile.user_id),
+        },
+        status=201,
+    )

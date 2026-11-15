@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    useWindowDimensions,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,7 +18,7 @@ import { Colors } from "../constants/theme";
 import { getToken } from "../lib/auth";
 
 // UI mirror of the backend rule (backend is what enforces it)
-// 2 Operational, 3 Dean, 4 Chairperson, 5 Faculty, 6 Staff
+// 2 Operational, 3 Dean, 4 Chairperson, 5 Staff, 6 Faculty
 const CAN_CREATE: Record<number, number[]> = {
   2: [3],
   3: [4],
