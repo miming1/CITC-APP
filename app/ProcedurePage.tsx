@@ -14,6 +14,7 @@ import Header from "../components/Universal Components/Header";
 import SearchBar from "../components/Universal Components/SearchBar";
 import { Colors } from "../constants/theme";
 import { fetchProcedures } from "../lib/api";
+import { canEditProcedures, useMe } from "../lib/roles";
 
 interface Procedure {
   procedure_id: number;
@@ -96,6 +97,9 @@ export default function ProcessListScreen() {
 
   const isAdmin =
     Number(roleId) === 2 || admin_mode === "true";
+
+  const me = useMe();
+  const canAdd = canEditProcedures(me?.role_id);
 
   const [search, setSearch] = useState("");
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
@@ -255,12 +259,14 @@ export default function ProcessListScreen() {
       </ScrollView>
 
       {isAdmin ? (
-        <FloatingButtons
-          isAdmin
-          adminIcon="add"
-          adminTooltip="Add Process"
-          onAdminPress={() => setShowAddProcessModal(true)}
-        />
+        canAdd ? (
+          <FloatingButtons
+            isAdmin
+            adminIcon="add"
+            adminTooltip="Add Process"
+            onAdminPress={() => setShowAddProcessModal(true)}
+          />
+        ) : null
       ) : (
         <FloatingButtons activeTab="faq" />
       )}
@@ -303,7 +309,7 @@ export default function ProcessListScreen() {
         </View>
       </Modal>
 
-      {isAdmin && (
+      {isAdmin && canAdd && (
         <AddProcessModal
           visible={showAddProcessModal}
           onClose={() => setShowAddProcessModal(false)}

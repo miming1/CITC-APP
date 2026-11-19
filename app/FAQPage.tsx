@@ -60,6 +60,7 @@ export default function FAQScreen() {
   const [showFAQModal, setShowFAQModal] = useState(false);
   const [showAuthModal,setShowAuthModal] = useState(false);
   const [pendingFAQ,setPendingFAQ] = useState<FAQ | null>(null);
+  const [canAddFaq, setCanAddFaq] = useState(false);
   const router = useRouter();
 
   const loadFAQs = async () => {
@@ -67,6 +68,12 @@ export default function FAQScreen() {
       setLoading(true); setError(null);
       const data = await fetchFAQs(categoryId ?? undefined);
       setFaqs(Array.isArray(data) ? data : []);
+      if (categoryId) {
+        const cats = await fetchFAQCategories();
+        setCanAddFaq(
+          !!cats.find((c: any) => String(c.category_id) === String(categoryId))?.can_edit
+        );
+      }
     } catch { setError("Could not load FAQs."); setFaqs([]); }
     finally { setLoading(false); }
   };
@@ -200,7 +207,7 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
           {!loading && !error && categoryId && (
             <View style={styles.cardList}>
               {filtered.map((item) => (
-                <FAQCard key={item.id} question={item.question} answer={item.answer} />
+                <FAQCard key={item.faq_id} question={item.question} answer={item.answer} />
               ))}
               {filtered.length === 0 && (
                 <Text style={[styles.empty, { color: textSec }]}>No FAQs found.</Text>
@@ -217,7 +224,7 @@ const handleCreateFAQ = async (_procId: number, data: { question: string; answer
         - Admin, inside a category -> Add FAQ
       */}
       {isAdmin ? (
-        categoryId ? (
+        categoryId && canAddFaq ? (
           <FloatingButtons
             isAdmin
             adminIcon="add"

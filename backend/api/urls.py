@@ -2,134 +2,60 @@ from django.urls import path
 from . import views, views_otp
 from .views import NotificationListView
 from .views import update_full_process
-from .views import user_submission_history
 
 urlpatterns = [
 
-    # =========================
     # AUTH
-    # =========================
     path('auth/register/', views.register),
     path('auth/login/', views.user_login),
     path('auth/me/', views.me),
-    #path('auth/admin', views.admin_dashboard),
-    path("admin/statistics/",views.admin_statistics),
 
+    # ADMIN / ACCOUNTS
+    path("admin/statistics/", views.admin_statistics),
+    path("admin/transaction-history/", views.admin_transaction_history),
     path("offices/", views.list_offices),
     path("accounts/", views.list_accounts),
     path("accounts/create/", views.create_account),
+    path("accounts/<uuid:user_id>/active/", views.set_account_active),
 
-    # =========================
     # PROCEDURES
-    # =========================
     path('procedures/', views.get_procedures),
     path('procedures/<int:pk>/', views.update_procedure),
     path('procedures/<int:pk>/delete/', views.delete_procedure),
-    path("process/<int:procedure_id>/save/",update_full_process,name="update_full_process"),
-    path("process/<int:procedure_id>/offices/", views.get_procedure_offices),
-    path("submission-history/", views.user_submission_history),
-    path("admin/transaction-history/", views.admin_transaction_history),    
+    path("process/<int:procedure_id>/save/", update_full_process, name="update_full_process"),
     path('process/create/', views.create_full_process),
-
-
-    # =========================
-    # PROCESS SCREEN (service layer)
-    # =========================
     path('process/<int:procedure_id>/', views.get_process_screen),
     path('process/<int:procedure_id>/documents/', views.get_procedure_documents),
     path('process/<int:procedure_id>/offices/', views.get_procedure_offices),
 
-    # =========================
     # FAQS
-    # =========================
     path('faq-categories/', views.get_faq_categories),
     path('faqs/', views.get_faqs),
     path('faqs/<int:pk>/', views.update_faq),
     path('faqs/<int:pk>/delete/', views.delete_faq),
     path('faqs/create/', views.create_faq),
 
-
-    # =========================
     # REQUESTS
-    # =========================
     path('requests/', views.submit_request),
     path('requests/track/', views.track_requests),
     path('requests/active/', views.active_requests),
     path("search-request/", views.search_request_by_reference),
-    path("requests/<int:request_id>/",views.update_request_status),
+    path("requests/<int:request_id>/", views.update_request_status),
 
-
-    # =========================
-    # ADMIN
-    # =========================
-    path('admin/transaction-history/', views.admin_transaction_history),
-
-
-    # =========================
     # USER
-    # =========================
+    path("submission-history/", views.user_submission_history),
     path('user/submission-history/', views.user_submission_history),
 
+    # PROFILE
+    path('auth/update-profile/', views.update_profile),
+    path("notifications/", NotificationListView.as_view(), name="notifications"),
+    path("notifications/read/", views.mark_notifications_read),
+    path("verify-password/", views.verify_password, name="verify-password"),
 
-    # =========================
-    # PROFILE 
-    # =========================
-    path(
-        'auth/update-profile/',
-        views.update_profile
-    ),
-
-    path(
-        "notifications/",
-        NotificationListView.as_view(),
-        name="notifications"
-    ),
-
-
-    # =========================
-    # VERIFY PASSWORD 
-    # =========================
-    path(
-        "verify-password/",
-        views.verify_password,
-        name="verify-password"
-    ),
-
-
-    # =========================
-    # OTP-BASED AUTH (signup + forgot password)
-    # =========================
-    path(
-        'auth/send-signup-otp/',
-        views_otp.send_signup_otp
-    ),
-
-    path(
-        'auth/verify-signup-otp/',
-        views_otp.verify_signup_otp
-    ),
-
-    path(
-        'auth/forgot-password/',
-        views_otp.forgot_password
-    ),
-
-    path(
-        'auth/verify-otp/',
-        views_otp.verify_reset_otp
-    ),
-
-    path(
-        'auth/reset-password/',
-        views_otp.reset_password
-    ),
-
-
-    path(
-        "notifications/read/",
-        views.mark_notifications_read,
-    ),
+    # OTP AUTH
+    path('auth/send-signup-otp/', views_otp.send_signup_otp),
+    path('auth/verify-signup-otp/', views_otp.verify_signup_otp),
+    path('auth/forgot-password/', views_otp.forgot_password),
+    path('auth/verify-otp/', views_otp.verify_reset_otp),
+    path('auth/reset-password/', views_otp.reset_password),
 ]
-
-
-

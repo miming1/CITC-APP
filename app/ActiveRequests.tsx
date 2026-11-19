@@ -4,12 +4,12 @@ import Header from "@/components/Universal Components/Header";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams } from "expo-router";
-import { ScrollView, StyleSheet, Text, View, useColorScheme, useWindowDimensions } from "react-native";
+import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useColorScheme, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 
 import { fetchActiveRequests, updateRequestStatus } from "@/lib/api";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 
 type ActiveRequest = {
   request_id: number;
@@ -59,14 +59,27 @@ export default function UserActiveReq() {
     "Approved" | "Rejected" | null
   >(null);
 
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+    title?: string;
+  } | null>(null);
 
-  const showMessage = (text: string) => {
-    setMessage(text);
+  const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    setTimeout(() => {
-      setMessage("");
-    }, 2500);
+  // success -> auto-hiding toast | error -> dialog the user dismisses with OK
+  const showMessage = (
+    text: string,
+    type: "success" | "error" = "success",
+    title?: string
+  ) => {
+    if (messageTimer.current) clearTimeout(messageTimer.current);
+
+    setMessage({ type, text, title });
+
+    if (type === "success") {
+      messageTimer.current = setTimeout(() => setMessage(null), 2500);
+    }
   };
 
   useFocusEffect(
@@ -110,7 +123,7 @@ export default function UserActiveReq() {
 
   const handleUpdateStatus = async () => {
     if (!selectedItem || !selectedStatus) {
-      alert("Please select Approve or Reject first.");
+      showMessage("Please choose Approve or Reject before updating.", "error", "Select a status");
       return;
     }
 
@@ -136,8 +149,19 @@ export default function UserActiveReq() {
       );
 
     } catch (err) {
-      console.log(err);
-      alert("Failed to update request.");
+      let text =
+        err instanceof Error && err.message
+          ? err.message
+          : "Failed to update request.";
+
+      try {
+        const parsed = JSON.parse(text);
+        text = parsed?.error || parsed?.detail || text;
+      } catch {
+        // already plain text
+      }
+
+      showMessage(text, "error", "Update failed");
     }
   };
 
@@ -162,16 +186,6 @@ export default function UserActiveReq() {
 
       const data = await fetchActiveRequests();
 
-      console.log("API DATA");
-      console.table(
-        data.map((item: any) => ({
-          document: item.document_name,
-          procedure: item.procedure_name,
-          remarks: item.remarks,
-          status: item.status,
-        }))
-      );
-
       const grouped = Object.values(
         data.reduce((acc: any, item: ActiveRequest) => {
           if (!acc[item.procedure_name]) {
@@ -189,16 +203,46 @@ export default function UserActiveReq() {
 
       setRequests(grouped as any);
 
-      console.log("Grouped Data:", grouped);
-
-      setRequests(grouped as any);
-
     } catch (err) {
-      console.log("Active Request Error:", err);
+      showMessage("Please check your connection and try again.", "error", "Couldn't load requests");
     } finally {
       setLoading(false);
     }
   };
+
+  const isError = message?.type === "error";
+
+  const toastBox = message ? (
+    <View
+      style={[
+        rstyles.toast,
+        {
+          backgroundColor: isError
+            ? colorScheme === "dark" ? "#1F2937" : "#FEE2E2"
+            : colorScheme === "dark" ? "#1F2937" : "#DCFCE7",
+        },
+      ]}
+    >
+      <MaterialIcons
+        name={isError ? "error-outline" : "check-circle"}
+        size={20}
+        color={isError ? "#DC2626" : "#16A34A"}
+      />
+
+      <Text
+        style={[
+          rstyles.toastText,
+          {
+            color: isError
+              ? colorScheme === "dark" ? "#FFFFFF" : "#991B1B"
+              : colorScheme === "dark" ? "#FFFFFF" : "#166534",
+          },
+        ]}
+      >
+        {message.text}
+      </Text>
+    </View>
+  ) : null;
 
   return (
     <SafeAreaView
@@ -210,44 +254,13 @@ export default function UserActiveReq() {
       ]}
     >
       <Header
-  title="Active Requestss"
+  title="Active Requests"
   roleId={roleId as string}
   adminMode={admin_mode as string}
 />
 
-      {message !== "" && (
-        <View
-          style={[
-            rstyles.toast,
-            {
-              backgroundColor:
-                colorScheme === "dark"
-                  ? "#1F2937"
-                  : "#DCFCE7",
-            },
-          ]}
-        >
-          <MaterialIcons
-            name="check-circle"
-            size={20}
-            color="#16A34A"
-          />
-
-          <Text
-            style={[
-              rstyles.toastText,
-              {
-                color:
-                  colorScheme === "dark"
-                    ? "#FFFFFF"
-                    : "#166534",
-              },
-            ]}
-          >
-            {message}
-          </Text>
-        </View>
-      )}
+      {/* success / load messages (errors raised while the modal is open show above it) */}
+      {message && !isError && toastBox}
 
       <ScrollView
         contentContainerStyle={[
@@ -368,6 +381,54 @@ export default function UserActiveReq() {
         handleUpdateStatus={handleUpdateStatus}
         formatYearLevel={formatYearLevel}
       />
+
+      {/* error dialog — replaces the browser alert, sits above the open request modal */}
+      <Modal
+        transparent
+        visible={!!message && isError}
+        animationType="fade"
+        onRequestClose={() => setMessage(null)}
+      >
+        <View style={rstyles.errorBackdrop}>
+          <View
+            style={[
+              rstyles.errorCard,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                rstyles.errorIconWrap,
+                {
+                  backgroundColor:
+                    colorScheme === "dark" ? "#3F1D1D" : "#FEE2E2",
+                },
+              ]}
+            >
+              <MaterialIcons name="error-outline" size={32} color="#DC2626" />
+            </View>
+
+            <Text style={[rstyles.errorTitle, { color: colors.text }]}>
+              {message?.title ?? "Something went wrong"}
+            </Text>
+
+            <Text style={[rstyles.errorText, { color: colors.icon }]}>
+              {message?.text}
+            </Text>
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[rstyles.errorBtn, { backgroundColor: colors.tint }]}
+              onPress={() => setMessage(null)}
+            >
+              <Text style={rstyles.errorBtnText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView >
   );
 }
@@ -403,6 +464,67 @@ export const rstyles = StyleSheet.create({
       width: 0,
       height: 3,
     },
+  },
+
+  errorBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    ...(Platform.OS === "web"
+      ? ({ backdropFilter: "blur(5px)" } as any)
+      : {}),
+  },
+
+  errorCard: {
+    width: "100%",
+    maxWidth: 380,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+  },
+
+  errorIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+
+  errorText: {
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+
+  errorBtn: {
+    alignSelf: "stretch",
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+
+  errorBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 15,
   },
 
   toastText: {

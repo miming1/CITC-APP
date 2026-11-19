@@ -41,21 +41,12 @@ export default function ProcessScreen() {
   const roleId = Number(userProfile?.role_id);
   const officeId = Number(userProfile?.office_id);
 
-  // Role identification
-  const isOperationalAdmin = roleId === 2;
+  // Any staff-side role (Operational Admin, Dean, Chairperson, Staff, Faculty)
+  const isAdmin = roleId >= 2;
 
-  // General administrative access
-  const isAdmin = [2, 3, 4, 5].includes(roleId);
-
-  // Office personnel
-  const isOfficePersonnel = [3, 4, 5].includes(roleId);
-
-  const canManageProcedure =
-    isOperationalAdmin ||
-    (
-      isOfficePersonnel &&
-      procedureOfficeIds.includes(officeId)
-    );
+  // The server decides who may edit this procedure (role + office rules)
+  const [canEdit, setCanEdit] = useState(false);
+  const canManageProcedure = canEdit;
 
   const [activeTab, setActiveTab] = useState<"procedure" | "faq">("procedure");
 
@@ -171,6 +162,7 @@ export default function ProcessScreen() {
         return;
       }
 
+      setCanEdit(!!data?.can_edit);
       setProcedure(data?.procedure ?? null);
       setSteps(data?.steps ?? []);
       setRequirements(data?.requirements ?? []);
