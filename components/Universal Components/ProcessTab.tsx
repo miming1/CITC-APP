@@ -164,7 +164,7 @@ export default function ProcessTab({
       {/* MENU */}
       {/* ========================= */}
 
-      {isAdmin && (
+      {canManageProcedure && (
         <View style={styles.menuContainer}>
           <TouchableOpacity
             onPress={() => setShowMenu(!showMenu)}
@@ -466,7 +466,7 @@ export default function ProcessTab({
               text={step.step_description}
               sub={step.office_location}
               link={step.reference_link}
-              isAdmin={canManageProcedure}
+              isAdmin={isAdmin}
               checked={checkedSteps.includes(step.step_number)}
               onToggle={() => {
                 if (checkedSteps.includes(step.step_number)) {
